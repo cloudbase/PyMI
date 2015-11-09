@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include <MI++.h>
+#include "Utils.h"
 
 static PyObject *PyMIError;
 
@@ -219,57 +220,72 @@ static void Instance_dealloc(Instance* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
-static PyObject* Instance_getattr(PyObject *self, char* name)
+static PyObject* Instance_subscript(Instance *self, PyObject *item)
 {
-    return NULL;
-}
-
-
-static PyObject* Instance_getitem(PyObject *self, PyObject *key)
-{
-    if (!PyUnicode_Check(key))
-        return NULL;
-
-    wchar_t w[1024];
-    if (PyUnicode_AsWideChar((PyUnicodeObject*)key, w, 1024) < 0)
-        return NULL;
-
-    return NULL;
-}
-
-static PyObject* Instance_getattro(PyObject *self, PyObject* name)
-{
+    // TODO: size buffer based on actual size
     wchar_t w[1024];
     w[0] = NULL;
+    Py_ssize_t i = -1;
 
-    if (PyString_Check(name))
+    if (PyString_Check(item))
     {
-        char* s = PyString_AsString(name);
+        char* s = PyString_AsString(item);
         ::MultiByteToWideChar(CP_ACP, 0, s, -1, w, 1024);
     }
-    else if (PyUnicode_Check(name))
+    else if (PyUnicode_Check(item))
     {
-        if (PyUnicode_AsWideChar((PyUnicodeObject*)name, w, 1024) < 0)
+        if (PyUnicode_AsWideChar((PyUnicodeObject*)item, w, 1024) < 0)
+            return NULL;
+    }
+    else if (PyIndex_Check(item))
+    {
+        i = PyNumber_AsSsize_t(item, PyExc_IndexError);
+        if (i == -1 && PyErr_Occurred())
             return NULL;
     }
     else
         return NULL;
 
+    const MI_Char* itemName;
     MI_Value itemValue;
     MI_Type itemType;
-    std::tie(itemValue, itemType) = ((Instance*)self)->instance[w];
 
-    size_t len = 0;
-
-    switch (itemType)
+    if (i >= 0)
     {
-    case MI_STRING:
-        len = wcslen(itemValue.string);
-        return PyUnicode_FromWideChar(itemValue.string, len);
-        break;
-    default:
-        return NULL;
+        std::tie(itemName, itemValue, itemType) = self->instance[i];
     }
+    else
+    {
+        std::tie(itemValue, itemType) = self->instance[w];
+    }
+    return MI2Py(itemValue, itemType);
+}
+
+static Py_ssize_t Instance_length(Instance *self)
+{
+    return self->instance.GetElementsCount();
+}
+
+static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* value)
+{
+    return -1;
+}
+
+static PyObject* Instance_getattro(Instance *self, PyObject* name)
+{
+    PyObject* attr = PyObject_GenericGetAttr((PyObject*)self, name);
+    if (attr)
+    {
+        return attr;
+    }
+
+    return Instance_subscript(self, name);
+}
+
+static PyObject* Instance_GetClassName(Instance *self)
+{
+    std::wstring className = self->instance.GetClassName();
+    return PyUnicode_FromWideChar(className.c_str(), className.length());
 }
 
 static PyMemberDef Instance_members[] = {
@@ -277,8 +293,15 @@ static PyMemberDef Instance_members[] = {
 };
 
 static PyMethodDef Instance_methods[] = {
-    { "__getitem__", (PyCFunction)Instance_getitem, METH_O, "" },
+    { "__getitem__", (PyCFunction)Instance_subscript, METH_O | METH_COEXIST, "" },
+    { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
     { NULL }  /* Sentinel */
+};
+
+static PyMappingMethods Instance_as_mapping = {
+    (lenfunc)Instance_length,
+    (binaryfunc)Instance_subscript,
+    (objobjargproc)Instance_ass_subscript
 };
 
 static PyTypeObject InstanceType = {
@@ -295,7 +318,7 @@ static PyTypeObject InstanceType = {
     0,                         /*tp_repr*/
     0,                         /*tp_as_number*/
     0,                         /*tp_as_sequence*/
-    0,                         /*tp_as_mapping*/
+    &Instance_as_mapping,      /*tp_as_mapping*/
     0,                         /*tp_hash */
     0,                         /*tp_call*/
     0,                         /*tp_str*/
@@ -443,24 +466,7 @@ static PyTypeObject QueryType = {
     Query_new,                 /* tp_new */
 };
 
-static PyObject* mi_test(PyObject *self, PyObject *args)
-{
-    MI::Application app;
-    MI::Session session(app);
-    MI::Query q(session, L"root\\cimv2", L"select * from Win32_Process");
-
-    MI::Instance i = q.GetNextInstance();
-    while (i)
-    {       
-        wprintf(L"%s\n", std::get<0>(i[L"Name"]).string);
-        i = q.GetNextInstance();
-    }
-
-    return NULL;
-}
-
 static PyMethodDef mi_methods[] = {
-    { "test",  mi_test, METH_VARARGS, "Test." },
     { NULL, NULL, 0, NULL }  /* Sentinel */
 };
 

@@ -49,14 +49,21 @@ namespace MI
     class Instance
     {
     private:
-        const MI_Instance *m_instance = NULL;
-        Instance(const MI_Instance *instance) : m_instance(instance) {}
+        MI_Instance* m_instance = NULL;
+        bool m_ownsInstance = false;
+        Instance(MI_Instance* instance, bool ownsInstance) : m_instance(instance), m_ownsInstance(ownsInstance) {}
+        void Delete();
 
         friend Query;
 
     public:
-        operator bool() { return m_instance != NULL; }
-        std::tuple<MI_Value, MI_Type> operator[] (const wchar_t* name);
+        operator bool() const { return m_instance != NULL; }
+        Instance* Instance::Clone() const;
+        std::wstring GetClassName() const;
+        unsigned GetElementsCount() const;
+        std::tuple<MI_Value, MI_Type> operator[] (const wchar_t* name) const;
+        std::tuple<const MI_Char*, MI_Value, MI_Type> operator[] (unsigned index) const;
+        virtual ~Instance();
     };
 
     class Query : public virtual Operation

@@ -52,7 +52,7 @@ Operation::~Operation()
     this->m_operation = MI_OPERATION_NULL;
 }
 
-std::tuple<MI_Value, MI_Type> Instance::operator[] (const wchar_t* name)
+std::tuple<MI_Value, MI_Type> Instance::operator[] (const wchar_t* name) const
 {
     MI_Result miResult = MI_RESULT_OK;
     MI_Value itemValue;
@@ -66,7 +66,75 @@ std::tuple<MI_Value, MI_Type> Instance::operator[] (const wchar_t* name)
         throw std::exception("operator[]");
     }
 
-    return  std::tuple<MI_Value, MI_Type>(itemValue, itemType);
+    return std::tuple<MI_Value, MI_Type>(itemValue, itemType);
+}
+
+std::tuple<const MI_Char*, MI_Value, MI_Type> Instance::operator[] (unsigned index) const
+{
+    MI_Result miResult = MI_RESULT_OK;
+    MI_Value itemValue;
+    MI_Type itemType;
+    MI_Uint32 itemFlags;
+    const MI_Char* itemName;
+
+    miResult = ::MI_Instance_GetElementAt(this->m_instance, index, &itemName, &itemValue, &itemType, &itemFlags);
+    if (miResult != MI_RESULT_OK)
+    {
+        throw std::exception("operator[]");
+    }
+
+    return std::tuple<const MI_Char*, MI_Value, MI_Type>(itemName, itemValue, itemType);
+}
+
+unsigned Instance::GetElementsCount() const
+{
+    MI_Uint32 count = 0;
+    if (::MI_Instance_GetElementCount(this->m_instance, &count) != MI_RESULT_OK)
+    {
+        throw std::exception("GetElementsCount");
+    }
+
+    return count;
+}
+
+Instance* Instance::Clone() const
+{
+    if (this->m_instance)
+    {
+        MI_Instance* newInstance = NULL;
+        if (::MI_Instance_Clone(this->m_instance, &newInstance) != MI_RESULT_OK)
+        {
+            throw std::exception("Clone");
+        }
+        return new Instance(newInstance, true);
+    }
+
+    return NULL;
+}
+
+std::wstring Instance::GetClassName() const
+{
+    const MI_Char* className = NULL;
+    if (::MI_Instance_GetClassName(this->m_instance, &className) != MI_RESULT_OK)
+    {
+        throw std::exception("GetClassName");
+    }
+
+    return std::wstring(className);
+}
+
+void Instance::Delete()
+{
+    ::MI_Instance_Delete(this->m_instance);
+    this->m_instance = NULL;
+}
+
+Instance::~Instance()
+{
+    if (m_ownsInstance && this->m_instance)
+    {
+        Delete();
+    }
 }
 
 Query::Query(Session& session, const std::wstring& ns, const std::wstring& query, const std::wstring& dialect)
@@ -89,5 +157,5 @@ Instance Query::GetNextInstance()
             throw std::exception("GetNextInstance");
         }
     }
-    return Instance(miInstance);
+    return Instance((MI_Instance*)miInstance, false);
 }
