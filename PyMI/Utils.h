@@ -3,4 +3,4 @@
 #include <Python.h>
 #include <mi.h>
 
-PyObject* MI2Py(const MI_Value& value, MI_Type valueType);
+PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags);

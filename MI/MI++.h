@@ -61,8 +61,8 @@ namespace MI
         Instance* Instance::Clone() const;
         std::wstring GetClassName() const;
         unsigned GetElementsCount() const;
-        std::tuple<MI_Value, MI_Type> operator[] (const wchar_t* name) const;
-        std::tuple<const MI_Char*, MI_Value, MI_Type> operator[] (unsigned index) const;
+        std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const;
+        std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const;
         virtual ~Instance();
     };
 

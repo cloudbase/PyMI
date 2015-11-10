@@ -52,7 +52,7 @@ Operation::~Operation()
     this->m_operation = MI_OPERATION_NULL;
 }
 
-std::tuple<MI_Value, MI_Type> Instance::operator[] (const wchar_t* name) const
+std::tuple<MI_Value, MI_Type, MI_Uint32> Instance::operator[] (const wchar_t* name) const
 {
     MI_Result miResult = MI_RESULT_OK;
     MI_Value itemValue;
@@ -66,10 +66,10 @@ std::tuple<MI_Value, MI_Type> Instance::operator[] (const wchar_t* name) const
         throw std::exception("operator[]");
     }
 
-    return std::tuple<MI_Value, MI_Type>(itemValue, itemType);
+    return std::tuple<MI_Value, MI_Type, MI_Uint32>(itemValue, itemType, itemFlags);
 }
 
-std::tuple<const MI_Char*, MI_Value, MI_Type> Instance::operator[] (unsigned index) const
+std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> Instance::operator[] (unsigned index) const
 {
     MI_Result miResult = MI_RESULT_OK;
     MI_Value itemValue;
@@ -83,7 +83,7 @@ std::tuple<const MI_Char*, MI_Value, MI_Type> Instance::operator[] (unsigned ind
         throw std::exception("operator[]");
     }
 
-    return std::tuple<const MI_Char*, MI_Value, MI_Type>(itemName, itemValue, itemType);
+    return std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32>(itemName, itemValue, itemType, itemFlags);
 }
 
 unsigned Instance::GetElementsCount() const

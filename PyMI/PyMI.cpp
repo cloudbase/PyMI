@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include <MI++.h>
 #include "Utils.h"
+#include <datetime.h>
 
 static PyObject *PyMIError;
 
@@ -249,16 +250,17 @@ static PyObject* Instance_subscript(Instance *self, PyObject *item)
     const MI_Char* itemName;
     MI_Value itemValue;
     MI_Type itemType;
+    MI_Uint32 itemFlags;
 
     if (i >= 0)
     {
-        std::tie(itemName, itemValue, itemType) = self->instance[i];
+        std::tie(itemName, itemValue, itemType, itemFlags) = self->instance[i];
     }
     else
     {
-        std::tie(itemValue, itemType) = self->instance[w];
+        std::tie(itemValue, itemType, itemFlags) = self->instance[w];
     }
-    return MI2Py(itemValue, itemType);
+    return MI2Py(itemValue, itemType, itemFlags);
 }
 
 static Py_ssize_t Instance_length(Instance *self)
@@ -472,6 +474,8 @@ static PyMethodDef mi_methods[] = {
 
 PyMODINIT_FUNC initmi(void)
 {
+    PyDateTime_IMPORT;
+
     PyObject* m = NULL;
 
     ApplicationType.tp_new = PyType_GenericNew;

@@ -12,8 +12,8 @@ while i is not None:
     print(len(i))
     print(i[u'name'])
     print(i['name'])
-    #for j in xrange(0, len(i)):
-    #    print(i[j])
+    for j in xrange(0, len(i)):
+        print(i[j])
 
     i = q.get_next_instance()
 
