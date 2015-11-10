@@ -4,17 +4,17 @@ import wmi
 def test_mi():
     a = mi.Application()
     s = mi.Session(a, protocol=u"WMIDCOM")
-    q = mi.Query(s, u"root\\virtualization\\v2", u"select * from msvm_computersystem")
+    q = s.exec_query(u"root\\cimv2", u"select * from win32_process")
     i = q.get_next_instance()
 
     while i is not None:
-        s = i.ElementName
+        s = i.name
         i = q.get_next_instance()
 
 def test_wmi():
-    conn = wmi.WMI(moniker="root\\virtualization\\v2")
-    for i in conn.msvm_computersystem():
-        s = i.ElementName
+    conn = wmi.WMI(moniker="root\\cimv2")
+    for i in conn.win32_process():
+        s = i.name
 
 if __name__ == '__main__':
     import timeit

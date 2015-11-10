@@ -54,7 +54,6 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
     case MI_STRING:
         len = wcslen(value.string);
         return PyUnicode_FromWideChar(value.string, len);
-        break;
     case MI_BOOLEANA:
     case MI_SINT8A:
     case MI_UINT8A:

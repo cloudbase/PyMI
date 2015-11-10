@@ -96,6 +96,67 @@ static PyTypeObject ApplicationType = {
 typedef struct {
     PyObject_HEAD
         /* Type-specific fields go here. */
+    MI::Operation* operation;
+} Operation;
+
+static PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static void Operation_dealloc(Operation* self);
+static PyObject* Operation_GetNextInstance(Operation* self);
+
+static PyMemberDef Operation_members[] = {
+    { NULL }  /* Sentinel */
+};
+
+static PyMethodDef Operation_methods[] = {
+    { "get_next_instance", (PyCFunction)Operation_GetNextInstance, METH_NOARGS, "Returns the next instance." },
+    { NULL }  /* Sentinel */
+};
+
+static PyTypeObject OperationType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "mi.operation",             /*tp_name*/
+    sizeof(Operation),             /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)Operation_dealloc, /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
+    "Operation objects",           /* tp_doc */
+    0,		               /* tp_traverse */
+    0,		               /* tp_clear */
+    0,		               /* tp_richcompare */
+    0,		               /* tp_weaklistoffset */
+    0,		               /* tp_iter */
+    0,		               /* tp_iternext */
+    Operation_methods,             /* tp_methods */
+    Operation_members,             /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    0,                          /* tp_init */
+    0,                         /* tp_alloc */
+    Operation_new,                 /* tp_new */
+};
+
+typedef struct {
+    PyObject_HEAD
+        /* Type-specific fields go here. */
         PyObject* app;
         MI::Session* session;
 } Session;
@@ -151,12 +212,31 @@ static void Session_dealloc(Session* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
+static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    wchar_t* query = NULL;
+    wchar_t* dialect = L"WQL";
+
+    static char *kwlist[] = { "ns", "query", "dialect", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|u", kwlist, &ns, &query, &dialect))
+        return NULL;
+
+    MI::Operation* op = self->session->ExecQuery(ns, query, dialect);
+
+    PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
+    //Py_INCREF(pyOp);
+    ((Operation*)pyOp)->operation = op;
+    return pyOp;
+}
+
 static PyMemberDef Session_members[] = {
     { "app", T_OBJECT_EX, offsetof(Session, app), 0, "Application" },
     { NULL }  /* Sentinel */
 };
 
 static PyMethodDef Session_methods[] = {
+    { "exec_query", (PyCFunction)Session_ExecQuery, METH_KEYWORDS, "Executes a query." },
     { NULL }  /* Sentinel */
 };
 
@@ -206,18 +286,25 @@ static PyTypeObject SessionType = {
 typedef struct {
     PyObject_HEAD
         /* Type-specific fields go here. */
-        MI::Instance instance;
+        MI::Instance* instance;
 } Instance;
 
 static PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Instance* self = NULL;
     self = (Instance*)type->tp_alloc(type, 0);
+    self->instance = NULL;
     return (PyObject *)self;
 }
 
 static void Instance_dealloc(Instance* self)
 {
+    if (self->instance)
+    {
+        delete self->instance;
+        self->instance = NULL;
+    }
+
     self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -254,18 +341,18 @@ static PyObject* Instance_subscript(Instance *self, PyObject *item)
 
     if (i >= 0)
     {
-        std::tie(itemName, itemValue, itemType, itemFlags) = self->instance[i];
+        std::tie(itemName, itemValue, itemType, itemFlags) = (*self->instance)[i];
     }
     else
     {
-        std::tie(itemValue, itemType, itemFlags) = self->instance[w];
+        std::tie(itemValue, itemType, itemFlags) = (*self->instance)[w];
     }
     return MI2Py(itemValue, itemType, itemFlags);
 }
 
 static Py_ssize_t Instance_length(Instance *self)
 {
-    return self->instance.GetElementsCount();
+    return self->instance->GetElementsCount();
 }
 
 static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* value)
@@ -286,7 +373,7 @@ static PyObject* Instance_getattro(Instance *self, PyObject* name)
 
 static PyObject* Instance_GetClassName(Instance *self)
 {
-    std::wstring className = self->instance.GetClassName();
+    std::wstring className = self->instance->GetClassName();
     return PyUnicode_FromWideChar(className.c_str(), className.length());
 }
 
@@ -348,125 +435,37 @@ static PyTypeObject InstanceType = {
     Instance_new,                 /* tp_new */
 };
 
-
-typedef struct {
-    PyObject_HEAD
-        /* Type-specific fields go here. */
-        PyObject* session;
-        MI::Query* query;
-} Query;
-
-static PyObject* Query_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    Query* self = NULL;
-    self = (Query*)type->tp_alloc(type, 0);
+    Operation* self = NULL;
+    self = (Operation*)type->tp_alloc(type, 0);
     return (PyObject *)self;
 }
 
-static int Query_init(Query *self, PyObject *args, PyObject *kwds)
+static void Operation_dealloc(Operation* self)
 {
-    PyObject* session = NULL;
-    wchar_t* ns = NULL;
-    wchar_t* query = NULL;
-    wchar_t* dialect = L"WQL";
-
-    static char *kwlist[] = { "session", "ns", "query", "dialect", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ouu|u", kwlist, &session, &ns, &query, &dialect))
-        return -1;
-
-    if (!PyObject_IsInstance(session, reinterpret_cast<PyObject*>(&SessionType)))
-        return -1;
-
-    PyObject* tmp = self->session;
-    Py_INCREF(session);
-    self->session = session;
-    Py_XDECREF(tmp);
-
-    self->query = new MI::Query(*((Session*)session)->session, ns, query, dialect);
-    return 0;
-}
-
-static void Query_dealloc(Query* self)
-{
-    if (self->query)
+    if (self->operation)
     {
-        delete self->query;
-        self->query = NULL;
-    }
-
-    if (self->session)
-    {
-        Py_XDECREF(self->session);
+        delete self->operation;
+        self->operation = NULL;
     }
 
     self->ob_type->tp_free((PyObject*)self);
 }
 
-static PyObject* Query_GetNextInstance(Query* self)
+static PyObject* Operation_GetNextInstance(Operation* self)
 {
-    MI::Instance instance = self->query->GetNextInstance();
+    MI::Instance* instance = self->operation->GetNextInstance();
     if (instance)
     {
         PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
-        Py_INCREF(pyInstance);
+        //Py_INCREF(pyInstance);
         ((Instance*)pyInstance)->instance = instance;
         return pyInstance;
     }
 
     Py_RETURN_NONE;
 }
-
-static PyMemberDef Query_members[] = {
-    { "session", T_OBJECT_EX, offsetof(Query, session), 0, "Session" },
-    { NULL }  /* Sentinel */
-};
-
-static PyMethodDef Query_methods[] = {
-    { "get_next_instance", (PyCFunction)Query_GetNextInstance, METH_NOARGS, "Returns the next instance." },
-    { NULL }  /* Sentinel */
-};
-
-static PyTypeObject QueryType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
-    "mi.Query",             /*tp_name*/
-    sizeof(Query),             /*tp_basicsize*/
-    0,                         /*tp_itemsize*/
-    (destructor)Query_dealloc, /*tp_dealloc*/
-    0,                         /*tp_print*/
-    0,                         /*tp_getattr*/
-    0,                         /*tp_setattr*/
-    0,                         /*tp_compare*/
-    0,                         /*tp_repr*/
-    0,                         /*tp_as_number*/
-    0,                         /*tp_as_sequence*/
-    0,                         /*tp_as_mapping*/
-    0,                         /*tp_hash */
-    0,                         /*tp_call*/
-    0,                         /*tp_str*/
-    0,                         /*tp_getattro*/
-    0,                         /*tp_setattro*/
-    0,                         /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
-    "Query objects",           /* tp_doc */
-    0,		               /* tp_traverse */
-    0,		               /* tp_clear */
-    0,		               /* tp_richcompare */
-    0,		               /* tp_weaklistoffset */
-    0,		               /* tp_iter */
-    0,		               /* tp_iternext */
-    Query_methods,             /* tp_methods */
-    Query_members,             /* tp_members */
-    0,                         /* tp_getset */
-    0,                         /* tp_base */
-    0,                         /* tp_dict */
-    0,                         /* tp_descr_get */
-    0,                         /* tp_descr_set */
-    0,                         /* tp_dictoffset */
-    (initproc)Query_init,      /* tp_init */
-    0,                         /* tp_alloc */
-    Query_new,                 /* tp_new */
-};
 
 static PyMethodDef mi_methods[] = {
     { NULL, NULL, 0, NULL }  /* Sentinel */
@@ -490,8 +489,8 @@ PyMODINIT_FUNC initmi(void)
     if (PyType_Ready(&InstanceType) < 0)
         return;
 
-    QueryType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&QueryType) < 0)
+    OperationType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&OperationType) < 0)
         return;
 
     m = Py_InitModule3("mi", mi_methods, "MI module.");
@@ -507,8 +506,8 @@ PyMODINIT_FUNC initmi(void)
     Py_INCREF(&InstanceType);
     PyModule_AddObject(m, "Instance", (PyObject*)&InstanceType);
 
-    Py_INCREF(&QueryType);
-    PyModule_AddObject(m, "Query", (PyObject*)&QueryType);
+    Py_INCREF(&OperationType);
+    PyModule_AddObject(m, "Operation", (PyObject*)&OperationType);
 
     /*
     m = Py_InitModule("mi", PyMIMethods);
