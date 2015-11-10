@@ -7,6 +7,8 @@
 namespace MI
 {
     class Session;
+    class Instance;
+    class Operation;
 
     class Application
     {
@@ -17,10 +19,8 @@ namespace MI
     public:
         Application(const std::wstring& appId = L"");
         virtual ~Application();
+        Instance* NewInstance(const std::wstring& className);
     };
-
-    class Operation;
-    class Instance;
 
     class Session
     {
@@ -30,11 +30,10 @@ namespace MI
     public:
         Session(Application& app, const std::wstring& protocol = L"", const std::wstring& computerName = L".");
         Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
-        Operation* Session::InvokeMethod(Instance& instance, const std::wstring& methodName);
+        Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance& inboundParams);
+        Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
         virtual ~Session();
     };
-
-    class Instance;
 
     class MElementsEnum
     {
@@ -72,6 +71,7 @@ namespace MI
         Instance(MI_Instance* instance, bool ownsInstance) : m_instance(instance), m_ownsInstance(ownsInstance) {}
         void Delete();
 
+        friend Application;
         friend Operation;
         friend Session;
 
@@ -83,6 +83,13 @@ namespace MI
         unsigned GetElementsCount() const;
         std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const;
         std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const;
+        void AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
+        void SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
+        void SetElement(unsigned index, const MI_Value* value, MI_Type valueType);
+        MI_Type GetElementType(const std::wstring& name) const;
+        MI_Type GetElementType(unsigned index) const;
+        void ClearElement(const std::wstring& name);
+        void ClearElement(unsigned index);
         virtual ~Instance();
     };
 

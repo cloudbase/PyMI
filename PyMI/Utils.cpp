@@ -6,7 +6,7 @@
 PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
 {
     if (flags & MI_FLAG_NULL)
-        return Py_None;
+        Py_RETURN_NONE;
 
     size_t len = 0;
 

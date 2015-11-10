@@ -31,6 +31,13 @@ Application::~Application()
     this->m_app = MI_APPLICATION_NULL;
 }
 
+Instance* Application::NewInstance(const std::wstring& className)
+{
+    MI_Instance* instance = NULL;
+    MICheckResult(::MI_Application_NewInstance(&this->m_app, className.c_str(), NULL, &instance));
+    return new Instance(instance, true);
+}
+
 Session::Session(Application& app, const std::wstring& protocol, const std::wstring& computerName)
 {
     this->m_session = MI_SESSION_NULL;
@@ -123,15 +130,63 @@ Class::~Class()
 Operation* Session::ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect)
 {
     MI_Operation op = MI_OPERATION_NULL;
-    ::MI_Session_QueryInstances(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, NULL, ns.c_str(), dialect.c_str(), query.c_str(), NULL, &op);
+    ::MI_Session_QueryInstances(&this->m_session, 0, NULL, ns.c_str(), dialect.c_str(), query.c_str(), NULL, &op);
     return new Operation(op);
 }
 
-Operation* Session::InvokeMethod(Instance& instance, const std::wstring& methodName)
+Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance& inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
-    ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_BASIC_RTTI, NULL, instance.GetNamespace().c_str(), NULL, methodName.c_str(), instance.m_instance, NULL, NULL, &op);
-    return new Operation(op);
+    ::MI_Session_Invoke(&this->m_session, 0, NULL, instance.GetNamespace().c_str(), NULL, methodName.c_str(), instance.m_instance, inboundParams.m_instance, NULL, &op);
+    Operation operation(op);
+    return operation.GetNextInstance();
+}
+
+Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams)
+{
+    MI_Operation op = MI_OPERATION_NULL;
+    ::MI_Session_Invoke(&this->m_session, 0, NULL, ns.c_str(), className.c_str(), methodName.c_str(), NULL, inboundParams.m_instance, NULL, &op);
+    Operation operation(op);
+    return operation.GetNextInstance();
+}
+
+MI_Type Instance::GetElementType(const std::wstring& name) const
+{
+    MI_Type itemType;
+    MICheckResult(::MI_Instance_GetElement(this->m_instance, name.c_str(), NULL, &itemType, NULL, NULL));
+    return itemType;
+}
+
+MI_Type Instance::GetElementType(unsigned index) const
+{
+    MI_Type itemType;
+    MICheckResult(::MI_Instance_GetElementAt(this->m_instance, index, NULL, NULL, &itemType, NULL));
+    return itemType;
+}
+
+void Instance::SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType)
+{
+    MICheckResult(::MI_Instance_SetElement(this->m_instance, name.c_str(), value, valueType, value ? 0 : MI_FLAG_NULL));
+}
+
+void Instance::SetElement(unsigned index, const MI_Value* value, MI_Type valueType)
+{
+    MICheckResult(::MI_Instance_SetElementAt(this->m_instance, index, value, valueType, value ? 0 : MI_FLAG_NULL));
+}
+
+void Instance::AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType)
+{
+    MICheckResult(::MI_Instance_AddElement(this->m_instance, name.c_str(), value, valueType, value ? 0 : MI_FLAG_NULL));
+}
+
+void Instance::ClearElement(const std::wstring& name)
+{
+    MICheckResult(::MI_Instance_ClearElement(this->m_instance, name.c_str()));
+}
+
+void Instance::ClearElement(unsigned index)
+{
+    MICheckResult(::MI_Instance_ClearElementAt(this->m_instance, index));
 }
 
 std::tuple<MI_Value, MI_Type, MI_Uint32> Instance::operator[] (const wchar_t* name) const
@@ -228,7 +283,7 @@ Instance* Operation::GetNextInstance()
         const MI_Char* errMsg = NULL;
         const MI_Instance* compDetails = NULL;
 
-        const MI_Instance *miInstance = NULL;
+        const MI_Instance* miInstance = NULL;
         MICheckResult(MI_Operation_GetInstance(&this->m_operation, &miInstance, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
         MICheckResult(miResult);
 
