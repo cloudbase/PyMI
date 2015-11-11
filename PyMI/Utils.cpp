@@ -153,6 +153,42 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             throw std::exception("Unsupported type conversion");
         }
     }
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)))
+    {
+        Py_ssize_t size = PyTuple_Size(pyValue);
+        switch (valueType)
+        {
+        case MI_UINT32A:
+            value.uint32a.size = size;
+            value.uint32a.data = (MI_Uint32*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint32) * size);
+            break;
+        case MI_STRINGA:
+            value.stringa.size = size;
+            value.stringa.data = (MI_Char**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Char*) * size);
+            break;
+        default:
+            throw std::exception("Unsupported type conversion");
+        }
+
+        for (Py_ssize_t i = 0; i < size; i++)
+        {
+            MI_Value tmpVal;
+            PyObject* pyObj = PyTuple_GetItem(pyValue, i);
+            switch (valueType)
+            {
+            case MI_UINT32A:
+                Py2MI(pyObj, tmpVal, MI_UINT32);
+                value.uint32a.data[i] = tmpVal.uint32;
+                break;
+            case MI_STRINGA:
+                Py2MI(pyObj, tmpVal, MI_STRING);
+                value.stringa.data[i] = tmpVal.string;
+                break;
+            default:
+                throw std::exception("Unsupported type conversion");
+            }
+        }
+    }
     else
     {
         throw std::exception("Unsupported type conversion");
@@ -165,6 +201,7 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
         Py_RETURN_NONE;
 
     size_t len = 0;
+    PyObject* pyObj = NULL;
 
     switch (valueType)
     {
@@ -214,7 +251,19 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
     case MI_SINT8A:
     case MI_UINT8A:
     case MI_SINT16A:
+        return NULL;
     case MI_UINT16A:
+        pyObj = PyTuple_New(value.uint16a.size);
+        for (MI_Uint32 i = 0; i < value.uint16a.size; i++)
+        {
+            MI_Value tmpVal;
+            tmpVal.uint16 = value.uint16a.data[i];
+            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_UINT16, 0)))
+            {
+                throw std::exception("PyTuple_SetItem");
+            }
+        }
+        return pyObj;
     case MI_SINT32A:
     case MI_UINT32A:
     case MI_SINT64A:
@@ -222,8 +271,31 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
     case MI_REAL32A:
     case MI_REAL64A:
     case MI_CHAR16A:
+        return NULL;
     case MI_DATETIMEA:
+        pyObj = PyTuple_New(value.datetimea.size);
+        for (MI_Uint32 i = 0; i < value.datetimea.size; i++)
+        {
+            MI_Value tmpVal;
+            tmpVal.datetime = value.datetimea.data[i];
+            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_DATETIME, 0)))
+            {
+                throw std::exception("PyTuple_SetItem");
+            }
+        }
+        return pyObj;
     case MI_STRINGA:
+        pyObj = PyTuple_New(value.stringa.size);
+        for (MI_Uint32 i = 0; i < value.stringa.size; i++)
+        {
+            MI_Value tmpVal;
+            tmpVal.string = value.stringa.data[i];
+            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_STRING, 0)))
+            {
+                throw std::exception("PyTuple_SetItem");
+            }
+        }
+        return pyObj;
     case MI_INSTANCE:
     case MI_REFERENCE:
     case MI_INSTANCEA:

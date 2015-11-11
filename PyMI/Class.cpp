@@ -30,20 +30,16 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
     if (!GetIndexOrName(item, w, i))
         return NULL;
 
-    const MI_Char* itemName;
-    MI_Value itemValue;
-    MI_Type itemType;
-    MI_Uint32 itemFlags;
-
+    MI::ClassElement element;
     if (i >= 0)
     {
-        std::tie(itemName, itemValue, itemType, itemFlags) = (*self->miClass)[i];
+        element = (*self->miClass)[i];
     }
     else
     {
-        std::tie(itemValue, itemType, itemFlags) = (*self->miClass)[w];
+        element = (*self->miClass)[w];
     }
-    return MI2Py(itemValue, itemType, itemFlags);
+    return MI2Py(element.m_value, element.m_type, element.m_flags);
 }
 
 static Py_ssize_t Class_length(Class *self)

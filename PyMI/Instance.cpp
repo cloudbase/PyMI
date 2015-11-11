@@ -36,15 +36,16 @@ static PyObject* Instance_subscript(Instance *self, PyObject *item)
     MI_Type itemType;
     MI_Uint32 itemFlags;
 
+    MI::ValueElement element;
     if (i >= 0)
     {
-        std::tie(itemName, itemValue, itemType, itemFlags) = (*self->instance)[i];
+        element = (*self->instance)[i];
     }
     else
     {
-        std::tie(itemValue, itemType, itemFlags) = (*self->instance)[w];
+        element = (*self->instance)[w];
     }
-    return MI2Py(itemValue, itemType, itemFlags);
+    return MI2Py(element.m_value, element.m_type, element.m_flags);
 }
 
 static Py_ssize_t Instance_length(Instance *self)

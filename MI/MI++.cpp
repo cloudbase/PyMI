@@ -153,30 +153,26 @@ MethodInfo Class::GetMethodInfo(unsigned index) const
     return info;
 }
 
-std::tuple<MI_Value, MI_Type, MI_Uint32> Class::operator[] (const wchar_t* name) const
+ClassElement Class::operator[] (const wchar_t* name) const
 {
-    MI_Result miResult = MI_RESULT_OK;
-    MI_Value itemValue;
-    MI_Type itemType;
-    MI_Uint32 itemFlags;
-    MI_Uint32 itemIndex;
-    MI_Boolean valueExists;
-
-    MICheckResult(::MI_Class_GetElement(this->m_class, name, &itemValue, &valueExists, &itemType, NULL, NULL, &itemFlags, &itemIndex));
-    return std::tuple<MI_Value, MI_Type, MI_Uint32>(itemValue, itemType, itemFlags);
+    ClassElement element;
+    MI_QualifierSet qualifierSet;
+    MICheckResult(::MI_Class_GetElement(this->m_class, name, &element.m_value, &element.m_valueExists, &element.m_type, NULL, &qualifierSet, &element.m_flags, &element.m_index));
+    element.m_name = name;
+    element.m_qualifiers = GetQualifiers(&qualifierSet);
+    return element;
 }
 
-std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> Class::operator[] (unsigned index) const
+ClassElement Class::operator[] (unsigned index) const
 {
-    MI_Result miResult = MI_RESULT_OK;
-    MI_Value itemValue;
-    MI_Type itemType;
-    MI_Uint32 itemFlags;
-    const MI_Char* itemName;
-    MI_Boolean valueExists;
-
-    MICheckResult(::MI_Class_GetElementAt(this->m_class, index, &itemName, &itemValue, &valueExists, &itemType, NULL, NULL, &itemFlags));
-    return std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32>(itemName, itemValue, itemType, itemFlags);
+    ClassElement element;
+    MI_QualifierSet qualifierSet;
+    const MI_Char* name;
+    MICheckResult(::MI_Class_GetElementAt(this->m_class, index, &name, &element.m_value, &element.m_valueExists, &element.m_type, NULL, &qualifierSet, &element.m_flags));
+    element.m_name = name;
+    element.m_index = index;
+    element.m_qualifiers = GetQualifiers(&qualifierSet);
+    return element;
 }
 
 unsigned Class::GetElementsCount() const
@@ -278,28 +274,22 @@ void Instance::ClearElement(unsigned index)
     MICheckResult(::MI_Instance_ClearElementAt(this->m_instance, index));
 }
 
-std::tuple<MI_Value, MI_Type, MI_Uint32> Instance::operator[] (const wchar_t* name) const
+ValueElement Instance::operator[] (const wchar_t* name) const
 {
-    MI_Result miResult = MI_RESULT_OK;
-    MI_Value itemValue;
-    MI_Type itemType;
-    MI_Uint32 itemFlags;
-    MI_Uint32 itemIndex;
-
-    MICheckResult(::MI_Instance_GetElement(this->m_instance, name, &itemValue, &itemType, &itemFlags, &itemIndex));
-    return std::tuple<MI_Value, MI_Type, MI_Uint32>(itemValue, itemType, itemFlags);
+    ClassElement element;
+    MICheckResult(::MI_Instance_GetElement(this->m_instance, name, &element.m_value, &element.m_type, &element.m_flags, &element.m_index));
+    element.m_name = name;
+    return element;
 }
 
-std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> Instance::operator[] (unsigned index) const
+ValueElement Instance::operator[] (unsigned index) const
 {
-    MI_Result miResult = MI_RESULT_OK;
-    MI_Value itemValue;
-    MI_Type itemType;
-    MI_Uint32 itemFlags;
-    const MI_Char* itemName;
-
-    MICheckResult(::MI_Instance_GetElementAt(this->m_instance, index, &itemName, &itemValue, &itemType, &itemFlags));
-    return std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32>(itemName, itemValue, itemType, itemFlags);
+    ClassElement element;
+    const MI_Char* name;
+    MICheckResult(::MI_Instance_GetElementAt(this->m_instance, index, &name, &element.m_value, &element.m_type, &element.m_flags));
+    element.m_name = name;
+    element.m_index = index;
+    return element;
 }
 
 unsigned Instance::GetElementsCount() const

@@ -51,12 +51,17 @@ namespace MI
         MI_Uint32 m_flags;
     };
 
-    struct ParameterInfo
+    struct BaseElementInfo
     {
     public:
         std::wstring m_name;
         unsigned m_index;
         MI_Type m_type;
+    };
+
+    struct ParameterInfo : public BaseElementInfo
+    {
+    public:
         std::map<std::wstring, Qualifier> m_qualifiers;
     };
 
@@ -69,15 +74,26 @@ namespace MI
         std::map<std::wstring, ParameterInfo> m_parameters;
     };
 
-    class MElementsEnum
+    struct BaseElementInfoWithFlags : public BaseElementInfo
     {
     public:
-        virtual unsigned GetElementsCount() const = 0;
-        virtual std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const = 0;
-        virtual std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const = 0;
+        MI_Uint32 m_flags;
     };
 
-    class Class : public MElementsEnum
+    struct ValueElement : public BaseElementInfoWithFlags
+    {
+    public:
+        MI_Value m_value;
+    };
+
+    struct ClassElement : public ValueElement
+    {
+    public:
+        MI_Boolean m_valueExists;
+        std::map<std::wstring, Qualifier> m_qualifiers;
+    };
+
+    class Class
     {
     private:
         MI_Class* m_class = NULL;
@@ -89,15 +105,15 @@ namespace MI
 
     public:
         unsigned GetElementsCount() const;
-        std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const;
-        std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const;
+        ClassElement operator[] (const wchar_t* name) const;
+        ClassElement operator[] (unsigned index) const;
         unsigned GetMethodCount() const;
         MethodInfo GetMethodInfo(const std::wstring& name) const;
         MethodInfo GetMethodInfo(unsigned index) const;
         virtual ~Class();
     };
 
-    class Instance : public MElementsEnum
+    class Instance
     {
     private:
         MI_Instance* m_instance = NULL;
@@ -117,8 +133,8 @@ namespace MI
         std::wstring GetClassName();
         std::wstring GetNamespace();
         unsigned GetElementsCount() const;
-        std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const;
-        std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const;
+        ValueElement operator[] (const wchar_t* name) const;
+        ValueElement operator[] (unsigned index) const;
         void AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
         void SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
         void SetElement(unsigned index, const MI_Value* value, MI_Type valueType);
