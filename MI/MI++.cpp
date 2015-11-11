@@ -299,6 +299,11 @@ std::wstring Instance::GetPath()
     std::wstring className = this->GetClassName();
     std::wstring serverName = this->GetServerName();
 
+    if (!serverName.length())
+    {
+        return L"";
+    }
+
     std::replace(ns.begin(), ns.end(), L'/', L'\\');
 
     std::wostringstream o;
@@ -392,7 +397,15 @@ std::wstring Instance::GetServerName()
     {
         const MI_Char* serverName = NULL;
         MICheckResult(::MI_Instance_GetServerName(this->m_instance, &serverName));
-        this->m_serverName = serverName;
+
+        if (serverName)
+        {
+            this->m_serverName = serverName;
+        }
+        else
+        {
+            this->m_serverName = L"";
+        }
     }
     return std::wstring(this->m_serverName);
 }
