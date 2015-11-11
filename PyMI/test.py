@@ -2,9 +2,15 @@
 
 a = mi.Application()
 s = mi.Session(a, protocol=u"WMIDCOM")
+
+c = s.get_class(u"root\\cimv2", u"win32_process")
+print(len(c))
+
 q = s.exec_query(u"root\\cimv2", u"select * from win32_process where name = 'notepad.exe'")
 i = q.get_next_instance()
 while i is not None:
+    c = i.get_class()
+
     #print(dir(i))
     print(i.get_class_name())
 

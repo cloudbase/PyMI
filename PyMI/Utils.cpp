@@ -4,6 +4,33 @@
 #include <datetime.h>
 #include <exception>
 
+bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
+{
+    w[0] = NULL;
+    i = -1;
+
+    if (PyString_Check(item))
+    {
+        char* s = PyString_AsString(item);
+        ::MultiByteToWideChar(CP_ACP, 0, s, -1, w, 1024);
+    }
+    else if (PyUnicode_Check(item))
+    {
+        if (PyUnicode_AsWideChar((PyUnicodeObject*)item, w, 1024) < 0)
+            return false;
+    }
+    else if (PyIndex_Check(item))
+    {
+        i = PyNumber_AsSsize_t(item, PyExc_IndexError);
+        if (i == -1 && PyErr_Occurred())
+            return false;
+    }
+    else
+        return false;
+
+    return true;
+}
+
 void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
 {
     ZeroMemory(&value, sizeof(value));

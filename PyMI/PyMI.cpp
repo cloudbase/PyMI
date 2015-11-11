@@ -6,6 +6,8 @@
 #include "Utils.h"
 #include <datetime.h>
 
+#include "Class.h"
+
 static PyObject *PyMIError;
 
 typedef struct {
@@ -234,6 +236,8 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
 }
 
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds);
+static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds);
+
 
 static PyMemberDef Session_members[] = {
     { "app", T_OBJECT_EX, offsetof(Session, app), 0, "Application" },
@@ -243,6 +247,7 @@ static PyMemberDef Session_members[] = {
 static PyMethodDef Session_methods[] = {
     { "exec_query", (PyCFunction)Session_ExecQuery, METH_KEYWORDS, "Executes a query." },
     { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_KEYWORDS, "invokes a method." },
+    { "get_class", (PyCFunction)Session_GetClass, METH_KEYWORDS, "Gets a class." },
     { NULL }  /* Sentinel */
 };
 
@@ -314,33 +319,6 @@ static void Instance_dealloc(Instance* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
-bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
-{
-    w[0] = NULL;
-    i = -1;
-
-    if (PyString_Check(item))
-    {
-        char* s = PyString_AsString(item);
-        ::MultiByteToWideChar(CP_ACP, 0, s, -1, w, 1024);
-    }
-    else if (PyUnicode_Check(item))
-    {
-        if (PyUnicode_AsWideChar((PyUnicodeObject*)item, w, 1024) < 0)
-            return false;
-    }
-    else if (PyIndex_Check(item))
-    {
-        i = PyNumber_AsSsize_t(item, PyExc_IndexError);
-        if (i == -1 && PyErr_Occurred())
-            return false;
-    }
-    else
-        return false;
-
-    return true;
-}
-
 static PyObject* Instance_subscript(Instance *self, PyObject *item)
 {
     // TODO: size buffer based on actual size
@@ -407,6 +385,15 @@ static int Instance_setattro(Instance *self, PyObject* name, PyObject* value)
     return -1;
 }
 
+static PyObject* Instance_GetClass(Instance *self, PyObject *args, PyObject *kwds)
+{
+    MI::Class* c = self->instance->GetClass();
+    PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
+    //Py_INCREF(pyInstance);
+    ((Class*)pyClass)->m_class = c;
+    return pyClass;
+}
+
 static PyObject* Instance_GetClassName(Instance *self)
 {
     std::wstring className = self->instance->GetClassName();
@@ -420,6 +407,7 @@ static PyMemberDef Instance_members[] = {
 static PyMethodDef Instance_methods[] = {
     { "__getitem__", (PyCFunction)Instance_subscript, METH_O | METH_COEXIST, "" },
     { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
+    { "get_class", (PyCFunction)Instance_GetClass, METH_NOARGS, "" },
     { NULL }  /* Sentinel */
 };
 
@@ -483,6 +471,23 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
     //Py_INCREF(pyInstance);
     ((Instance*)pyInstance)->instance = instance;
     return pyInstance;
+}
+
+
+static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    wchar_t* className = NULL;
+
+    static char *kwlist[] = { "ns", "className", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu", kwlist, &ns, &className))
+        return NULL;
+
+    MI::Class* c = self->session->GetClass(ns, className);
+    PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
+    //Py_INCREF(pyInstance);
+    ((Class*)pyClass)->m_class = c;
+    return pyClass;
 }
 
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
@@ -562,6 +567,10 @@ PyMODINIT_FUNC initmi(void)
     if (PyType_Ready(&SessionType) < 0)
         return;
 
+    ClassType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&ClassType) < 0)
+        return;
+
     InstanceType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&InstanceType) < 0)
         return;
@@ -579,6 +588,9 @@ PyMODINIT_FUNC initmi(void)
 
     Py_INCREF(&SessionType);
     PyModule_AddObject(m, "Session", (PyObject*)&SessionType);
+
+    Py_INCREF(&ClassType);
+    PyModule_AddObject(m, "Class", (PyObject*)&ClassType);
 
     Py_INCREF(&InstanceType);
     PyModule_AddObject(m, "Instance", (PyObject*)&InstanceType);

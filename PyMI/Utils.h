@@ -5,3 +5,4 @@
 
 PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags);
 void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType);
+bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i);
