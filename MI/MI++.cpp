@@ -37,6 +37,34 @@ Instance* Application::NewInstance(const std::wstring& className)
     return new Instance(instance, true);
 }
 
+Instance* Application::NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName)
+{
+    MI::MethodInfo methodInfo = miClass.GetMethodInfo(methodName);
+    MI::Instance* instance = this->NewInstance(L"__parameters");
+
+    try
+    {
+        for (auto const &it : methodInfo.m_parameters)
+        {
+            auto& param = it.second;
+            for (auto const &it2 : param.m_qualifiers)
+            {
+                if (it2.second.m_name == L"In")
+                {
+                    instance->AddElement(param.m_name, NULL, param.m_type);
+                }
+            }
+        }
+    }
+    catch (std::exception&)
+    {
+        delete instance;
+        throw;
+    }
+
+    return instance;
+}
+
 Session* Application::NewSession(const std::wstring& protocol, const std::wstring& computerName)
 {
     MI_Instance* extError = NULL;
@@ -97,13 +125,13 @@ std::map<std::wstring, ParameterInfo> GetParametersInfo(MI_ParameterSet* paramSe
     return parametersInfo;
 }
 
-MethodInfo Class::GetMethodInfo(const wchar_t* name) const
+MethodInfo Class::GetMethodInfo(const std::wstring& name) const
 {
     MethodInfo info;
     MI_ParameterSet paramSet;
     MI_QualifierSet qualifierSet;
     MI_Uint32 index;
-    MICheckResult(::MI_Class_GetMethod(this->m_class, name, &qualifierSet, &paramSet, &index));
+    MICheckResult(::MI_Class_GetMethod(this->m_class, name.c_str(), &qualifierSet, &paramSet, &index));
     info.m_name = name;
     info.m_index = index;
     info.m_qualifiers = GetQualifiers(&qualifierSet);

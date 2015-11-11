@@ -22,6 +22,7 @@ namespace MI
         Application(const std::wstring& appId = L"");
         virtual ~Application();
         Instance* NewInstance(const std::wstring& className);
+        Instance* Application::NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
         Session* NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
     };
 
@@ -91,7 +92,7 @@ namespace MI
         std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const;
         std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const;
         unsigned GetMethodCount() const;
-        MethodInfo GetMethodInfo(const wchar_t* name) const;
+        MethodInfo GetMethodInfo(const std::wstring& name) const;
         MethodInfo GetMethodInfo(unsigned index) const;
         virtual ~Class();
     };

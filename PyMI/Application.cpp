@@ -62,21 +62,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
     if (!PyObject_IsInstance(pyClass, reinterpret_cast<PyObject*>(&ClassType)))
         return NULL;
 
-    MI::MethodInfo methodInfo = ((Class*)pyClass)->miClass->GetMethodInfo(methodName);
-    MI::Instance* instance = self->app->NewInstance(L"__parameters");
-
-    for (auto const &it : methodInfo.m_parameters)
-    {
-        auto& param = it.second;
-        for (auto const &it2 : param.m_qualifiers)
-        {
-            if (it2.second.m_name == L"In")
-            {
-                instance->AddElement(param.m_name, NULL, param.m_type);
-            }
-        }
-    }
-
+    MI::Instance* instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
     Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
     //Py_INCREF(pyInstance);
     pyInstance->instance = instance;
