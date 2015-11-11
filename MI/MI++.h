@@ -40,6 +40,9 @@ namespace MI
         Instance* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
         Instance* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
         Class* GetClass(const std::wstring& ns, const std::wstring& className);
+        Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
+                                  const std::wstring& resultClass = L"", const std::wstring& role = L"",
+                                  const std::wstring& resultRole = L"", bool keysOnly = false);
         virtual ~Session();
     };
 
@@ -163,7 +166,8 @@ namespace MI
     public:
         Instance* GetNextInstance();
         Class* GetNextClass();
-        operator bool() { return m_hasMoreResults != FALSE; }        
+        operator bool() { return m_hasMoreResults != FALSE; }
+        void Cancel();
         virtual ~Operation();
     };
 };

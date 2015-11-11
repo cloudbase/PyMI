@@ -229,6 +229,20 @@ Operation* Session::ExecQuery(const std::wstring& ns, const std::wstring& query,
     return new Operation(op);
 }
 
+Operation* Session::GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass,
+                                   const std::wstring& resultClass, const std::wstring& role, const std::wstring& resultRole, bool keysOnly)
+{
+    MI_Operation op = MI_OPERATION_NULL;
+    ::MI_Session_AssociatorInstances(
+        &this->m_session, 0, NULL, ns.c_str(), instance.m_instance,
+        assocClass.length() ? assocClass.c_str() : NULL,
+        resultClass.length() ? resultClass.c_str() : NULL,
+        role.length() ? role.c_str() : NULL,
+        resultRole.length() ? resultRole.c_str() : NULL,
+        keysOnly, NULL, &op);
+    return new Operation(op);
+}
+
 Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
@@ -422,6 +436,11 @@ Instance::~Instance()
     {
         Delete();
     }
+}
+
+void Operation::Cancel()
+{
+    MICheckResult(::MI_Operation_Cancel(&this->m_operation, MI_REASON_NONE));
 }
 
 Class* Operation::GetNextClass()

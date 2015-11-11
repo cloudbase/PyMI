@@ -9,8 +9,11 @@
     c = svc.get_class()
     p = a.create_method_params(c, u"GetSummaryInformation")
 
-    q1 = s.exec_query(u"root/virtualization/v2", u"select * from Msvm_VirtualSystemSettingData where ElementName = 'nano1'")
-    vssd = q1.get_next_instance()
+    q1 = s.exec_query(u"root/virtualization/v2", u"select * from Msvm_ComputerSystem where ElementName = 'nano1'")
+    vm = q1.get_next_instance()
+
+    q2 = s.get_associators(u"root/virtualization/v2", vm, assocClass=u"Msvm_SettingsDefineState", resultClass=u"Msvm_VirtualSystemSettingData")
+    vssd = q2.get_next_instance()
 
     p[u'SettingData'] = (vssd,) 
     p[u'requestedInformation'] = (4, 100, 103, 105)
@@ -25,6 +28,7 @@
     print("Memory: %s" % summary_info["MemoryUsage"])
     print("UpTime: %s" % summary_info["UpTime"])
 
+    q2 = None
     q1 = None
     q = None
     s = None
@@ -36,7 +40,11 @@ def test_wmi():
 
     conn = wmi.WMI(moniker="root\\virtualization\\v2")
     svc = conn.Msvm_VirtualSystemManagementService()[0]
-    vssd = conn.query("select * from Msvm_VirtualSystemSettingData where ElementName = 'nano1'")[0]
+    vm = conn.query("select * from Msvm_ComputerSystem where ElementName = 'nano1'")[0]
+
+    vssd = vm.associators(
+            wmi_association_class="Msvm_SettingsDefineState",
+            wmi_result_class="Msvm_VirtualSystemSettingData")[0]
 
     (ret_val, summary_info) = svc.GetSummaryInformation(
             [4, 100, 103, 105],
@@ -52,8 +60,8 @@ def test_wmi():
 
 if __name__ == '__main__':
     import timeit
-    t1 = timeit.timeit("test_mi()", setup="from __main__ import test_mi", number=200)
-    t2 = timeit.timeit("test_wmi()", setup="from __main__ import test_wmi", number=200)
+    t1 = timeit.timeit("test_mi()", setup="from __main__ import test_mi", number=100)
+    t2 = timeit.timeit("test_wmi()", setup="from __main__ import test_wmi", number=100)
 
     print "MI: %s" % t1
     print "WMI %s" % t2

@@ -22,6 +22,12 @@ static void Operation_dealloc(Operation* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
+static int Operation_Cancel(Operation* self)
+{
+    self->operation->Cancel();
+    return 0;
+}
+
 static PyObject* Operation_GetNextInstance(Operation* self)
 {
     MI::Instance* instance = self->operation->GetNextInstance();
@@ -42,6 +48,7 @@ static PyMemberDef Operation_members[] = {
 
 static PyMethodDef Operation_methods[] = {
     { "get_next_instance", (PyCFunction)Operation_GetNextInstance, METH_NOARGS, "Returns the next instance." },
+    { "cancel", (PyCFunction)Operation_Cancel, METH_NOARGS, "Cancels the operation." },
     { NULL }  /* Sentinel */
 };
 

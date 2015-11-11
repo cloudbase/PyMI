@@ -43,6 +43,32 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
     return pyOp;
 }
 
+static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject *kwds)
+{
+    PyObject* instance = NULL;
+    wchar_t* ns = NULL;
+    wchar_t* assocClass = L"";
+    wchar_t* resultClass = L"";
+    wchar_t* role = L"";
+    wchar_t* resultRole = L"";
+    PyObject* keysOnlyObj = NULL;
+
+    static char *kwlist[] = { "ns", "instance", "assocClass", "resultClass", "role", "resultRole", "keysOnly", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|uuuuO", kwlist, &ns, &instance, &assocClass, &resultClass, &role, &resultRole, &keysOnlyObj))
+        return NULL;
+
+    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+        return NULL;
+
+    bool keysOnly = keysOnlyObj && PyObject_IsTrue(keysOnlyObj);
+
+    MI::Operation* op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
+    PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
+    //Py_INCREF(pyOp);
+    ((Operation*)pyOp)->operation = op;
+    return pyOp;
+}
+
 static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
@@ -93,7 +119,8 @@ static PyMemberDef Session_members[] = {
 
 static PyMethodDef Session_methods[] = {
     { "exec_query", (PyCFunction)Session_ExecQuery, METH_KEYWORDS, "Executes a query." },
-    { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_KEYWORDS, "invokes a method." },
+    { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_KEYWORDS, "Invokes a method." },
+    { "get_associators", (PyCFunction)Session_GetAssociators, METH_KEYWORDS, "Retrieves the associators of an instance." },
     { "get_class", (PyCFunction)Session_GetClass, METH_KEYWORDS, "Gets a class." },
     { NULL }  /* Sentinel */
 };
