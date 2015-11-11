@@ -10,6 +10,7 @@ PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Session* self = NULL;
     self = (Session*)type->tp_alloc(type, 0);
+    self->session = NULL;
     return (PyObject *)self;
 }
 
@@ -19,11 +20,6 @@ static void Session_dealloc(Session* self)
     {
         delete self->session;
         self->session = NULL;
-    }
-
-    if (self->app)
-    {
-        Py_XDECREF(self->app);
     }
 
     self->ob_type->tp_free((PyObject*)self);
@@ -57,10 +53,11 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     MI::Class* c = self->session->GetClass(ns, className);
-    PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
-    //Py_INCREF(pyInstance);
-    ((Class*)pyClass)->m_class = c;
-    return pyClass;
+    Class* pyClass = (Class*)Class_new(&ClassType, NULL, NULL);
+
+    //Py_INCREF(pyClass);
+    pyClass->miClass = c;
+    return (PyObject*)pyClass;
 }
 
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
@@ -91,7 +88,6 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
 }
 
 static PyMemberDef Session_members[] = {
-    { "app", T_OBJECT_EX, offsetof(Session, app), 0, "Application" },
     { NULL }  /* Sentinel */
 };
 

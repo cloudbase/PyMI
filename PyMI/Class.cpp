@@ -7,16 +7,16 @@ PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Class* self = NULL;
     self = (Class*)type->tp_alloc(type, 0);
-    self->m_class = NULL;
+    self->miClass = NULL;
     return (PyObject *)self;
 }
 
 static void Class_dealloc(Class* self)
 {
-    if (self->m_class)
+    if (self->miClass)
     {
-        delete self->m_class;
-        self->m_class = NULL;
+        delete self->miClass;
+        self->miClass = NULL;
     }
 
     self->ob_type->tp_free((PyObject*)self);
@@ -37,18 +37,18 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
 
     if (i >= 0)
     {
-        std::tie(itemName, itemValue, itemType, itemFlags) = (*self->m_class)[i];
+        std::tie(itemName, itemValue, itemType, itemFlags) = (*self->miClass)[i];
     }
     else
     {
-        std::tie(itemValue, itemType, itemFlags) = (*self->m_class)[w];
+        std::tie(itemValue, itemType, itemFlags) = (*self->miClass)[w];
     }
     return MI2Py(itemValue, itemType, itemFlags);
 }
 
 static Py_ssize_t Class_length(Class *self)
 {
-    return self->m_class->GetElementsCount();
+    return self->miClass->GetElementsCount();
 }
 
 static PyObject* Class_getattro(Class *self, PyObject* name)

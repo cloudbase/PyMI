@@ -20,7 +20,6 @@ void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
 Application::Application(const std::wstring& appId)
 {
     this->m_app = MI_APPLICATION_NULL;
-
     MI_Instance* extError = NULL;
     MICheckResult(::MI_Application_Initialize(0, appId.length() ? appId.c_str() : NULL, &extError, &this->m_app), extError);
 }

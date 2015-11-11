@@ -6,7 +6,7 @@
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    MI::Class* m_class;
+    MI::Class* miClass;
 } Class;
 
 PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds);

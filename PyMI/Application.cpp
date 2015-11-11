@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Application.h"
 #include "Session.h"
+#include "Class.h"
 #include "Instance.h"
 
 
@@ -32,10 +33,10 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
         return NULL;
 
     MI::Session* session = self->app->NewSession(protocol, computerName);
-    PyObject* pySession = Session_new(&SessionType, NULL, NULL);
-    //Py_INCREF(pyInstance);
-    ((Session*)pySession)->session = session;
-    return pySession;
+    Session* pySession = (Session*)Session_new(&SessionType, NULL, NULL);
+    pySession->session = session;
+    //Py_INCREF(pySession);
+    return (PyObject*)pySession;
 }
 
 static void Application_dealloc(Application* self)
@@ -49,6 +50,39 @@ static void Application_dealloc(Application* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
+static PyObject* Application_NewMethodInboundParameters(Application *self, PyObject *args, PyObject *kwds)
+{
+    PyObject* pyClass = NULL;
+    wchar_t* methodName = NULL;
+
+    static char *kwlist[] = { "miclass", "methodName", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou", kwlist, &pyClass, &methodName))
+        return NULL;
+
+    if (!PyObject_IsInstance(pyClass, reinterpret_cast<PyObject*>(&ClassType)))
+        return NULL;
+
+    MI::MethodInfo methodInfo = ((Class*)pyClass)->miClass->GetMethodInfo(methodName);
+    MI::Instance* instance = self->app->NewInstance(L"__parameters");
+
+    for (auto const &it : methodInfo.m_parameters)
+    {
+        auto& param = it.second;
+        for (auto const &it2 : param.m_qualifiers)
+        {
+            if (it2.second.m_name == L"In")
+            {
+                instance->AddElement(param.m_name, NULL, param.m_type);
+            }
+        }
+    }
+
+    Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+    //Py_INCREF(pyInstance);
+    pyInstance->instance = instance;
+    return (PyObject*)pyInstance;
+}
+
 static PyObject* Application_NewInstance(Application *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* className = NULL;
@@ -57,10 +91,10 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
         return NULL;
 
     MI::Instance* instance = self->app->NewInstance(className);
-    PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
+    Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
     //Py_INCREF(pyInstance);
-    ((Instance*)pyInstance)->instance = instance;
-    return pyInstance;
+    pyInstance->instance = instance;
+    return (PyObject*)pyInstance;
 }
 
 static PyMemberDef Application_members[] = {
@@ -68,8 +102,9 @@ static PyMemberDef Application_members[] = {
 };
 
 static PyMethodDef Application_methods[] = {
-    { "create_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
     { "create_session", (PyCFunction)Application_NewSession, METH_KEYWORDS, "Creates a new session." },
+    { "create_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
+    { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },    
     { NULL }  /* Sentinel */
 };
 

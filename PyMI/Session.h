@@ -6,7 +6,6 @@
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    PyObject* app;
     MI::Session* session;
 } Session;
 

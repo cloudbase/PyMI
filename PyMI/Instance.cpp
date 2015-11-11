@@ -68,7 +68,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
     MI_Type miType = self->instance->GetElementType(w);
 
     Py2MI(value, miValue, miType);
-    self->instance->AddElement(w, &miValue, miType);
+    self->instance->SetElement(w, &miValue, miType);
 
     return 0;
 }
@@ -94,7 +94,7 @@ static PyObject* Instance_GetClass(Instance *self, PyObject *args, PyObject *kwd
     MI::Class* c = self->instance->GetClass();
     PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
     //Py_INCREF(pyInstance);
-    ((Class*)pyClass)->m_class = c;
+    ((Class*)pyClass)->miClass = c;
     return pyClass;
 }
 

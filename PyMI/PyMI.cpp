@@ -2,14 +2,13 @@
 //
 
 #include "stdafx.h"
-#include <datetime.h>
-
 #include "Application.h"
 #include "Session.h"
 #include "Class.h"
 #include "Operation.h"
 #include "Instance.h"
 
+#include <datetime.h>
 
 static PyObject *PyMIError;
 

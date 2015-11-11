@@ -7,6 +7,7 @@ PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Operation* self = NULL;
     self = (Operation*)type->tp_alloc(type, 0);
+    self->operation = NULL;
     return (PyObject *)self;
 }
 
