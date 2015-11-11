@@ -59,20 +59,72 @@ unsigned Class::GetMethodCount() const
     return count;
 }
 
-/*
-void Class::GetMethod(const wchar_t* name) const
+std::map<std::wstring, Qualifier> GetQualifiers(MI_QualifierSet* qualifierSet)
 {
-    MI_ParameterSet paramSet;
-    MICheckResult(::MI_Class_GetMethod(this->m_class, name, NULL, &paramSet, NULL));
+    std::map<std::wstring, Qualifier> qualifiers;
 
     MI_Uint32 count = 0;
-    MICheckResult(::MI_ParameterSet_GetParameterCount(&paramSet, &count));
+    MICheckResult(::MI_QualifierSet_GetQualifierCount(qualifierSet, &count));
     for (MI_Uint32 i = 0; i < count; i++)
     {
-
+        const MI_Char* qualifierName = NULL;
+        Qualifier q;
+        MICheckResult(::MI_QualifierSet_GetQualifierAt(qualifierSet, i, &qualifierName, &q.m_type, &q.m_flags, &q.m_value));
+        q.m_name = qualifierName;
+        qualifiers[qualifierName] = q;
     }
+
+    return qualifiers;
 }
-*/
+
+std::map<std::wstring, ParameterInfo> GetParametersInfo(MI_ParameterSet* paramSet)
+{
+    std::map<std::wstring, ParameterInfo> parametersInfo;
+
+    MI_Uint32 count = 0;
+    MICheckResult(::MI_ParameterSet_GetParameterCount(paramSet, &count));
+    for (MI_Uint32 i = 0; i < count; i++)
+    {
+        const MI_Char* paramName = NULL;
+        ParameterInfo paramInfo;
+        MI_QualifierSet qualifierSet;
+        MICheckResult(::MI_ParameterSet_GetParameterAt(paramSet, i, &paramName, &paramInfo.m_type, NULL, &qualifierSet));
+        paramInfo.m_name = paramName;
+        paramInfo.m_index = i;
+        paramInfo.m_qualifiers = GetQualifiers(&qualifierSet);
+        parametersInfo[paramName] = paramInfo;
+    }
+
+    return parametersInfo;
+}
+
+MethodInfo Class::GetMethodInfo(const wchar_t* name) const
+{
+    MethodInfo info;
+    MI_ParameterSet paramSet;
+    MI_QualifierSet qualifierSet;
+    MI_Uint32 index;
+    MICheckResult(::MI_Class_GetMethod(this->m_class, name, &qualifierSet, &paramSet, &index));
+    info.m_name = name;
+    info.m_index = index;
+    info.m_qualifiers = GetQualifiers(&qualifierSet);
+    info.m_parameters = GetParametersInfo(&paramSet);
+    return info;
+}
+
+MethodInfo Class::GetMethodInfo(unsigned index) const
+{
+    MethodInfo info;
+    MI_ParameterSet paramSet;
+    MI_QualifierSet qualifierSet;
+    const MI_Char* name = NULL;
+    MICheckResult(::MI_Class_GetMethodAt(this->m_class, index, &name, &qualifierSet, &paramSet));
+    info.m_name = name;
+    info.m_index = index;
+    info.m_qualifiers = GetQualifiers(&qualifierSet);
+    info.m_parameters = GetParametersInfo(&paramSet);
+    return info;
+}
 
 std::tuple<MI_Value, MI_Type, MI_Uint32> Class::operator[] (const wchar_t* name) const
 {
@@ -149,6 +201,16 @@ Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& clas
     Operation operation(op);
     return operation.GetNextInstance();
 }
+
+Class* Session::GetClass(const std::wstring& ns, const std::wstring& className)
+{
+    MI_Class* miClass = NULL;
+    MI_Operation op;
+    ::MI_Session_GetClass(&this->m_session, 0, NULL, ns.c_str(), className.c_str(), NULL, &op);
+    Operation operation(op);
+    return operation.GetNextClass();
+}
+
 
 MI_Type Instance::GetElementType(const std::wstring& name) const
 {
@@ -275,6 +337,27 @@ Instance::~Instance()
     }
 }
 
+Class* Operation::GetNextClass()
+{
+    if (this->m_hasMoreResults)
+    {
+        MI_Result miResult = MI_RESULT_OK;
+        const MI_Char* errMsg = NULL;
+        const MI_Instance* compDetails = NULL;
+
+        const MI_Class* miClass = NULL;
+        MICheckResult(::MI_Operation_GetClass(&this->m_operation, &miClass, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
+        MICheckResult(miResult);
+
+        if (miClass)
+        {
+            return new Class((MI_Class*)miClass);
+        }
+    }
+
+    return NULL;
+}
+
 Instance* Operation::GetNextInstance()
 {
     if (this->m_hasMoreResults)
@@ -284,7 +367,7 @@ Instance* Operation::GetNextInstance()
         const MI_Instance* compDetails = NULL;
 
         const MI_Instance* miInstance = NULL;
-        MICheckResult(MI_Operation_GetInstance(&this->m_operation, &miInstance, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
+        MICheckResult(::MI_Operation_GetInstance(&this->m_operation, &miInstance, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
         MICheckResult(miResult);
 
         if (miInstance)

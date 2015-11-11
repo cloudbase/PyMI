@@ -3,12 +3,14 @@
 #include <MI.h>
 #include <string>
 #include <tuple>
+#include <map>
 
 namespace MI
 {
     class Session;
     class Instance;
     class Operation;
+    class Class;
 
     class Application
     {
@@ -30,9 +32,37 @@ namespace MI
     public:
         Session(Application& app, const std::wstring& protocol = L"", const std::wstring& computerName = L".");
         Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
-        Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
-        Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
+        Instance* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
+        Instance* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
+        Class* GetClass(const std::wstring& ns, const std::wstring& className);
         virtual ~Session();
+    };
+
+    struct Qualifier
+    {
+    public:
+        std::wstring m_name;
+        MI_Type m_type;
+        MI_Value m_value;
+        MI_Uint32 m_flags;
+    };
+
+    struct ParameterInfo
+    {
+    public:
+        std::wstring m_name;
+        unsigned m_index;
+        MI_Type m_type;
+        std::map<std::wstring, Qualifier> m_qualifiers;
+    };
+
+    struct MethodInfo
+    {
+    public:
+        std::wstring m_name;
+        unsigned m_index;
+        std::map<std::wstring, Qualifier> m_qualifiers;
+        std::map<std::wstring, ParameterInfo> m_parameters;
     };
 
     class MElementsEnum
@@ -51,13 +81,15 @@ namespace MI
         void Delete();
 
         friend Instance;
+        friend Operation;
 
     public:
         unsigned GetElementsCount() const;
         std::tuple<MI_Value, MI_Type, MI_Uint32> operator[] (const wchar_t* name) const;
         std::tuple<const MI_Char*, MI_Value, MI_Type, MI_Uint32> operator[] (unsigned index) const;
         unsigned GetMethodCount() const;
-
+        MethodInfo GetMethodInfo(const wchar_t* name) const;
+        MethodInfo GetMethodInfo(unsigned index) const;
         virtual ~Class();
     };
 
@@ -104,6 +136,7 @@ namespace MI
 
     public:
         Instance* GetNextInstance();
+        Class* GetNextClass();
         operator bool() { return m_hasMoreResults != FALSE; }        
         virtual ~Operation();
     };
