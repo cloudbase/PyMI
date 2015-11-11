@@ -22,15 +22,18 @@ namespace MI
         Application(const std::wstring& appId = L"");
         virtual ~Application();
         Instance* NewInstance(const std::wstring& className);
+        Session* NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
     };
 
     class Session
     {
     private:
         MI_Session m_session;
+        Session(MI_Session session) : m_session(session) {}
+
+        friend Application;
 
     public:
-        Session(Application& app, const std::wstring& protocol = L"", const std::wstring& computerName = L".");
         Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
         Instance* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
         Instance* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);

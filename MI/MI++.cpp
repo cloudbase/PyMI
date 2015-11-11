@@ -38,12 +38,12 @@ Instance* Application::NewInstance(const std::wstring& className)
     return new Instance(instance, true);
 }
 
-Session::Session(Application& app, const std::wstring& protocol, const std::wstring& computerName)
+Session* Application::NewSession(const std::wstring& protocol, const std::wstring& computerName)
 {
-    this->m_session = MI_SESSION_NULL;
-
     MI_Instance* extError = NULL;
-    MICheckResult(::MI_Application_NewSession(&app.m_app, protocol.length() ? protocol.c_str() : NULL, computerName.c_str(), NULL, NULL, &extError, &this->m_session), extError);
+    MI_Session session;
+    MICheckResult(::MI_Application_NewSession(&this->m_app, protocol.length() ? protocol.c_str() : NULL, computerName.c_str(), NULL, NULL, &extError, &session), extError);
+    return new Session(session);
 }
 
 Session::~Session()

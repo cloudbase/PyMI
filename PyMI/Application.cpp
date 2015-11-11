@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Application.h"
+#include "Session.h"
 #include "Instance.h"
 
 
@@ -19,6 +20,22 @@ static int Application_init(Application *self, PyObject *args, PyObject *kwds)
 
     self->app = new MI::Application(appId);
     return 0;
+}
+
+static PyObject* Application_NewSession(Application *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* protocol = L"";
+    wchar_t* computerName = L".";
+
+    static char *kwlist[] = { "protocol", "computerName", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|uu", kwlist, &protocol, &computerName))
+        return NULL;
+
+    MI::Session* session = self->app->NewSession(protocol, computerName);
+    PyObject* pySession = Session_new(&SessionType, NULL, NULL);
+    //Py_INCREF(pyInstance);
+    ((Session*)pySession)->session = session;
+    return pySession;
 }
 
 static void Application_dealloc(Application* self)
@@ -51,7 +68,8 @@ static PyMemberDef Application_members[] = {
 };
 
 static PyMethodDef Application_methods[] = {
-    { "new_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
+    { "create_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
+    { "create_session", (PyCFunction)Application_NewSession, METH_KEYWORDS, "Creates a new session." },
     { NULL }  /* Sentinel */
 };
 

@@ -1,7 +1,7 @@
 ﻿import mi
 
 a = mi.Application()
-s = mi.Session(a, protocol=u"WMIDCOM")
+s = a.create_session(protocol=u"WMIDCOM")
 
 c = s.get_class(u"root\\cimv2", u"win32_process")
 print(len(c))
@@ -15,7 +15,7 @@ while i is not None:
     print(i.get_class_name())
 
     if i.name.lower() == u'notepad.exe':
-        params = a.new_instance(u"__parameters")
+        params = a.create_instance(u"__parameters")
         params['reason'] = 2
         print(len(params))
         s.invoke_method(i, u"Terminate", params)

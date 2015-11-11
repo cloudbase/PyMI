@@ -6,39 +6,11 @@
 #include "Instance.h"
 
 
-static PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Session* self = NULL;
     self = (Session*)type->tp_alloc(type, 0);
     return (PyObject *)self;
-}
-
-static int Session_init(Session *self, PyObject *args, PyObject *kwds)
-{
-    PyObject* app = NULL;
-    wchar_t* protocol = L"";
-    wchar_t* computerName = L".";
-
-    static char *kwlist[] = { "app", "protocol", "computerName", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|uu", kwlist, &app, &protocol, &computerName))
-        return -1;
-
-    if (!PyObject_IsInstance(app, reinterpret_cast<PyObject*>(&ApplicationType)))
-        return -1;
-
-    PyObject* tmp = self->app;
-    Py_INCREF(app);
-    self->app = app;
-    Py_XDECREF(tmp);
-
-    if (self->session)
-    {
-        delete self->session;
-        self->session = NULL;
-    }
-
-    self->session = new MI::Session(*((Application*)app)->app, protocol, computerName);
-    return 0;
 }
 
 static void Session_dealloc(Session* self)
@@ -167,7 +139,7 @@ PyTypeObject SessionType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    (initproc)Session_init,      /* tp_init */
+    0,                         /* tp_init */
     0,                         /* tp_alloc */
     Session_new,                 /* tp_new */
 };
