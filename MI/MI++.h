@@ -30,7 +30,7 @@ namespace MI
     public:
         Session(Application& app, const std::wstring& protocol = L"", const std::wstring& computerName = L".");
         Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
-        Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance& inboundParams);
+        Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
         Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
         virtual ~Session();
     };

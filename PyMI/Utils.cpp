@@ -2,6 +2,134 @@
 #include "Utils.h"
 
 #include <datetime.h>
+#include <exception>
+
+void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
+{
+    ZeroMemory(&value, sizeof(value));
+
+    if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyBool_Type)))
+    {
+        value.boolean = PyObject_IsTrue(pyValue) ? MI_TRUE : MI_FALSE;
+    }
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyLong_Type)))
+    {
+        switch (valueType)
+        {
+        case MI_UINT8:
+            value.uint8 = (MI_Uint8)PyLong_AsUnsignedLong(pyValue);
+            break;
+        case MI_SINT8:
+            value.sint8 = (MI_Sint8)PyLong_AsLong(pyValue);
+            break;
+        case MI_UINT16:
+            value.uint16 = (MI_Uint16)PyLong_AsUnsignedLong(pyValue);
+            break;
+        case MI_SINT16:
+            value.sint16 = (MI_Sint16)PyLong_AsLong(pyValue);
+            break;
+        case MI_UINT32:
+            value.uint32 = PyLong_AsUnsignedLong(pyValue);
+            break;
+        case MI_SINT32:
+            value.sint32 = PyLong_AsLong(pyValue);
+            break;
+        case MI_UINT64:
+            value.uint64 = PyLong_AsUnsignedLongLong(pyValue);
+            break;
+        case MI_SINT64:
+            value.sint64 = PyLong_AsLongLong(pyValue);
+            break;
+        default:
+            throw std::exception("Unsupported type conversion");
+        }
+    }
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyInt_Type)))
+    {
+        switch (valueType)
+        {
+        case MI_UINT8:
+            value.uint8 = (MI_Uint8)PyInt_AsLong(pyValue);
+            break;
+        case MI_SINT8:
+            value.sint8 = (MI_Sint8)PyInt_AsLong(pyValue);
+            break;
+        case MI_UINT16:
+            value.uint16 = (MI_Uint16)PyInt_AsLong(pyValue);
+            break;
+        case MI_SINT16:
+            value.sint16 = (MI_Sint16)PyInt_AsLong(pyValue);
+            break;
+        case MI_UINT32:
+            value.uint32 = PyInt_AsLong(pyValue);
+            break;
+        case MI_SINT32:
+            value.sint32 = PyInt_AsLong(pyValue);
+            break;
+        case MI_UINT64:
+            value.uint64 = PyInt_AsLong(pyValue);
+            break;
+        case MI_SINT64:
+            value.sint64 = PyInt_AsLong(pyValue);
+            break;
+        default:
+            throw std::exception("Unsupported type conversion");
+        }
+    }
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyString_Type)))
+    {
+        unsigned len = 0;
+        char* s = NULL;
+
+        switch (valueType)
+        {
+        case MI_STRING:
+            s = PyString_AsString(pyValue);
+            len = lstrlenA(s);
+            // Note: caller owns the memory
+            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, (len + 1) * sizeof(MI_Char));
+            if (!value.string)
+            {
+                throw std::exception("Out of memory");
+            }
+            if (::MultiByteToWideChar(CP_ACP, 0, s, len, value.string, len) != len)
+            {
+                throw std::exception("MultiByteToWideChar");
+            }
+        default:
+            throw std::exception("Unsupported type conversion");
+        }
+    }
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyUnicode_Type)))
+    {
+        Py_ssize_t len = 0;
+
+        switch (valueType)
+        {
+        case MI_STRING:
+            // TODO: use PyUnicode_GetLength on 3.x
+            len = PyUnicode_GetSize(pyValue);
+            // Note: caller owns the memory
+            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, (len + 1) * sizeof(MI_Char));
+            if (!value.string)
+            {
+                throw std::exception("Out of memory");
+            }
+
+            if (PyUnicode_AsWideChar((PyUnicodeObject*)pyValue, value.string, len) < 0)
+            {
+                throw std::exception("PyUnicode_AsWideChar");
+            }
+            break;
+        default:
+            throw std::exception("Unsupported type conversion");
+        }
+    }
+    else
+    {
+        throw std::exception("Unsupported type conversion");
+    }
+}
 
 PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
 {

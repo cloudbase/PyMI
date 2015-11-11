@@ -134,10 +134,10 @@ Operation* Session::ExecQuery(const std::wstring& ns, const std::wstring& query,
     return new Operation(op);
 }
 
-Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance& inboundParams)
+Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
-    ::MI_Session_Invoke(&this->m_session, 0, NULL, instance.GetNamespace().c_str(), NULL, methodName.c_str(), instance.m_instance, inboundParams.m_instance, NULL, &op);
+    ::MI_Session_Invoke(&this->m_session, 0, NULL, instance.GetNamespace().c_str(), NULL, methodName.c_str(), instance.m_instance, inboundParams ? inboundParams->m_instance : NULL, NULL, &op);
     Operation operation(op);
     return operation.GetNextInstance();
 }
@@ -287,7 +287,10 @@ Instance* Operation::GetNextInstance()
         MICheckResult(MI_Operation_GetInstance(&this->m_operation, &miInstance, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
         MICheckResult(miResult);
 
-        return new Instance((MI_Instance*)miInstance, false);
+        if (miInstance)
+        {
+            return new Instance((MI_Instance*)miInstance, false);
+        }
     }
 
     return NULL;

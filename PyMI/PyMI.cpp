@@ -43,11 +43,14 @@ static void Application_dealloc(Application* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
+static PyObject* Application_NewInstance(Application *self, PyObject *args, PyObject *kwds);
+
 static PyMemberDef Application_members[] = {
     { NULL }  /* Sentinel */
 };
 
 static PyMethodDef Application_methods[] = {
+    { "new_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
     { NULL }  /* Sentinel */
 };
 
@@ -230,6 +233,8 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
     return pyOp;
 }
 
+static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds);
+
 static PyMemberDef Session_members[] = {
     { "app", T_OBJECT_EX, offsetof(Session, app), 0, "Application" },
     { NULL }  /* Sentinel */
@@ -237,6 +242,7 @@ static PyMemberDef Session_members[] = {
 
 static PyMethodDef Session_methods[] = {
     { "exec_query", (PyCFunction)Session_ExecQuery, METH_KEYWORDS, "Executes a query." },
+    { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_KEYWORDS, "invokes a method." },
     { NULL }  /* Sentinel */
 };
 
@@ -308,12 +314,10 @@ static void Instance_dealloc(Instance* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
-static PyObject* Instance_subscript(Instance *self, PyObject *item)
+bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
 {
-    // TODO: size buffer based on actual size
-    wchar_t w[1024];
     w[0] = NULL;
-    Py_ssize_t i = -1;
+    i = -1;
 
     if (PyString_Check(item))
     {
@@ -323,15 +327,26 @@ static PyObject* Instance_subscript(Instance *self, PyObject *item)
     else if (PyUnicode_Check(item))
     {
         if (PyUnicode_AsWideChar((PyUnicodeObject*)item, w, 1024) < 0)
-            return NULL;
+            return false;
     }
     else if (PyIndex_Check(item))
     {
         i = PyNumber_AsSsize_t(item, PyExc_IndexError);
         if (i == -1 && PyErr_Occurred())
-            return NULL;
+            return false;
     }
     else
+        return false;
+
+    return true;
+}
+
+static PyObject* Instance_subscript(Instance *self, PyObject *item)
+{
+    // TODO: size buffer based on actual size
+    wchar_t w[1024];
+    Py_ssize_t i;
+    if (!GetIndexOrName(item, w, i))
         return NULL;
 
     const MI_Char* itemName;
@@ -357,7 +372,23 @@ static Py_ssize_t Instance_length(Instance *self)
 
 static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* value)
 {
-    return -1;
+    // TODO: size buffer based on actual size
+    wchar_t w[1024];
+    w[0] = NULL;
+    Py_ssize_t i = 0;
+    if (!GetIndexOrName(item, w, i))
+        return NULL;
+
+    bool addElement = false;
+
+    MI_Value miValue;
+    MI_UNREFERENCED_PARAMETER(&miValue);
+    MI_Type miType = self->instance->GetElementType(w);
+
+    Py2MI(value, miValue, miType);
+    self->instance->AddElement(w, &miValue, miType);
+
+    return 0;
 }
 
 static PyObject* Instance_getattro(Instance *self, PyObject* name)
@@ -369,6 +400,11 @@ static PyObject* Instance_getattro(Instance *self, PyObject* name)
     }
 
     return Instance_subscript(self, name);
+}
+
+static int Instance_setattro(Instance *self, PyObject* name, PyObject* value)
+{
+    return -1;
 }
 
 static PyObject* Instance_GetClassName(Instance *self)
@@ -412,7 +448,7 @@ static PyTypeObject InstanceType = {
     0,                         /*tp_call*/
     0,                         /*tp_str*/
     (getattrofunc)Instance_getattro, /*tp_getattro*/
-    0,                         /*tp_setattro*/
+    (setattrofunc)Instance_setattro, /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /*tp_flags*/
     "Instance objects",           /* tp_doc */
@@ -434,6 +470,47 @@ static PyTypeObject InstanceType = {
     0,                         /* tp_alloc */
     Instance_new,                 /* tp_new */
 };
+
+static PyObject* Application_NewInstance(Application *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* className = NULL;
+    static char *kwlist[] = { "className", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &className))
+        return NULL;
+
+    MI::Instance* instance = self->app->NewInstance(className);
+    PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
+    //Py_INCREF(pyInstance);
+    ((Instance*)pyInstance)->instance = instance;
+    return pyInstance;
+}
+
+static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
+{
+    PyObject* instance = NULL;
+    wchar_t* methodName = NULL;
+    PyObject* inboundParams = NULL;
+
+    static char *kwlist[] = { "instance", "methodName", "inboundParams", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|O", kwlist, &instance, &methodName, &inboundParams))
+        return NULL;
+
+    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+        return NULL;
+
+    if (inboundParams && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
+        return NULL;
+
+    MI::Instance* result = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+    if (result)
+    {
+        PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
+        //Py_INCREF(pyInstance);
+        ((Instance*)pyInstance)->instance = result;
+        return pyInstance;
+    }
+    Py_RETURN_NONE;
+}
 
 static PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
