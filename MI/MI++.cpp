@@ -66,20 +66,6 @@ Instance* Application::NewMethodParamsInstance(const Class& miClass, const std::
     return instance;
 }
 
-Session* Application::NewSession(const std::wstring& protocol, const std::wstring& computerName)
-{
-    MI_Instance* extError = NULL;
-    MI_Session session;
-    MICheckResult(::MI_Application_NewSession(&this->m_app, protocol.length() ? protocol.c_str() : NULL, computerName.c_str(), NULL, NULL, &extError, &session), extError);
-    return new Session(session);
-}
-
-Session::~Session()
-{
-    ::MI_Session_Close(&this->m_session, NULL, NULL);
-    this->m_session = MI_SESSION_NULL;
-}
-
 unsigned Class::GetMethodCount() const
 {
     MI_Uint32 count = 0;
@@ -222,6 +208,20 @@ Class::~Class()
     Delete();
 }
 
+Session* Application::NewSession(const std::wstring& protocol, const std::wstring& computerName)
+{
+    MI_Instance* extError = NULL;
+    MI_Session session;
+    MICheckResult(::MI_Application_NewSession(&this->m_app, protocol.length() ? protocol.c_str() : NULL, computerName.c_str(), NULL, NULL, &extError, &session), extError);
+    return new Session(session);
+}
+
+Session::~Session()
+{
+    ::MI_Session_Close(&this->m_session, NULL, NULL);
+    this->m_session = MI_SESSION_NULL;
+}
+
 Operation* Session::ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect)
 {
     MI_Operation op = MI_OPERATION_NULL;
@@ -255,6 +255,38 @@ Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& clas
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, 0, NULL, ns.c_str(), className.c_str(), methodName.c_str(), NULL, inboundParams.m_instance, NULL, &op);
+    Operation operation(op);
+    return operation.GetNextInstance();
+}
+
+void Session::DeleteInstance(const std::wstring& ns, const Instance& instance)
+{
+    MI_Operation op;
+    ::MI_Session_DeleteInstance(&this->m_session, 0, NULL, ns.c_str(), instance.m_instance, NULL, &op);
+    Operation operation(op);
+    operation.GetNextInstance();
+}
+
+void Session::ModifyInstance(const std::wstring& ns, const Instance& instance)
+{
+    MI_Operation op;
+    ::MI_Session_ModifyInstance(&this->m_session, 0, NULL, ns.c_str(), instance.m_instance, NULL, &op);
+    Operation operation(op);
+    operation.GetNextInstance();
+}
+
+void Session::CreateInstance(const std::wstring& ns, const Instance& instance)
+{
+    MI_Operation op;
+    ::MI_Session_CreateInstance(&this->m_session, 0, NULL, ns.c_str(), instance.m_instance, NULL, &op);
+    Operation operation(op);
+    operation.GetNextInstance();
+}
+
+Instance* Session::GetInstance(const std::wstring& ns, const Instance& keyInstance)
+{
+    MI_Operation op;
+    ::MI_Session_GetInstance(&this->m_session, 0, NULL, ns.c_str(), keyInstance.m_instance, NULL, &op);
     Operation operation(op);
     return operation.GetNextInstance();
 }

@@ -39,7 +39,11 @@ namespace MI
         Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
         Instance* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
         Instance* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
+        void CreateInstance(const std::wstring& ns, const Instance& instance);
+        void ModifyInstance(const std::wstring& ns, const Instance& instance);
+        void DeleteInstance(const std::wstring& ns, const Instance& instance);
         Class* GetClass(const std::wstring& ns, const std::wstring& className);
+        Instance* GetInstance(const std::wstring& ns, const Instance& keyInstance);
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
                                   const std::wstring& resultRole = L"", bool keysOnly = false);
