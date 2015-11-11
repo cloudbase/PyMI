@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Utils.h"
+#include "instance.h"
 
 #include <datetime.h>
 #include <exception>
@@ -153,6 +154,17 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             throw std::exception("Unsupported type conversion");
         }
     }
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&InstanceType)))
+    {
+        switch (valueType)
+        {
+        case MI_REFERENCE:
+            value.reference = ((Instance*)pyValue)->instance->GetMIObject();
+            break;
+        default:
+            throw std::exception("Unsupported type conversion");
+        }
+    }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)))
     {
         Py_ssize_t size = PyTuple_Size(pyValue);
@@ -165,6 +177,10 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         case MI_STRINGA:
             value.stringa.size = size;
             value.stringa.data = (MI_Char**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Char*) * size);
+            break;
+        case MI_REFERENCEA:
+            value.referencea.size = size;
+            value.referencea.data = (MI_Instance**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Instance*) * size);
             break;
         default:
             throw std::exception("Unsupported type conversion");
@@ -183,6 +199,10 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             case MI_STRINGA:
                 Py2MI(pyObj, tmpVal, MI_STRING);
                 value.stringa.data[i] = tmpVal.string;
+                break;
+            case MI_REFERENCEA:
+                Py2MI(pyObj, tmpVal, MI_REFERENCE);
+                value.referencea.data[i] = tmpVal.reference;
                 break;
             default:
                 throw std::exception("Unsupported type conversion");
@@ -297,10 +317,37 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
         }
         return pyObj;
     case MI_INSTANCE:
+        pyObj = Instance_new(&InstanceType, NULL, NULL);
+        ((Instance*)pyObj)->instance = new MI::Instance(value.instance, false);
+        return pyObj;
     case MI_REFERENCE:
+        pyObj = Instance_new(&InstanceType, NULL, NULL);
+        ((Instance*)pyObj)->instance = new MI::Instance(value.reference, false);
+        return pyObj;
     case MI_INSTANCEA:
+        pyObj = PyTuple_New(value.instancea.size);
+        for (unsigned i = 0; i < value.instancea.size; i++)
+        {
+            MI_Value tmpVal;
+            tmpVal.instance = value.instancea.data[i];
+            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_INSTANCE, 0)))
+            {
+                throw std::exception("PyTuple_SetItem");
+            }
+        }
+        return pyObj;
     case MI_REFERENCEA:
-        return NULL;
+        pyObj = PyTuple_New(value.stringa.size);
+        for (unsigned i = 0; i < value.referencea.size; i++)
+        {
+            MI_Value tmpVal;
+            tmpVal.reference = value.referencea.data[i];
+            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_REFERENCE, 0)))
+            {
+                throw std::exception("PyTuple_SetItem");
+            }
+        }
+        return pyObj;
     default:
         return NULL;
     }

@@ -31,11 +31,6 @@ static PyObject* Instance_subscript(Instance *self, PyObject *item)
     if (!GetIndexOrName(item, w, i))
         return NULL;
 
-    const MI_Char* itemName;
-    MI_Value itemValue;
-    MI_Type itemType;
-    MI_Uint32 itemFlags;
-
     MI::ValueElement element;
     if (i >= 0)
     {
@@ -99,6 +94,12 @@ static PyObject* Instance_GetClass(Instance *self, PyObject *args, PyObject *kwd
     return pyClass;
 }
 
+static PyObject* Instance_GetPath(Instance *self)
+{
+    std::wstring path = self->instance->GetPath();
+    return PyUnicode_FromWideChar(path.c_str(), path.length());
+}
+
 static PyObject* Instance_GetClassName(Instance *self)
 {
     std::wstring className = self->instance->GetClassName();
@@ -111,6 +112,7 @@ static PyMemberDef Instance_members[] = {
 
 static PyMethodDef Instance_methods[] = {
     { "__getitem__", (PyCFunction)Instance_subscript, METH_O | METH_COEXIST, "" },
+    { "get_path", (PyCFunction)Instance_GetPath, METH_NOARGS, "" },
     { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
     { "get_class", (PyCFunction)Instance_GetClass, METH_NOARGS, "" },
     { NULL }  /* Sentinel */

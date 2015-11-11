@@ -1,6 +1,7 @@
 #include "stdafx.h"
-
 #include "MI++.h"
+#include <algorithm>
+#include <sstream>
 
 using namespace MI;
 
@@ -153,11 +154,30 @@ MethodInfo Class::GetMethodInfo(unsigned index) const
     return info;
 }
 
-ClassElement Class::operator[] (const wchar_t* name) const
+std::vector<std::wstring> Class::GetKey()
+{
+    std::vector<std::wstring> key;
+    unsigned count = this->GetElementsCount();
+    for (unsigned i = 0; i < count; i++)
+    {
+        ClassElement element = (*this)[i];
+        for (auto const &it : element.m_qualifiers)
+        {
+            if (it.second.m_name == L"key")
+            {
+                key.push_back(element.m_name);
+            }
+        }
+    }
+
+    return key;
+}
+
+ClassElement Class::operator[] (const std::wstring& name) const
 {
     ClassElement element;
     MI_QualifierSet qualifierSet;
-    MICheckResult(::MI_Class_GetElement(this->m_class, name, &element.m_value, &element.m_valueExists, &element.m_type, NULL, &qualifierSet, &element.m_flags, &element.m_index));
+    MICheckResult(::MI_Class_GetElement(this->m_class, name.c_str(), &element.m_value, &element.m_valueExists, &element.m_type, NULL, &qualifierSet, &element.m_flags, &element.m_index));
     element.m_name = name;
     element.m_qualifiers = GetQualifiers(&qualifierSet);
     return element;
@@ -234,7 +254,6 @@ Class* Session::GetClass(const std::wstring& ns, const std::wstring& className)
     return operation.GetNextClass();
 }
 
-
 MI_Type Instance::GetElementType(const std::wstring& name) const
 {
     MI_Type itemType;
@@ -274,10 +293,37 @@ void Instance::ClearElement(unsigned index)
     MICheckResult(::MI_Instance_ClearElementAt(this->m_instance, index));
 }
 
-ValueElement Instance::operator[] (const wchar_t* name) const
+std::wstring Instance::GetPath()
+{
+    std::wstring ns = this->GetNamespace();
+    std::wstring className = this->GetClassName();
+    std::wstring serverName = this->GetServerName();
+
+    std::replace(ns.begin(), ns.end(), L'/', L'\\');
+
+    std::wostringstream o;
+    o << L"\\\\" << serverName << L"\\" << ns << L":" << className << L".";
+
+    auto key = this->GetClass()->GetKey();
+    bool isFirst = true;
+    for (auto const &it : key)
+    {
+        auto element = (*this)[it.c_str()];
+        if (!isFirst)
+        {
+            o << L",";
+        }
+        // TODO: handle non strings and escaping
+        o << it << L"=\"" << element.m_value.string << L"\"";
+        isFirst = false;
+    }
+    return o.str();
+}
+
+ValueElement Instance::operator[] (const std::wstring& name) const
 {
     ClassElement element;
-    MICheckResult(::MI_Instance_GetElement(this->m_instance, name, &element.m_value, &element.m_type, &element.m_flags, &element.m_index));
+    MICheckResult(::MI_Instance_GetElement(this->m_instance, name.c_str(), &element.m_value, &element.m_type, &element.m_flags, &element.m_index));
     element.m_name = name;
     return element;
 }
@@ -338,6 +384,17 @@ std::wstring Instance::GetNamespace()
         this->m_namespace = ns;
     }
     return std::wstring(this->m_namespace);
+}
+
+std::wstring Instance::GetServerName()
+{
+    if (!this->m_serverName.length())
+    {
+        const MI_Char* serverName = NULL;
+        MICheckResult(::MI_Instance_GetServerName(this->m_instance, &serverName));
+        this->m_serverName = serverName;
+    }
+    return std::wstring(this->m_serverName);
 }
 
 void Instance::Delete()

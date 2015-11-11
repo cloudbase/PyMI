@@ -4,6 +4,7 @@
 #include <string>
 #include <tuple>
 #include <map>
+#include <vector>
 
 namespace MI
 {
@@ -105,7 +106,8 @@ namespace MI
 
     public:
         unsigned GetElementsCount() const;
-        ClassElement operator[] (const wchar_t* name) const;
+        std::vector<std::wstring> GetKey();
+        ClassElement operator[] (const std::wstring& name) const;
         ClassElement operator[] (unsigned index) const;
         unsigned GetMethodCount() const;
         MethodInfo GetMethodInfo(const std::wstring& name) const;
@@ -119,8 +121,8 @@ namespace MI
         MI_Instance* m_instance = NULL;
         std::wstring m_namespace;
         std::wstring m_className;
+        std::wstring m_serverName;
         bool m_ownsInstance = false;
-        Instance(MI_Instance* instance, bool ownsInstance) : m_instance(instance), m_ownsInstance(ownsInstance) {}
         void Delete();
 
         friend Application;
@@ -128,12 +130,16 @@ namespace MI
         friend Session;
 
     public:
+        Instance(MI_Instance* instance, bool ownsInstance) : m_instance(instance), m_ownsInstance(ownsInstance) {}
+        MI_Instance* GetMIObject() { return this->m_instance; }
         Instance* Instance::Clone() const;
         Class* GetClass() const;
         std::wstring GetClassName();
         std::wstring GetNamespace();
+        std::wstring GetServerName();
         unsigned GetElementsCount() const;
-        ValueElement operator[] (const wchar_t* name) const;
+        std::wstring GetPath();
+        ValueElement operator[] (const std::wstring& name) const;
         ValueElement operator[] (unsigned index) const;
         void AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
         void SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
