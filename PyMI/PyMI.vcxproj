@@ -182,6 +182,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="benchmark.py" />
+    <None Include="benchmark2.py" />
     <None Include="test.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
