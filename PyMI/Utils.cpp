@@ -4,6 +4,7 @@
 #include <datetime.h>
 #include <exception>
 
+
 bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
 {
     w[0] = NULL;

@@ -2,6 +2,7 @@
 #include "Class.h"
 #include "Utils.h"
 
+
 PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Class* self = NULL;
