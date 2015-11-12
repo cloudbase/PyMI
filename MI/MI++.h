@@ -23,7 +23,8 @@ namespace MI
         Application(const std::wstring& appId = L"");
         virtual ~Application();
         Instance* NewInstance(const std::wstring& className);
-        Instance* Application::NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
+        Instance* NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
+        Instance* NewInstanceFromClass(const std::wstring& className, const Class& miClass);
         Session* NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
     };
 
@@ -108,6 +109,7 @@ namespace MI
         Class(MI_Class* miClass) : m_class(miClass) {}
         void Delete();
 
+        friend Application;
         friend Instance;
         friend Operation;
 

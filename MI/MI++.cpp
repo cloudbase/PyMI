@@ -31,6 +31,13 @@ Application::~Application()
     this->m_app = MI_APPLICATION_NULL;
 }
 
+Instance* Application::NewInstanceFromClass(const std::wstring& className, const Class& miClass)
+{
+    MI_Instance* instance = NULL;
+    MICheckResult(::MI_Application_NewInstanceFromClass(&this->m_app, className.c_str(), miClass.m_class, &instance));
+    return new Instance(instance, true);
+}
+
 Instance* Application::NewInstance(const std::wstring& className)
 {
     MI_Instance* instance = NULL;
