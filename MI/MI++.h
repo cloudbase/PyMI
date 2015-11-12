@@ -21,6 +21,7 @@ namespace MI
 
     public:
         Application(const std::wstring& appId = L"");
+        void Close();
         virtual ~Application();
         Instance* NewInstance(const std::wstring& className);
         Instance* NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
@@ -48,6 +49,7 @@ namespace MI
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
                                   const std::wstring& resultRole = L"", bool keysOnly = false);
+        void Close();
         virtual ~Session();
     };
 
@@ -174,6 +176,7 @@ namespace MI
         Class* GetNextClass();
         operator bool() { return m_hasMoreResults != FALSE; }
         void Cancel();
+        void Close();
         virtual ~Operation();
     };
 };

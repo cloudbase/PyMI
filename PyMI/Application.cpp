@@ -138,6 +138,31 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
     }
 }
 
+static PyObject* Application_Close(Application *self, PyObject*)
+{
+    try
+    {
+        self->app->Close();
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* Application_self(Application *self, PyObject*)
+{
+    Py_INCREF(self);
+    return (PyObject *)self;
+}
+
+static PyObject* Application_exit(Application* self, PyObject*)
+{
+    return PyObject_CallMethod((PyObject*)self, "close", NULL);
+}
+
 static PyMemberDef Application_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -147,6 +172,9 @@ static PyMethodDef Application_methods[] = {
     { "create_instance", (PyCFunction)Application_NewInstance, METH_VARARGS | METH_KEYWORDS, "Creates a new instance." },
     { "create_instance_from_class", (PyCFunction)Application_NewInstanceFromClass, METH_VARARGS | METH_KEYWORDS, "Creates a new instance from a class." },
     { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_VARARGS | METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },
+    { "close", (PyCFunction)Application_Close, METH_NOARGS, "Closes the application." },
+    { "__enter__", (PyCFunction)Application_self, METH_NOARGS, "" },
+    { "__exit__",  (PyCFunction)Application_exit, METH_VARARGS, "" },
     { NULL }  /* Sentinel */
 };
 

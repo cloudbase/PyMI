@@ -125,6 +125,22 @@ static PyObject* Instance_GetClass(Instance *self, PyObject*)
     }
 }
 
+static PyObject* Instance_Clone(Instance *self, PyObject*)
+{
+    try
+    {
+        MI::Instance* instance = self->instance->Clone();
+        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+        pyInstance->instance = instance;
+        return (PyObject*)instance;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyObject* Instance_GetPath(Instance *self, PyObject*)
 {
     try
@@ -162,6 +178,7 @@ static PyMethodDef Instance_methods[] = {
     { "get_path", (PyCFunction)Instance_GetPath, METH_NOARGS, "" },
     { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
     { "get_class", (PyCFunction)Instance_GetClass, METH_NOARGS, "" },
+    { "clone", (PyCFunction)Instance_Clone, METH_NOARGS, "Clones this instance." },
     { NULL }  /* Sentinel */
 };
 

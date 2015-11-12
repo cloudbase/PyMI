@@ -28,8 +28,24 @@ Application::Application(const std::wstring& appId)
 
 Application::~Application()
 {
-    ::MI_Application_Close(&this->m_app);
-    this->m_app = MI_APPLICATION_NULL;
+    try
+    {
+        this->Close();
+    }
+    catch (std::exception&)
+    {
+        // Ignore
+    }
+}
+
+void Application::Close()
+{
+    MI_Application nullApp = MI_APPLICATION_NULL;
+    if (memcmp(&this->m_app, &nullApp, sizeof(MI_Application)))
+    {
+        MICheckResult(::MI_Application_Close(&this->m_app));
+        this->m_app = MI_APPLICATION_NULL;
+    }
 }
 
 Instance* Application::NewInstanceFromClass(const std::wstring& className, const Class& miClass)
@@ -196,10 +212,26 @@ unsigned Class::GetElementsCount() const
     return count;
 }
 
+void Operation::Close()
+{
+    MI_Operation nullOp = MI_OPERATION_NULL;
+    if (memcmp(&this->m_operation, &nullOp, sizeof(MI_Operation)))
+    {
+        MICheckResult(::MI_Operation_Close(&this->m_operation));
+        this->m_operation = MI_OPERATION_NULL;
+    }
+}
+
 Operation::~Operation()
 {
-    ::MI_Operation_Close(&this->m_operation);
-    this->m_operation = MI_OPERATION_NULL;
+    try
+    {
+        this->Close();
+    }
+    catch (std::exception&)
+    {
+        // Ignore
+    }
 }
 
 void Class::Delete()
@@ -224,10 +256,26 @@ Session* Application::NewSession(const std::wstring& protocol, const std::wstrin
     return new Session(session);
 }
 
+void Session::Close()
+{
+    MI_Session nullSession = MI_SESSION_NULL;
+    if (memcmp(&this->m_session, &nullSession, sizeof(MI_Session)))
+    {
+        MICheckResult(::MI_Session_Close(&this->m_session, NULL, NULL));
+        this->m_session = MI_SESSION_NULL;
+    }
+}
+
 Session::~Session()
 {
-    ::MI_Session_Close(&this->m_session, NULL, NULL);
-    this->m_session = MI_SESSION_NULL;
+    try
+    {
+        this->Close();
+    }
+    catch (std::exception&)
+    {
+        // Ignore
+    }
 }
 
 Operation* Session::ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect)

@@ -3,7 +3,7 @@
 #include "Instance.h"
 #include "Utils.h"
 
-PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+PyObject* Operation_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
     Operation* self = NULL;
     self = (Operation*)type->tp_alloc(type, 0);
@@ -56,6 +56,31 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
     }
 }
 
+static PyObject* Operation_Close(Operation *self, PyObject*)
+{
+    try
+    {
+        self->operation->Close();
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* Operation_self(Operation *self, PyObject*)
+{
+    Py_INCREF(self);
+    return (PyObject *)self;
+}
+
+static PyObject* Operation_exit(Operation* self, PyObject*)
+{
+    return PyObject_CallMethod((PyObject*)self, "close", NULL);
+}
+
 static PyMemberDef Operation_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -63,6 +88,9 @@ static PyMemberDef Operation_members[] = {
 static PyMethodDef Operation_methods[] = {
     { "get_next_instance", (PyCFunction)Operation_GetNextInstance, METH_NOARGS, "Returns the next instance." },
     { "cancel", (PyCFunction)Operation_Cancel, METH_NOARGS, "Cancels the operation." },
+    { "close", (PyCFunction)Operation_Close, METH_NOARGS, "Closes the operation." },
+    { "__enter__", (PyCFunction)Operation_self, METH_NOARGS, "" },
+    { "__exit__",  (PyCFunction)Operation_exit, METH_VARARGS, "" },
     { NULL }  /* Sentinel */
 };
 

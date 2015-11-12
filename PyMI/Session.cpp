@@ -83,6 +83,31 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     }
 }
 
+static PyObject* Session_Close(Session *self, PyObject*)
+{
+    try
+    {
+        self->session->Close();
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* Session_self(Operation *self, PyObject*)
+{
+    Py_INCREF(self);
+    return (PyObject *)self;
+}
+
+static PyObject* Session_exit(Operation* self, PyObject*)
+{
+    return PyObject_CallMethod((PyObject*)self, "close", NULL);
+}
+
 static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
@@ -130,7 +155,6 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
         return NULL;
     }
 }
-
 
 static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject *kwds)
 {
@@ -225,6 +249,9 @@ static PyMethodDef Session_methods[] = {
     { "create_instance", (PyCFunction)Session_CreateInstance, METH_VARARGS | METH_KEYWORDS, "Creates an instance." },
     { "modify_instance", (PyCFunction)Session_ModifyInstance, METH_VARARGS | METH_KEYWORDS, "Modifies an instance." },
     { "delete_instance", (PyCFunction)Session_DeleteInstance, METH_VARARGS | METH_KEYWORDS, "Deletes an instance." },
+    { "close", (PyCFunction)Session_Close, METH_NOARGS, "Closes the session." },
+    { "__enter__", (PyCFunction)Session_self, METH_NOARGS, "" },
+    { "__exit__",  (PyCFunction)Session_exit, METH_VARARGS, "" },
     { NULL }  /* Sentinel */
 };
 
