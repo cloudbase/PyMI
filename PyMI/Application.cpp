@@ -83,6 +83,24 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
     return (PyObject*)pyInstance;
 }
 
+static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* className = NULL;
+    PyObject* miClass = NULL;
+    static char *kwlist[] = { "className", "miClass", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &className, &miClass))
+        return NULL;
+
+    if (!PyObject_IsInstance(miClass, reinterpret_cast<PyObject*>(&ClassType)))
+        return NULL;
+
+    MI::Instance* instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
+    Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+    //Py_INCREF(pyInstance);
+    pyInstance->instance = instance;
+    return (PyObject*)pyInstance;
+}
+
 static PyMemberDef Application_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -90,6 +108,7 @@ static PyMemberDef Application_members[] = {
 static PyMethodDef Application_methods[] = {
     { "create_session", (PyCFunction)Application_NewSession, METH_KEYWORDS, "Creates a new session." },
     { "create_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
+    { "create_instance_from_class", (PyCFunction)Application_NewInstanceFromClass, METH_KEYWORDS, "Creates a new instance from a class." },
     { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },    
     { NULL }  /* Sentinel */
 };
