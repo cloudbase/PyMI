@@ -1,17 +1,17 @@
-﻿import mi
-import wmi
+﻿def test_mi():
+    import mi
 
-def test_mi():
-    a = mi.Application()
-    s = mi.Session(a, protocol=u"WMIDCOM")
-    q = s.exec_query(u"root\\cimv2", u"select * from win32_process")
-    i = q.get_next_instance()
-
-    while i is not None:
-        s = i.name
-        i = q.get_next_instance()
+    with mi.Application() as a:
+        with a.create_session(protocol=u"WMIDCOM") as s:
+            with s.exec_query(u"root\\cimv2", u"select * from win32_process") as q:
+                i = q.get_next_instance()
+                while i is not None:
+                    s = i[u'name']
+                    i = q.get_next_instance()
 
 def test_wmi():
+    import wmi
+
     conn = wmi.WMI(moniker="root\\cimv2")
     for i in conn.win32_process():
         s = i.name
