@@ -69,6 +69,55 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     return pyOp;
 }
 
+static int Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    PyObject* instance = NULL;
+
+    static char *kwlist[] = { "ns", "instance", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
+        return -1;
+
+    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+        return -1;
+
+    self->session->CreateInstance(ns, *((Instance*)instance)->instance);
+    return 0;
+}
+
+static int Session_ModifyInstance(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    PyObject* instance = NULL;
+
+    static char *kwlist[] = { "ns", "instance", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
+        return -1;
+
+    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+        return -1;
+
+    self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
+    return 0;
+}
+
+
+static int Session_DeleteInstance(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    PyObject* instance = NULL;
+
+    static char *kwlist[] = { "ns", "instance", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
+        return -1;
+
+    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+        return -1;
+
+    self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
+    return 0;
+}
+
 static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
@@ -122,6 +171,9 @@ static PyMethodDef Session_methods[] = {
     { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_KEYWORDS, "Invokes a method." },
     { "get_associators", (PyCFunction)Session_GetAssociators, METH_KEYWORDS, "Retrieves the associators of an instance." },
     { "get_class", (PyCFunction)Session_GetClass, METH_KEYWORDS, "Gets a class." },
+    { "create_instance", (PyCFunction)Session_CreateInstance, METH_KEYWORDS, "Creates an instance." },
+    { "modify_instance", (PyCFunction)Session_ModifyInstance, METH_KEYWORDS, "Modifies an instance." },
+    { "delete_instance", (PyCFunction)Session_DeleteInstance, METH_KEYWORDS, "Deletes an instance." },
     { NULL }  /* Sentinel */
 };
 
