@@ -22,10 +22,10 @@ static void Operation_dealloc(Operation* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
-static int Operation_Cancel(Operation* self)
+static PyObject* Operation_Cancel(Operation* self)
 {
     self->operation->Cancel();
-    return 0;
+    Py_RETURN_NONE;
 }
 
 static PyObject* Operation_GetNextInstance(Operation* self)

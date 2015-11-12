@@ -69,53 +69,53 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     return pyOp;
 }
 
-static int Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)
+static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
     PyObject* instance = NULL;
 
     static char *kwlist[] = { "ns", "instance", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
-        return -1;
+        return NULL;
 
     if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return -1;
+        return NULL;
 
     self->session->CreateInstance(ns, *((Instance*)instance)->instance);
-    return 0;
+    Py_RETURN_NONE;
 }
 
-static int Session_ModifyInstance(Session *self, PyObject *args, PyObject *kwds)
+static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
     PyObject* instance = NULL;
 
     static char *kwlist[] = { "ns", "instance", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
-        return -1;
+        return NULL;
 
     if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return -1;
+        return NULL;
 
     self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
-    return 0;
+    Py_RETURN_NONE;
 }
 
 
-static int Session_DeleteInstance(Session *self, PyObject *args, PyObject *kwds)
+static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
     PyObject* instance = NULL;
 
     static char *kwlist[] = { "ns", "instance", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
-        return -1;
+        return NULL;
 
     if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return -1;
+        return NULL;
 
     self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
-    return 0;
+    Py_RETURN_NONE;
 }
 
 static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
