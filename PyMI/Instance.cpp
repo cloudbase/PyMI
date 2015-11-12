@@ -25,48 +25,72 @@ static void Instance_dealloc(Instance* self)
 
 static PyObject* Instance_subscript(Instance *self, PyObject *item)
 {
-    // TODO: size buffer based on actual size
-    wchar_t w[1024];
-    Py_ssize_t i;
-    if (!GetIndexOrName(item, w, i))
-        return NULL;
+    try
+    {
+        // TODO: size buffer based on actual size
+        wchar_t w[1024];
+        Py_ssize_t i;
+        if (!GetIndexOrName(item, w, i))
+            return NULL;
 
-    MI::ValueElement element;
-    if (i >= 0)
-    {
-        element = (*self->instance)[i];
+        MI::ValueElement element;
+        if (i >= 0)
+        {
+            element = (*self->instance)[i];
+        }
+        else
+        {
+            element = (*self->instance)[w];
+        }
+        return MI2Py(element.m_value, element.m_type, element.m_flags);
     }
-    else
+    catch (std::exception& ex)
     {
-        element = (*self->instance)[w];
+        SetPyException(ex);
+        return NULL;
     }
-    return MI2Py(element.m_value, element.m_type, element.m_flags);
 }
 
 static Py_ssize_t Instance_length(Instance *self)
 {
-    return self->instance->GetElementsCount();
+    try
+    {
+        return self->instance->GetElementsCount();
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return -1;
+    }
 }
 
 static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* value)
 {
-    // TODO: size buffer based on actual size
-    wchar_t w[1024];
-    w[0] = NULL;
-    Py_ssize_t i = 0;
-    if (!GetIndexOrName(item, w, i))
-        return NULL;
+    try
+    {
+        // TODO: size buffer based on actual size
+        wchar_t w[1024];
+        w[0] = NULL;
+        Py_ssize_t i = 0;
+        if (!GetIndexOrName(item, w, i))
+            return NULL;
 
-    bool addElement = false;
+        bool addElement = false;
 
-    MI_Value miValue;
-    MI_UNREFERENCED_PARAMETER(&miValue);
-    MI_Type miType = self->instance->GetElementType(w);
+        MI_Value miValue;
+        MI_UNREFERENCED_PARAMETER(&miValue);
+        MI_Type miType = self->instance->GetElementType(w);
 
-    Py2MI(value, miValue, miType);
-    self->instance->SetElement(w, &miValue, miType);
+        Py2MI(value, miValue, miType);
+        self->instance->SetElement(w, &miValue, miType);
 
-    return 0;
+        return 0;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return -1;
+    }
 }
 
 static PyObject* Instance_getattro(Instance *self, PyObject* name)
@@ -87,23 +111,46 @@ static int Instance_setattro(Instance *self, PyObject* name, PyObject* value)
 
 static PyObject* Instance_GetClass(Instance *self, PyObject*)
 {
-    MI::Class* c = self->instance->GetClass();
-    PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
-    //Py_INCREF(pyInstance);
-    ((Class*)pyClass)->miClass = c;
-    return pyClass;
+    try
+    {
+        MI::Class* c = self->instance->GetClass();
+        PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
+        ((Class*)pyClass)->miClass = c;
+        return pyClass;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Instance_GetPath(Instance *self, PyObject*)
 {
-    std::wstring path = self->instance->GetPath();
-    return PyUnicode_FromWideChar(path.c_str(), path.length());
+    try
+    {
+        std::wstring path = self->instance->GetPath();
+        return PyUnicode_FromWideChar(path.c_str(), path.length());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Instance_GetClassName(Instance *self, PyObject*)
 {
-    std::wstring className = self->instance->GetClassName();
-    return PyUnicode_FromWideChar(className.c_str(), className.length());
+    try
+    {
+        std::wstring className = self->instance->GetClassName();
+        return PyUnicode_FromWideChar(className.c_str(), className.length());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyMemberDef Instance_members[] = {

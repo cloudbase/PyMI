@@ -24,27 +24,43 @@ static void Class_dealloc(Class* self)
 
 static PyObject* Class_subscript(Class *self, PyObject *item)
 {
-    // TODO: size buffer based on actual size
-    wchar_t w[1024];
-    Py_ssize_t i;
-    if (!GetIndexOrName(item, w, i))
-        return NULL;
+    try
+    {
+        // TODO: size buffer based on actual size
+        wchar_t w[1024];
+        Py_ssize_t i;
+        if (!GetIndexOrName(item, w, i))
+            return NULL;
 
-    MI::ClassElement element;
-    if (i >= 0)
-    {
-        element = (*self->miClass)[i];
+        MI::ClassElement element;
+        if (i >= 0)
+        {
+            element = (*self->miClass)[i];
+        }
+        else
+        {
+            element = (*self->miClass)[w];
+        }
+        return MI2Py(element.m_value, element.m_type, element.m_flags);
     }
-    else
+    catch (std::exception& ex)
     {
-        element = (*self->miClass)[w];
+        SetPyException(ex);
+        return NULL;
     }
-    return MI2Py(element.m_value, element.m_type, element.m_flags);
 }
 
 static Py_ssize_t Class_length(Class *self)
 {
-    return self->miClass->GetElementsCount();
+    try
+    {
+        return self->miClass->GetElementsCount();
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return -1;
+    }
 }
 
 static PyObject* Class_getattro(Class *self, PyObject* name)

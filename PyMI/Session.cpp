@@ -4,6 +4,7 @@
 #include "Operation.h"
 #include "Class.h"
 #include "Instance.h"
+#include "Utils.h"
 
 
 PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -35,12 +36,18 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|u", kwlist, &ns, &query, &dialect))
         return NULL;
 
-    MI::Operation* op = self->session->ExecQuery(ns, query, dialect);
-
-    PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
-    //Py_INCREF(pyOp);
-    ((Operation*)pyOp)->operation = op;
-    return pyOp;
+    try
+    {
+        MI::Operation* op = self->session->ExecQuery(ns, query, dialect);
+        PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
+        ((Operation*)pyOp)->operation = op;
+        return pyOp;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject *kwds)
@@ -62,11 +69,18 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
 
     bool keysOnly = keysOnlyObj && PyObject_IsTrue(keysOnlyObj);
 
-    MI::Operation* op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
-    PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
-    //Py_INCREF(pyOp);
-    ((Operation*)pyOp)->operation = op;
-    return pyOp;
+    try
+    {
+        MI::Operation* op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
+        PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
+        ((Operation*)pyOp)->operation = op;
+        return pyOp;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)
@@ -81,8 +95,16 @@ static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject 
     if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
         return NULL;
 
-    self->session->CreateInstance(ns, *((Instance*)instance)->instance);
-    Py_RETURN_NONE;
+    try
+    {
+        self->session->CreateInstance(ns, *((Instance*)instance)->instance);
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject *kwds)
@@ -97,8 +119,16 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
     if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
         return NULL;
 
-    self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
-    Py_RETURN_NONE;
+    try
+    {
+        self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 
@@ -114,8 +144,16 @@ static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject 
     if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
         return NULL;
 
-    self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
-    Py_RETURN_NONE;
+    try
+    {
+        self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
@@ -127,12 +165,18 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu", kwlist, &ns, &className))
         return NULL;
 
-    MI::Class* c = self->session->GetClass(ns, className);
-    Class* pyClass = (Class*)Class_new(&ClassType, NULL, NULL);
-
-    //Py_INCREF(pyClass);
-    pyClass->miClass = c;
-    return (PyObject*)pyClass;
+    try
+    {
+        MI::Class* c = self->session->GetClass(ns, className);
+        Class* pyClass = (Class*)Class_new(&ClassType, NULL, NULL);
+        pyClass->miClass = c;
+        return (PyObject*)pyClass;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
@@ -151,15 +195,22 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
     if (inboundParams && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
         return NULL;
 
-    MI::Instance* result = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
-    if (result)
+    try
     {
-        PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
-        //Py_INCREF(pyInstance);
-        ((Instance*)pyInstance)->instance = result;
-        return pyInstance;
+        MI::Instance* result = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+        if (result)
+        {
+            PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
+            ((Instance*)pyInstance)->instance = result;
+            return pyInstance;
+        }
+        Py_RETURN_NONE;
     }
-    Py_RETURN_NONE;
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyMemberDef Session_members[] = {

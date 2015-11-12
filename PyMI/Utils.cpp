@@ -1,9 +1,9 @@
 #include "stdafx.h"
+#include "PyMI.h"
 #include "Utils.h"
 #include "instance.h"
 
 #include <datetime.h>
-#include <exception>
 
 
 bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
@@ -70,7 +70,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             value.sint64 = PyLong_AsLongLong(pyValue);
             break;
         default:
-            throw std::exception("Unsupported type conversion");
+            throw TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyInt_Type)))
@@ -102,7 +102,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             value.sint64 = PyInt_AsLong(pyValue);
             break;
         default:
-            throw std::exception("Unsupported type conversion");
+            throw TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyString_Type)))
@@ -119,14 +119,14 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, (len + 1) * sizeof(MI_Char));
             if (!value.string)
             {
-                throw std::exception("Out of memory");
+                throw OutOfMemoryException();
             }
             if (::MultiByteToWideChar(CP_ACP, 0, s, len, value.string, len) != len)
             {
-                throw std::exception("MultiByteToWideChar");
+                throw MI::Exception(L"MultiByteToWideChar failed");
             }
         default:
-            throw std::exception("Unsupported type conversion");
+            throw TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyUnicode_Type)))
@@ -142,16 +142,16 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, (len + 1) * sizeof(MI_Char));
             if (!value.string)
             {
-                throw std::exception("Out of memory");
+                throw OutOfMemoryException();
             }
 
             if (PyUnicode_AsWideChar((PyUnicodeObject*)pyValue, value.string, len) < 0)
             {
-                throw std::exception("PyUnicode_AsWideChar");
+                throw MI::Exception(L"PyUnicode_AsWideChar failed");
             }
             break;
         default:
-            throw std::exception("Unsupported type conversion");
+            throw TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&InstanceType)))
@@ -162,7 +162,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             value.reference = ((Instance*)pyValue)->instance->GetMIObject();
             break;
         default:
-            throw std::exception("Unsupported type conversion");
+            throw TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)))
@@ -183,7 +183,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             value.referencea.data = (MI_Instance**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Instance*) * size);
             break;
         default:
-            throw std::exception("Unsupported type conversion");
+            throw TypeConversionException();
         }
 
         for (Py_ssize_t i = 0; i < size; i++)
@@ -205,13 +205,13 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
                 value.referencea.data[i] = tmpVal.reference;
                 break;
             default:
-                throw std::exception("Unsupported type conversion");
+                throw TypeConversionException();
             }
         }
     }
     else
     {
-        throw std::exception("Unsupported type conversion");
+        throw TypeConversionException();
     }
 }
 
@@ -280,7 +280,8 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
             tmpVal.uint16 = value.uint16a.data[i];
             if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_UINT16, 0)))
             {
-                throw std::exception("PyTuple_SetItem");
+                Py_DECREF(pyObj);
+                throw MI::Exception(L"PyTuple_SetItem failed");
             }
         }
         return pyObj;
@@ -300,7 +301,8 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
             tmpVal.datetime = value.datetimea.data[i];
             if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_DATETIME, 0)))
             {
-                throw std::exception("PyTuple_SetItem");
+                Py_DECREF(pyObj);
+                throw MI::Exception(L"PyTuple_SetItem failed");
             }
         }
         return pyObj;
@@ -312,7 +314,8 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
             tmpVal.string = value.stringa.data[i];
             if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_STRING, 0)))
             {
-                throw std::exception("PyTuple_SetItem");
+                Py_DECREF(pyObj);
+                throw MI::Exception(L"PyTuple_SetItem failed");
             }
         }
         return pyObj;
@@ -332,7 +335,8 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
             tmpVal.instance = value.instancea.data[i];
             if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_INSTANCE, 0)))
             {
-                throw std::exception("PyTuple_SetItem");
+                Py_DECREF(pyObj);
+                throw MI::Exception(L"PyTuple_SetItem failed");
             }
         }
         return pyObj;
@@ -344,11 +348,18 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
             tmpVal.reference = value.referencea.data[i];
             if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_REFERENCE, 0)))
             {
-                throw std::exception("PyTuple_SetItem");
+                Py_DECREF(pyObj);
+                throw MI::Exception(L"PyTuple_SetItem failed");
             }
         }
         return pyObj;
     default:
         return NULL;
     }
+}
+
+void SetPyException(const std::exception& ex)
+{
+    const char* message = ex.what();
+    PyErr_SetString(PyMIError, message);
 }

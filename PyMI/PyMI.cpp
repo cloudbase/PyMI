@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "PyMI.h"
 #include "Application.h"
 #include "Session.h"
 #include "Class.h"
@@ -10,7 +11,7 @@
 
 #include <datetime.h>
 
-static PyObject *PyMIError;
+PyObject *PyMIError;
 
 static PyMethodDef mi_methods[] = {
     { NULL, NULL, 0, NULL }  /* Sentinel */
@@ -65,9 +66,9 @@ PyMODINIT_FUNC initmi(void)
     m = Py_InitModule("mi", PyMIMethods);
     if (m == NULL)
         return;
+    */
 
     PyMIError = PyErr_NewException("PyMI.error", NULL, NULL);
     Py_INCREF(PyMIError);
     PyModule_AddObject(m, "error", PyMIError);
-    */
 }

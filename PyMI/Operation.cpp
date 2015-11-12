@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Operation.h"
 #include "Instance.h"
-
+#include "Utils.h"
 
 PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -24,22 +24,36 @@ static void Operation_dealloc(Operation* self)
 
 static PyObject* Operation_Cancel(Operation* self, PyObject*)
 {
-    self->operation->Cancel();
-    Py_RETURN_NONE;
+    try
+    {
+        self->operation->Cancel();
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
 {
-    MI::Instance* instance = self->operation->GetNextInstance();
-    if (instance)
+    try
     {
-        PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
-        //Py_INCREF(pyInstance);
-        ((Instance*)pyInstance)->instance = instance;
-        return pyInstance;
+        MI::Instance* instance = self->operation->GetNextInstance();
+        if (instance)
+        {
+            PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
+            ((Instance*)pyInstance)->instance = instance;
+            return pyInstance;
+        }
+        Py_RETURN_NONE;
     }
-
-    Py_RETURN_NONE;
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyMemberDef Operation_members[] = {

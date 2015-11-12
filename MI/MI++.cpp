@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "MI++.h"
+#include "MIExceptions.h"
 #include <algorithm>
 #include <sstream>
 
@@ -11,10 +12,10 @@ void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
     {
         if (extError)
         {
+            // TODO: do something with extError
             ::MI_Instance_Delete(extError);
         }
-        // TODO: format text
-        throw std::exception("MI operation failed");
+        throw MIException(result);
     }
 }
 

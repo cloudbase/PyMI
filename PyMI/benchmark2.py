@@ -1,39 +1,43 @@
 ﻿def test_mi():
     import mi
 
-    a = mi.Application()
-    s = a.create_session(protocol=u"WMIDCOM")
-    q = s.exec_query(u"root/virtualization/v2", u"select * from Msvm_VirtualSystemManagementService")
-    svc = q.get_next_instance()
+    try:
+        a = mi.Application()
+        s = a.create_session(protocol=u"WMIDCOM")
+        q = s.exec_query(u"root/virtualization/v2", u"select * from Msvm_VirtualSystemManagementService")
+        svc = q.get_next_instance()
 
-    c = svc.get_class()
-    p = a.create_method_params(c, u"GetSummaryInformation")
+        c = svc.get_class()
+        p = a.create_method_params(c, u"GetSummaryInformation")
 
-    q1 = s.exec_query(u"root/virtualization/v2", u"select * from Msvm_ComputerSystem where ElementName = 'nano1'")
-    vm = q1.get_next_instance()
+        q1 = s.exec_query(u"root/virtualization/v2", u"select * from Msvm_ComputerSystem where ElementName = 'nano1'")
+        vm = q1.get_next_instance()
 
-    q2 = s.get_associators(u"root/virtualization/v2", vm, assocClass=u"Msvm_SettingsDefineState", resultClass=u"Msvm_VirtualSystemSettingData")
-    vssd = q2.get_next_instance()
+        q2 = s.get_associators(u"root/virtualization/v2", vm, assocClass=u"Msvm_SettingsDefineState", resultClass=u"Msvm_VirtualSystemSettingData")
+        vssd = q2.get_next_instance()
 
-    p[u'SettingData'] = (vssd,) 
-    p[u'requestedInformation'] = (4, 100, 103, 105)
+        p[u'SettingData'] = (vssd,) 
+        p[u'requestedInformation'] = (4, 100, 103, 105)
 
-    r = s.invoke_method(svc, u"GetSummaryInformation", p)
+        r = s.invoke_method(svc, u"GetSummaryInformation", p)
 
-    print("Result: %s" % r[0])
-    summary_info = r[1][0]
+        print("Result: %s" % r[0])
+        summary_info = r[1][0]
 
-    print("vCPUs: %s" % summary_info["NumberOfProcessors"])
-    print("EnabledState: %s" % summary_info["EnabledState"])
-    print("Memory: %s" % summary_info["MemoryUsage"])
-    print("UpTime: %s" % summary_info["UpTime"])
+        print("vCPUs: %s" % summary_info["NumberOfProcessors"])
+        print("EnabledState: %s" % summary_info["EnabledState"])
+        print("Memory: %s" % summary_info["MemoryUsage"])
+        print("UpTime: %s" % summary_info["UpTime"])
 
-    q2 = None
-    q1 = None
-    q = None
-    s = None
-    a = None
-
+        q2 = None
+        q1 = None
+        q = None
+        s = None
+        a = None
+    except mi.error as ex:
+        print("An exception occurred: %s" % ex)
+        import traceback
+        traceback.print_exc()
 
 def test_wmi():
     import wmi

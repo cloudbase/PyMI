@@ -3,6 +3,7 @@
 #include "Session.h"
 #include "Class.h"
 #include "Instance.h"
+#include "Utils.h"
 
 
 static PyObject* Application_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -19,8 +20,16 @@ static int Application_init(Application *self, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|u", kwlist, &appId))
         return -1;
 
-    self->app = new MI::Application(appId);
-    return 0;
+    try
+    {
+        self->app = new MI::Application(appId);
+        return 0;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return -1;
+    }
 }
 
 static PyObject* Application_NewSession(Application *self, PyObject *args, PyObject *kwds)
@@ -32,11 +41,18 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|uu", kwlist, &protocol, &computerName))
         return NULL;
 
-    MI::Session* session = self->app->NewSession(protocol, computerName);
-    Session* pySession = (Session*)Session_new(&SessionType, NULL, NULL);
-    pySession->session = session;
-    //Py_INCREF(pySession);
-    return (PyObject*)pySession;
+    try
+    {
+        MI::Session* session = self->app->NewSession(protocol, computerName);
+        Session* pySession = (Session*)Session_new(&SessionType, NULL, NULL);
+        pySession->session = session;
+        return (PyObject*)pySession;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static void Application_dealloc(Application* self)
@@ -62,11 +78,18 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
     if (!PyObject_IsInstance(pyClass, reinterpret_cast<PyObject*>(&ClassType)))
         return NULL;
 
-    MI::Instance* instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
-    Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-    //Py_INCREF(pyInstance);
-    pyInstance->instance = instance;
-    return (PyObject*)pyInstance;
+    try
+    {
+        MI::Instance* instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
+        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+        pyInstance->instance = instance;
+        return (PyObject*)pyInstance;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Application_NewInstance(Application *self, PyObject *args, PyObject *kwds)
@@ -76,11 +99,18 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &className))
         return NULL;
 
-    MI::Instance* instance = self->app->NewInstance(className);
-    Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-    //Py_INCREF(pyInstance);
-    pyInstance->instance = instance;
-    return (PyObject*)pyInstance;
+    try
+    {
+        MI::Instance* instance = self->app->NewInstance(className);
+        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+        pyInstance->instance = instance;
+        return (PyObject*)pyInstance;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *args, PyObject *kwds)
@@ -94,11 +124,18 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
     if (!PyObject_IsInstance(miClass, reinterpret_cast<PyObject*>(&ClassType)))
         return NULL;
 
-    MI::Instance* instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
-    Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-    //Py_INCREF(pyInstance);
-    pyInstance->instance = instance;
-    return (PyObject*)pyInstance;
+    try
+    {
+        MI::Instance* instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
+        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+        pyInstance->instance = instance;
+        return (PyObject*)pyInstance;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
 }
 
 static PyMemberDef Application_members[] = {

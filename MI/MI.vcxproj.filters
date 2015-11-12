@@ -27,12 +27,18 @@
     <ClInclude Include="MI++.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MIExceptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MI++.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MIExceptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
