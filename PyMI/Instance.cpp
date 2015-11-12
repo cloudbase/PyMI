@@ -85,7 +85,7 @@ static int Instance_setattro(Instance *self, PyObject* name, PyObject* value)
     return -1;
 }
 
-static PyObject* Instance_GetClass(Instance *self, PyObject *args, PyObject *kwds)
+static PyObject* Instance_GetClass(Instance *self, PyObject*)
 {
     MI::Class* c = self->instance->GetClass();
     PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
@@ -94,13 +94,13 @@ static PyObject* Instance_GetClass(Instance *self, PyObject *args, PyObject *kwd
     return pyClass;
 }
 
-static PyObject* Instance_GetPath(Instance *self)
+static PyObject* Instance_GetPath(Instance *self, PyObject*)
 {
     std::wstring path = self->instance->GetPath();
     return PyUnicode_FromWideChar(path.c_str(), path.length());
 }
 
-static PyObject* Instance_GetClassName(Instance *self)
+static PyObject* Instance_GetClassName(Instance *self, PyObject*)
 {
     std::wstring className = self->instance->GetClassName();
     return PyUnicode_FromWideChar(className.c_str(), className.length());

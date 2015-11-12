@@ -167,13 +167,13 @@ static PyMemberDef Session_members[] = {
 };
 
 static PyMethodDef Session_methods[] = {
-    { "exec_query", (PyCFunction)Session_ExecQuery, METH_KEYWORDS, "Executes a query." },
-    { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_KEYWORDS, "Invokes a method." },
-    { "get_associators", (PyCFunction)Session_GetAssociators, METH_KEYWORDS, "Retrieves the associators of an instance." },
-    { "get_class", (PyCFunction)Session_GetClass, METH_KEYWORDS, "Gets a class." },
-    { "create_instance", (PyCFunction)Session_CreateInstance, METH_KEYWORDS, "Creates an instance." },
-    { "modify_instance", (PyCFunction)Session_ModifyInstance, METH_KEYWORDS, "Modifies an instance." },
-    { "delete_instance", (PyCFunction)Session_DeleteInstance, METH_KEYWORDS, "Deletes an instance." },
+    { "exec_query", (PyCFunction)Session_ExecQuery, METH_VARARGS | METH_KEYWORDS, "Executes a query." },
+    { "invoke_method", (PyCFunction)Session_InvokeMethod, METH_VARARGS | METH_KEYWORDS, "Invokes a method." },
+    { "get_associators", (PyCFunction)Session_GetAssociators, METH_VARARGS | METH_KEYWORDS, "Retrieves the associators of an instance." },
+    { "get_class", (PyCFunction)Session_GetClass, METH_VARARGS | METH_KEYWORDS, "Gets a class." },
+    { "create_instance", (PyCFunction)Session_CreateInstance, METH_VARARGS | METH_KEYWORDS, "Creates an instance." },
+    { "modify_instance", (PyCFunction)Session_ModifyInstance, METH_VARARGS | METH_KEYWORDS, "Modifies an instance." },
+    { "delete_instance", (PyCFunction)Session_DeleteInstance, METH_VARARGS | METH_KEYWORDS, "Deletes an instance." },
     { NULL }  /* Sentinel */
 };
 

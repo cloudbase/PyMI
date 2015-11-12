@@ -106,10 +106,10 @@ static PyMemberDef Application_members[] = {
 };
 
 static PyMethodDef Application_methods[] = {
-    { "create_session", (PyCFunction)Application_NewSession, METH_KEYWORDS, "Creates a new session." },
-    { "create_instance", (PyCFunction)Application_NewInstance, METH_KEYWORDS, "Creates a new instance." },
-    { "create_instance_from_class", (PyCFunction)Application_NewInstanceFromClass, METH_KEYWORDS, "Creates a new instance from a class." },
-    { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },    
+    { "create_session", (PyCFunction)Application_NewSession, METH_VARARGS | METH_KEYWORDS, "Creates a new session." },
+    { "create_instance", (PyCFunction)Application_NewInstance, METH_VARARGS | METH_KEYWORDS, "Creates a new instance." },
+    { "create_instance_from_class", (PyCFunction)Application_NewInstanceFromClass, METH_VARARGS | METH_KEYWORDS, "Creates a new instance from a class." },
+    { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_VARARGS | METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },
     { NULL }  /* Sentinel */
 };
 

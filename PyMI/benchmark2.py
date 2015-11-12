@@ -28,7 +28,7 @@
     print("Memory: %s" % summary_info["MemoryUsage"])
     print("UpTime: %s" % summary_info["UpTime"])
 
-    #q2 = None
+    q2 = None
     q1 = None
     q = None
     s = None
