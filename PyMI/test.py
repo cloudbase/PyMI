@@ -1,7 +1,7 @@
 ﻿import mi
 
 with mi.Application() as a:
-    with a.create_session(protocol=u"WMIDCOM") as s:
+    with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
         c = s.get_class(u"root\\cimv2", u"win32_process")
 
         proc_name = u'notepad.exe'

@@ -3,7 +3,7 @@
 
     try:
         with mi.Application() as a:
-            with a.create_session(protocol=u"WMIDCOM") as s:
+            with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
                 with s.exec_query(u"root/virtualization/v2", u"select * from Msvm_VirtualSystemManagementService") as q:
                     svc = q.get_next_instance()
 
@@ -20,7 +20,6 @@
                             p[u'requestedInformation'] = (4, 100, 103, 105)
 
                             r = s.invoke_method(svc, u"GetSummaryInformation", p)
-
                             print("Result: %s" % r[0])
                             summary_info = r[1][0]
 

@@ -62,13 +62,10 @@ PyMODINIT_FUNC initmi(void)
     Py_INCREF(&OperationType);
     PyModule_AddObject(m, "Operation", (PyObject*)&OperationType);
 
-    /*
-    m = Py_InitModule("mi", PyMIMethods);
-    if (m == NULL)
-        return;
-    */
-
     PyMIError = PyErr_NewException("PyMI.error", NULL, NULL);
     Py_INCREF(PyMIError);
     PyModule_AddObject(m, "error", PyMIError);
+
+    PyObject_SetAttrString(m, "PROTOCOL_WINRM", PyUnicode_FromString("WINRM"));
+    PyObject_SetAttrString(m, "PROTOCOL_WMIDCOM", PyUnicode_FromString("WMIDCOM"));
 }

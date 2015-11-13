@@ -2,7 +2,7 @@
     import mi
 
     with mi.Application() as a:
-        with a.create_session(protocol=u"WMIDCOM") as s:
+        with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
             with s.exec_query(u"root\\cimv2", u"select * from win32_process") as q:
                 i = q.get_next_instance()
                 while i is not None:
