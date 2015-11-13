@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Class.h"
 #include "Utils.h"
+#include "PyMI.h"
 
 
 PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -9,6 +10,12 @@ PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (Class*)type->tp_alloc(type, 0);
     self->miClass = NULL;
     return (PyObject *)self;
+}
+
+static int Class_init(Class* self, PyObject* args, PyObject* kwds)
+{
+    PyErr_SetString(PyMIError, "A class object cannot be allocated directly.");
+    return -1;
 }
 
 static void Class_dealloc(Class* self)
@@ -126,7 +133,7 @@ PyTypeObject ClassType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    0,                          /* tp_init */
+    (initproc)Class_init,    /* tp_init */
     0,                         /* tp_alloc */
     Class_new,                 /* tp_new */
 };

@@ -2,6 +2,7 @@
 #include "Instance.h"
 #include "Class.h"
 #include "Utils.h"
+#include "PyMI.h"
 
 
 PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -10,6 +11,12 @@ PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (Instance*)type->tp_alloc(type, 0);
     self->instance = NULL;
     return (PyObject *)self;
+}
+
+static int Instance_init(Instance* self, PyObject* args, PyObject* kwds)
+{
+    PyErr_SetString(PyMIError, "An Instance object cannot be allocated directly.");
+    return -1;
 }
 
 static void Instance_dealloc(Instance* self)
@@ -225,7 +232,7 @@ PyTypeObject InstanceType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    0,                          /* tp_init */
+    (initproc)Instance_init,    /* tp_init */
     0,                         /* tp_alloc */
     Instance_new,                 /* tp_new */
 };

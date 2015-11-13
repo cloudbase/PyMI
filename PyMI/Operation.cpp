@@ -2,6 +2,8 @@
 #include "Operation.h"
 #include "Instance.h"
 #include "Utils.h"
+#include "PyMI.h"
+
 
 PyObject* Operation_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
@@ -9,6 +11,12 @@ PyObject* Operation_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
     self = (Operation*)type->tp_alloc(type, 0);
     self->operation = NULL;
     return (PyObject *)self;
+}
+
+static int Operation_init(Operation* self, PyObject* args, PyObject* kwds)
+{
+    PyErr_SetString(PyMIError, "An Operation object cannot be allocated directly.");
+    return -1;
 }
 
 static void Operation_dealloc(Operation* self)
@@ -131,7 +139,7 @@ PyTypeObject OperationType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    0,                          /* tp_init */
+    (initproc)Operation_init,    /* tp_init */
     0,                         /* tp_alloc */
     Operation_new,                 /* tp_new */
 };

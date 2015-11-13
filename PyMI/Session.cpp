@@ -5,7 +5,7 @@
 #include "Class.h"
 #include "Instance.h"
 #include "Utils.h"
-
+#include "PyMI.h"
 
 PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -13,6 +13,12 @@ PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     self = (Session*)type->tp_alloc(type, 0);
     self->session = NULL;
     return (PyObject *)self;
+}
+
+static int Session_init(Session* self, PyObject* args, PyObject* kwds)
+{
+    PyErr_SetString(PyMIError, "Please use Application.create_session to allocate a Session object.");
+    return -1;
 }
 
 static void Session_dealloc(Session* self)
@@ -292,7 +298,7 @@ PyTypeObject SessionType = {
     0,                         /* tp_descr_get */
     0,                         /* tp_descr_set */
     0,                         /* tp_dictoffset */
-    0,                         /* tp_init */
+    (initproc)Session_init,    /* tp_init */
     0,                         /* tp_alloc */
     Session_new,                 /* tp_new */
 };
