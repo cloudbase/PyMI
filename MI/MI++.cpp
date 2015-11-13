@@ -26,11 +26,20 @@ Application::Application(const std::wstring& appId)
     MICheckResult(::MI_Application_Initialize(0, appId.length() ? appId.c_str() : NULL, &extError, &this->m_app), extError);
 }
 
+bool Application::IsNull()
+{
+    MI_Application nullApp = MI_APPLICATION_NULL;
+    return memcmp(&this->m_app, &nullApp, sizeof(MI_Application)) == 0;
+}
+
 Application::~Application()
 {
     try
     {
-        this->Close();
+        if (!this->IsNull())
+        {
+            this->Close();
+        }
     }
     catch (std::exception&)
     {
@@ -40,12 +49,8 @@ Application::~Application()
 
 void Application::Close()
 {
-    MI_Application nullApp = MI_APPLICATION_NULL;
-    if (memcmp(&this->m_app, &nullApp, sizeof(MI_Application)))
-    {
-        MICheckResult(::MI_Application_Close(&this->m_app));
-        this->m_app = MI_APPLICATION_NULL;
-    }
+    MICheckResult(::MI_Application_Close(&this->m_app));
+    this->m_app = MI_APPLICATION_NULL;
 }
 
 Instance* Application::NewInstanceFromClass(const std::wstring& className, const Class& miClass)
@@ -212,21 +217,37 @@ unsigned Class::GetElementsCount() const
     return count;
 }
 
-void Operation::Close()
+Class* Class::Clone() const
+{
+    if (this->m_class)
+    {
+        MI_Class* newClass = NULL;
+        MICheckResult(::MI_Class_Clone(this->m_class, &newClass));
+        return new Class(newClass, true);
+    }
+    return NULL;
+}
+
+bool Operation::IsNull()
 {
     MI_Operation nullOp = MI_OPERATION_NULL;
-    if (memcmp(&this->m_operation, &nullOp, sizeof(MI_Operation)))
-    {
-        MICheckResult(::MI_Operation_Close(&this->m_operation));
-        this->m_operation = MI_OPERATION_NULL;
-    }
+    return memcmp(&this->m_operation, &nullOp, sizeof(MI_Operation)) == 0;
+}
+
+void Operation::Close()
+{
+    MICheckResult(::MI_Operation_Close(&this->m_operation));
+    this->m_operation = MI_OPERATION_NULL;
 }
 
 Operation::~Operation()
 {
     try
     {
-        this->Close();
+        if (!this->IsNull())
+        {
+            this->Close();
+        }
     }
     catch (std::exception&)
     {
@@ -236,16 +257,23 @@ Operation::~Operation()
 
 void Class::Delete()
 {
-    if (this->m_class)
-    {
-        ::MI_Class_Delete(this->m_class);
-        this->m_class = NULL;
-    }
+    MICheckResult(::MI_Class_Delete(this->m_class));
+    this->m_class = NULL;
 }
 
 Class::~Class()
 {
-    Delete();
+    try
+    {
+        if (this->m_class && this->m_ownsInstance)
+        {
+            Delete();
+        }
+    }
+    catch (std::exception&)
+    {
+        // Ignore
+    }
 }
 
 Session* Application::NewSession(const std::wstring& protocol, const std::wstring& computerName)
@@ -256,21 +284,26 @@ Session* Application::NewSession(const std::wstring& protocol, const std::wstrin
     return new Session(session);
 }
 
-void Session::Close()
+bool Session::IsNull()
 {
     MI_Session nullSession = MI_SESSION_NULL;
-    if (memcmp(&this->m_session, &nullSession, sizeof(MI_Session)))
-    {
-        MICheckResult(::MI_Session_Close(&this->m_session, NULL, NULL));
-        this->m_session = MI_SESSION_NULL;
-    }
+    return memcmp(&this->m_session, &nullSession, sizeof(MI_Session)) == 0;
+}
+
+void Session::Close()
+{
+    MICheckResult(::MI_Session_Close(&this->m_session, NULL, NULL));
+    this->m_session = MI_SESSION_NULL;
 }
 
 Session::~Session()
 {
     try
     {
-        this->Close();
+        if (!this->IsNull())
+        {
+            this->Close();
+        }
     }
     catch (std::exception&)
     {
@@ -299,20 +332,18 @@ Operation* Session::GetAssociators(const std::wstring& ns, const Instance& insta
     return new Operation(op);
 }
 
-Instance* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams)
+Operation* Session::InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, 0, NULL, instance.GetNamespace().c_str(), NULL, methodName.c_str(), instance.m_instance, inboundParams ? inboundParams->m_instance : NULL, NULL, &op);
-    Operation operation(op);
-    return operation.GetNextInstance();
+    return new Operation(op);
 }
 
-Instance* Session::InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams)
+Operation* Session::InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, 0, NULL, ns.c_str(), className.c_str(), methodName.c_str(), NULL, inboundParams.m_instance, NULL, &op);
-    Operation operation(op);
-    return operation.GetNextInstance();
+    return new Operation(op);
 }
 
 void Session::DeleteInstance(const std::wstring& ns, const Instance& instance)
@@ -347,13 +378,12 @@ Instance* Session::GetInstance(const std::wstring& ns, const Instance& keyInstan
     return operation.GetNextInstance();
 }
 
-Class* Session::GetClass(const std::wstring& ns, const std::wstring& className)
+Operation* Session::GetClass(const std::wstring& ns, const std::wstring& className)
 {
     MI_Class* miClass = NULL;
     MI_Operation op;
     ::MI_Session_GetClass(&this->m_session, 0, NULL, ns.c_str(), className.c_str(), NULL, &op);
-    Operation operation(op);
-    return operation.GetNextClass();
+    return new Operation(op);
 }
 
 MI_Type Instance::GetElementType(const std::wstring& name) const
@@ -468,7 +498,7 @@ Class* Instance::GetClass() const
 {
     MI_Class* miClass = NULL;
     MICheckResult(::MI_Instance_GetClass(this->m_instance, &miClass));
-    return new Class(miClass);
+    return new Class(miClass, true);
 }
 
 std::wstring Instance::GetClassName()
@@ -514,15 +544,22 @@ std::wstring Instance::GetServerName()
 
 void Instance::Delete()
 {
-    ::MI_Instance_Delete(this->m_instance);
+    MICheckResult(::MI_Instance_Delete(this->m_instance));
     this->m_instance = NULL;
 }
 
 Instance::~Instance()
 {
-    if (this->m_instance && this->m_ownsInstance)
+    try
     {
-        Delete();
+        if (this->m_instance && this->m_ownsInstance)
+        {
+            Delete();
+        }
+    }
+    catch (std::exception&)
+    {
+        // Ignore
     }
 }
 
@@ -545,7 +582,7 @@ Class* Operation::GetNextClass()
 
         if (miClass)
         {
-            return new Class((MI_Class*)miClass);
+            return new Class((MI_Class*)miClass, false);
         }
     }
 

@@ -17,6 +17,8 @@ namespace MI
     {
     private:
         MI_Application m_app;
+        bool IsNull();
+
         friend class Session;
 
     public:
@@ -34,17 +36,18 @@ namespace MI
     private:
         MI_Session m_session;
         Session(MI_Session session) : m_session(session) {}
+        bool IsNull();
 
         friend Application;
 
     public:
         Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
-        Instance* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
-        Instance* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
+        Operation* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
+        Operation* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
         void CreateInstance(const std::wstring& ns, const Instance& instance);
         void ModifyInstance(const std::wstring& ns, const Instance& instance);
         void DeleteInstance(const std::wstring& ns, const Instance& instance);
-        Class* GetClass(const std::wstring& ns, const std::wstring& className);
+        Operation* GetClass(const std::wstring& ns, const std::wstring& className);
         Instance* GetInstance(const std::wstring& ns, const Instance& keyInstance);
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
@@ -108,7 +111,8 @@ namespace MI
     {
     private:
         MI_Class* m_class = NULL;
-        Class(MI_Class* miClass) : m_class(miClass) {}
+        bool m_ownsInstance = false;
+        Class(MI_Class* miClass, bool ownsInstance) : m_class(miClass), m_ownsInstance(ownsInstance) {}
         void Delete();
 
         friend Application;
@@ -123,6 +127,7 @@ namespace MI
         unsigned GetMethodCount() const;
         MethodInfo GetMethodInfo(const std::wstring& name) const;
         MethodInfo GetMethodInfo(unsigned index) const;
+        Class* Clone() const;
         virtual ~Class();
     };
 
@@ -167,6 +172,7 @@ namespace MI
     private:
         MI_Operation m_operation;
         Operation(MI_Operation& operation) : m_operation(operation) {}
+        bool IsNull();
         MI_Boolean m_hasMoreResults = TRUE;
 
         friend Session;

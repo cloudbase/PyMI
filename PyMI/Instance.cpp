@@ -135,9 +135,7 @@ static PyObject* Instance_Clone(Instance *self, PyObject*)
     try
     {
         MI::Instance* instance = self->instance->Clone();
-        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-        pyInstance->instance = instance;
-        return (PyObject*)instance;
+        return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
     {

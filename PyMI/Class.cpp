@@ -88,12 +88,27 @@ Class* Class_New(MI::Class* miClass)
     return obj;
 }
 
+static PyObject* Class_Clone(Class* self, PyObject*)
+{
+    try
+    {
+        MI::Class* miClass = self->miClass->Clone();
+        return (PyObject*)Class_New(miClass);
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyMemberDef Class_members[] = {
     { NULL }  /* Sentinel */
 };
 
 static PyMethodDef Class_methods[] = {
     { "__getitem__", (PyCFunction)Class_subscript, METH_O | METH_COEXIST, "" },
+    { "clone", (PyCFunction)Class_Clone, METH_NOARGS, "Clones this class." },
     { NULL }  /* Sentinel */
 };
 

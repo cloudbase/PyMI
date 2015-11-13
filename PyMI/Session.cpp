@@ -2,7 +2,6 @@
 #include "Session.h"
 #include "Application.h"
 #include "Operation.h"
-#include "Class.h"
 #include "Instance.h"
 #include "Utils.h"
 #include "PyMI.h"
@@ -193,8 +192,8 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
 
     try
     {
-        MI::Class* c = self->session->GetClass(ns, className);
-        return (PyObject*)Class_New(c);
+        MI::Operation* op = self->session->GetClass(ns, className);
+        return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
     {
@@ -221,10 +220,10 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
 
     try
     {
-        MI::Instance* result = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
-        if (result)
+        MI::Operation* op = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+        if (op)
         {
-            return (PyObject*)Instance_New(result);
+            return (PyObject*)Operation_New(op);
         }
         Py_RETURN_NONE;
     }

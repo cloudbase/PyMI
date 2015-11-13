@@ -2,7 +2,8 @@
 
 with mi.Application() as a:
     with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
-        c = s.get_class(u"root\\cimv2", u"win32_process")
+        with s.get_class(u"root\\cimv2", u"win32_process") as q2:
+            c = q2.get_next_class()
 
         proc_name = u'notepad.exe'
         with s.exec_query(u"root\\cimv2", u"select * from win32_process where name = '%s'" % proc_name) as q:
@@ -13,10 +14,11 @@ with mi.Application() as a:
                 print(i.get_class_name())
 
                 if i[u'name'].lower() == proc_name.lower():
-                    owner = s.invoke_method(i, u"GetOwner")
-                    print(owner.get_class_name())
-                    for j in xrange(0, len(owner)):
-                        print(owner[j])
+                    with s.invoke_method(i, u"GetOwner") as q1:
+                        owner = q1.get_next_instance()
+                        print(owner.get_class_name())
+                        for j in xrange(0, len(owner)):
+                            print(owner[j])
 
                     params = a.create_instance(u"__parameters")
                     c = i.get_class()
@@ -24,7 +26,8 @@ with mi.Application() as a:
 
                     params['reason'] = 2
                     print(len(params))
-                    s.invoke_method(i, u"Terminate", params)
+                    with s.invoke_method(i, u"Terminate", params) as q3:
+                        q3.get_next_instance()
 
                 print(i.get_class_name())
                 print(len(i))

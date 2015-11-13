@@ -19,14 +19,15 @@
                             p[u'SettingData'] = (vssd,) 
                             p[u'requestedInformation'] = (4, 100, 103, 105)
 
-                            r = s.invoke_method(svc, u"GetSummaryInformation", p)
-                            print("Result: %s" % r[0])
-                            summary_info = r[1][0]
+                            with s.invoke_method(svc, u"GetSummaryInformation", p) as q3:
+                                r = q3.get_next_instance()
+                                print("Result: %s" % r["ReturnValue"])
+                                summary_info = r["SummaryInformation"][0]
 
-                            print("vCPUs: %s" % summary_info["NumberOfProcessors"])
-                            print("EnabledState: %s" % summary_info["EnabledState"])
-                            print("Memory: %s" % summary_info["MemoryUsage"])
-                            print("UpTime: %s" % summary_info["UpTime"])
+                                print("vCPUs: %s" % summary_info["NumberOfProcessors"])
+                                print("EnabledState: %s" % summary_info["EnabledState"])
+                                print("Memory: %s" % summary_info["MemoryUsage"])
+                                print("UpTime: %s" % summary_info["UpTime"])
     except mi.error as ex:
         print("An exception occurred: %s" % ex)
         import traceback
