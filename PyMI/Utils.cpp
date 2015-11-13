@@ -320,12 +320,10 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
         }
         return pyObj;
     case MI_INSTANCE:
-        pyObj = Instance_new(&InstanceType, NULL, NULL);
-        ((Instance*)pyObj)->instance = new MI::Instance(value.instance, false);
+        pyObj = (PyObject*)Instance_New(new MI::Instance(value.instance, false));
         return pyObj;
     case MI_REFERENCE:
-        pyObj = Instance_new(&InstanceType, NULL, NULL);
-        ((Instance*)pyObj)->instance = new MI::Instance(value.reference, false);
+        pyObj = (PyObject*)Instance_New(new MI::Instance(value.reference, false));
         return pyObj;
     case MI_INSTANCEA:
         pyObj = PyTuple_New(value.instancea.size);

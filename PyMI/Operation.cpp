@@ -5,7 +5,7 @@
 #include "PyMI.h"
 
 
-PyObject* Operation_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
+static PyObject* Operation_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
     Operation* self = NULL;
     self = (Operation*)type->tp_alloc(type, 0);
@@ -51,9 +51,7 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
         MI::Instance* instance = self->operation->GetNextInstance();
         if (instance)
         {
-            PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
-            ((Instance*)pyInstance)->instance = instance;
-            return pyInstance;
+            return (PyObject*)Instance_New(instance);
         }
         Py_RETURN_NONE;
     }
@@ -87,6 +85,13 @@ static PyObject* Operation_self(Operation *self, PyObject*)
 static PyObject* Operation_exit(Operation* self, PyObject*)
 {
     return PyObject_CallMethod((PyObject*)self, "close", NULL);
+}
+
+Operation* Operation_New(MI::Operation* operation)
+{
+    Operation* obj = (Operation*)Operation_new(&OperationType, NULL, NULL);
+    obj->operation = operation;
+    return obj;
 }
 
 static PyMemberDef Operation_members[] = {

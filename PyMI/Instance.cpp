@@ -5,7 +5,7 @@
 #include "PyMI.h"
 
 
-PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Instance* self = NULL;
     self = (Instance*)type->tp_alloc(type, 0);
@@ -121,9 +121,7 @@ static PyObject* Instance_GetClass(Instance *self, PyObject*)
     try
     {
         MI::Class* c = self->instance->GetClass();
-        PyObject* pyClass = Class_new(&ClassType, NULL, NULL);
-        ((Class*)pyClass)->miClass = c;
-        return pyClass;
+        return (PyObject*)Class_New(c);
     }
     catch (std::exception& ex)
     {
@@ -174,6 +172,13 @@ static PyObject* Instance_GetClassName(Instance *self, PyObject*)
         SetPyException(ex);
         return NULL;
     }
+}
+
+Instance* Instance_New(MI::Instance* instance)
+{
+    Instance* obj = (Instance*)Instance_new(&InstanceType, NULL, NULL);
+    obj->instance = instance;
+    return obj;
 }
 
 static PyMemberDef Instance_members[] = {

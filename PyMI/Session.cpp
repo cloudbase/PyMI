@@ -7,7 +7,7 @@
 #include "Utils.h"
 #include "PyMI.h"
 
-PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Session* self = NULL;
     self = (Session*)type->tp_alloc(type, 0);
@@ -45,9 +45,7 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
     try
     {
         MI::Operation* op = self->session->ExecQuery(ns, query, dialect);
-        PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
-        ((Operation*)pyOp)->operation = op;
-        return pyOp;
+        return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
     {
@@ -78,9 +76,7 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     try
     {
         MI::Operation* op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
-        PyObject* pyOp = Operation_new(&OperationType, NULL, NULL);
-        ((Operation*)pyOp)->operation = op;
-        return pyOp;
+        return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
     {
@@ -198,9 +194,7 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
     try
     {
         MI::Class* c = self->session->GetClass(ns, className);
-        Class* pyClass = (Class*)Class_new(&ClassType, NULL, NULL);
-        pyClass->miClass = c;
-        return (PyObject*)pyClass;
+        return (PyObject*)Class_New(c);
     }
     catch (std::exception& ex)
     {
@@ -230,9 +224,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         MI::Instance* result = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
         if (result)
         {
-            PyObject* pyInstance = Instance_new(&InstanceType, NULL, NULL);
-            ((Instance*)pyInstance)->instance = result;
-            return pyInstance;
+            return (PyObject*)Instance_New(result);
         }
         Py_RETURN_NONE;
     }
@@ -241,6 +233,13 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         SetPyException(ex);
         return NULL;
     }
+}
+
+Session* Session_New(MI::Session* session)
+{
+    Session* obj = (Session*)Session_new(&SessionType, NULL, NULL);
+    obj->session = session;
+    return obj;
 }
 
 static PyMemberDef Session_members[] = {

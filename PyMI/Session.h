@@ -11,4 +11,4 @@ typedef struct {
 
 extern PyTypeObject SessionType;
 
-PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+Session* Session_New(MI::Session* session);

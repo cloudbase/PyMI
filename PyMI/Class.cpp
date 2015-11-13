@@ -4,7 +4,7 @@
 #include "PyMI.h"
 
 
-PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Class* self = NULL;
     self = (Class*)type->tp_alloc(type, 0);
@@ -79,6 +79,13 @@ static PyObject* Class_getattro(Class *self, PyObject* name)
     }
 
     return Class_subscript(self, name);
+}
+
+Class* Class_New(MI::Class* miClass)
+{
+    Class* obj = (Class*)Class_new(&ClassType, NULL, NULL);
+    obj->miClass = miClass;
+    return obj;
 }
 
 static PyMemberDef Class_members[] = {

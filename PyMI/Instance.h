@@ -11,4 +11,4 @@ typedef struct {
 
 extern PyTypeObject InstanceType;
 
-PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+Instance* Instance_New(MI::Instance* instance);

@@ -9,6 +9,6 @@ typedef struct {
     MI::Class* miClass;
 } Class;
 
-PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
-
 extern PyTypeObject ClassType;
+
+Class* Class_New(MI::Class* miClass);

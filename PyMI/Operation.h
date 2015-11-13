@@ -11,4 +11,4 @@ typedef struct {
 
 extern PyTypeObject OperationType;
 
-PyObject* Operation_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+Operation* Operation_New(MI::Operation* operation);

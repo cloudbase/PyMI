@@ -44,9 +44,7 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
     try
     {
         MI::Session* session = self->app->NewSession(protocol, computerName);
-        Session* pySession = (Session*)Session_new(&SessionType, NULL, NULL);
-        pySession->session = session;
-        return (PyObject*)pySession;
+        return (PyObject*)Session_New(session);
     }
     catch (std::exception& ex)
     {
@@ -81,9 +79,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
     try
     {
         MI::Instance* instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
-        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-        pyInstance->instance = instance;
-        return (PyObject*)pyInstance;
+        return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
     {
@@ -102,9 +98,7 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
     try
     {
         MI::Instance* instance = self->app->NewInstance(className);
-        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-        pyInstance->instance = instance;
-        return (PyObject*)pyInstance;
+        return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
     {
@@ -127,9 +121,7 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
     try
     {
         MI::Instance* instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
-        Instance* pyInstance = (Instance*)Instance_new(&InstanceType, NULL, NULL);
-        pyInstance->instance = instance;
-        return (PyObject*)pyInstance;
+        return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
     {
