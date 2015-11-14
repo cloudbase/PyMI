@@ -86,10 +86,26 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
 
         MI_Value miValue;
         MI_UNREFERENCED_PARAMETER(&miValue);
-        MI_Type miType = self->instance->GetElementType(w);
+        MI_Type miType;
+        if (i >= 0)
+        {
+            miType = self->instance->GetElementType(i);
+        }
+        else
+        {
+            miType = self->instance->GetElementType(w);
+        }
 
         Py2MI(value, miValue, miType);
-        self->instance->SetElement(w, &miValue, miType);
+
+        if (i >= 0)
+        {
+            self->instance->SetElement(i, &miValue, miType);
+        }
+        else
+        {
+            self->instance->SetElement(w, &miValue, miType);
+        }
 
         return 0;
     }
