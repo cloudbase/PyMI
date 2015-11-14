@@ -165,9 +165,20 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             throw TypeConversionException();
         }
     }
-    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)))
+    else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)) ||
+             PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyList_Type)))
     {
-        Py_ssize_t size = PyTuple_Size(pyValue);
+        bool isTuple = PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type));
+        Py_ssize_t size = 0;
+        if (isTuple)
+        {
+            size = PyTuple_Size(pyValue);
+        }
+        else
+        {
+            size = PyList_Size(pyValue);
+        }
+
         switch (valueType)
         {
         case MI_UINT32A:
@@ -189,7 +200,17 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         for (Py_ssize_t i = 0; i < size; i++)
         {
             MI_Value tmpVal;
-            PyObject* pyObj = PyTuple_GetItem(pyValue, i);
+            PyObject* pyObj = NULL;
+
+            if (isTuple)
+            {
+                pyObj = PyTuple_GetItem(pyValue, i);
+            }
+            else
+            {
+                pyObj = PyList_GetItem(pyValue, i);
+            }
+
             switch (valueType)
             {
             case MI_UINT32A:
@@ -286,11 +307,28 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
         }
         return pyObj;
     case MI_SINT32A:
+        return NULL;
     case MI_UINT32A:
+        pyObj = PyTuple_New(value.uint32a.size);
+        for (MI_Uint32 i = 0; i < value.uint32a.size; i++)
+        {
+            MI_Value tmpVal;
+            tmpVal.uint32 = value.uint32a.data[i];
+            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_UINT32, 0)))
+            {
+                Py_DECREF(pyObj);
+                throw MI::Exception(L"PyTuple_SetItem failed");
+            }
+        }
+        return pyObj;
     case MI_SINT64A:
+        return NULL;
     case MI_UINT64A:
+        return NULL;
     case MI_REAL32A:
+        return NULL;
     case MI_REAL64A:
+        return NULL;
     case MI_CHAR16A:
         return NULL;
     case MI_DATETIMEA:
