@@ -17,13 +17,13 @@ namespace MI
     {
     private:
         MI_Application m_app;
-        bool IsNull();
 
         friend class Session;
 
     public:
         Application(const std::wstring& appId = L"");
         void Close();
+        bool IsClosed();
         virtual ~Application();
         Instance* NewInstance(const std::wstring& className);
         Instance* NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
@@ -36,7 +36,6 @@ namespace MI
     private:
         MI_Session m_session;
         Session(MI_Session session) : m_session(session) {}
-        bool IsNull();
 
         friend Application;
 
@@ -53,6 +52,7 @@ namespace MI
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
                                   const std::wstring& resultRole = L"", bool keysOnly = false);
         void Close();
+        bool IsClosed();
         virtual ~Session();
     };
 
@@ -172,7 +172,6 @@ namespace MI
     private:
         MI_Operation m_operation;
         Operation(MI_Operation& operation) : m_operation(operation) {}
-        bool IsNull();
         MI_Boolean m_hasMoreResults = TRUE;
 
         friend Session;
@@ -183,6 +182,7 @@ namespace MI
         operator bool() { return m_hasMoreResults != FALSE; }
         void Cancel();
         void Close();
+        bool IsClosed();
         virtual ~Operation();
     };
 };

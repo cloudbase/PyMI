@@ -26,7 +26,7 @@ Application::Application(const std::wstring& appId)
     MICheckResult(::MI_Application_Initialize(0, appId.length() ? appId.c_str() : NULL, &extError, &this->m_app), extError);
 }
 
-bool Application::IsNull()
+bool Application::IsClosed()
 {
     MI_Application nullApp = MI_APPLICATION_NULL;
     return memcmp(&this->m_app, &nullApp, sizeof(MI_Application)) == 0;
@@ -36,7 +36,7 @@ Application::~Application()
 {
     try
     {
-        if (!this->IsNull())
+        if (!this->IsClosed())
         {
             this->Close();
         }
@@ -228,7 +228,7 @@ Class* Class::Clone() const
     return NULL;
 }
 
-bool Operation::IsNull()
+bool Operation::IsClosed()
 {
     MI_Operation nullOp = MI_OPERATION_NULL;
     return memcmp(&this->m_operation, &nullOp, sizeof(MI_Operation)) == 0;
@@ -244,7 +244,7 @@ Operation::~Operation()
 {
     try
     {
-        if (!this->IsNull())
+        if (!this->IsClosed())
         {
             this->Close();
         }
@@ -284,7 +284,7 @@ Session* Application::NewSession(const std::wstring& protocol, const std::wstrin
     return new Session(session);
 }
 
-bool Session::IsNull()
+bool Session::IsClosed()
 {
     MI_Session nullSession = MI_SESSION_NULL;
     return memcmp(&this->m_session, &nullSession, sizeof(MI_Session)) == 0;
@@ -300,7 +300,7 @@ Session::~Session()
 {
     try
     {
-        if (!this->IsNull())
+        if (!this->IsClosed())
         {
             this->Close();
         }

@@ -103,7 +103,9 @@ static PyObject* Operation_self(Operation *self, PyObject*)
 
 static PyObject* Operation_exit(Operation* self, PyObject*)
 {
-    return PyObject_CallMethod((PyObject*)self, "close", NULL);
+    if(!self->operation->IsClosed())
+        self->operation->Close();
+    Py_RETURN_NONE;
 }
 
 Operation* Operation_New(MI::Operation* operation)

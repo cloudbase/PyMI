@@ -104,9 +104,11 @@ static PyObject* Session_self(Operation *self, PyObject*)
     return (PyObject *)self;
 }
 
-static PyObject* Session_exit(Operation* self, PyObject*)
+static PyObject* Session_exit(Session* self, PyObject*)
 {
-    return PyObject_CallMethod((PyObject*)self, "close", NULL);
+    if (!self->session->IsClosed())
+        self->session->Close();
+    Py_RETURN_NONE;
 }
 
 static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)

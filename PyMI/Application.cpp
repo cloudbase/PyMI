@@ -152,7 +152,9 @@ static PyObject* Application_self(Application *self, PyObject*)
 
 static PyObject* Application_exit(Application* self, PyObject*)
 {
-    return PyObject_CallMethod((PyObject*)self, "close", NULL);
+    if (!self->app->IsClosed())
+        self->app->Close();
+    Py_RETURN_NONE;
 }
 
 static PyMemberDef Application_members[] = {
