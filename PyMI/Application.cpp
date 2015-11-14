@@ -3,6 +3,7 @@
 #include "Session.h"
 #include "Class.h"
 #include "Instance.h"
+#include "Serializer.h"
 #include "Utils.h"
 
 
@@ -130,6 +131,20 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
     }
 }
 
+static PyObject* Application_NewSerializer(Application* self, PyObject*)
+{
+    try
+    {
+        MI::Serializer* serializer = self->app->NewSerializer();
+        return (PyObject*)Serializer_New(serializer);
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyObject* Application_Close(Application *self, PyObject*)
 {
     try
@@ -166,6 +181,7 @@ static PyMethodDef Application_methods[] = {
     { "create_instance", (PyCFunction)Application_NewInstance, METH_VARARGS | METH_KEYWORDS, "Creates a new instance." },
     { "create_instance_from_class", (PyCFunction)Application_NewInstanceFromClass, METH_VARARGS | METH_KEYWORDS, "Creates a new instance from a class." },
     { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_VARARGS | METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },
+    { "create_serializer", (PyCFunction)Application_NewSerializer, METH_NOARGS, "Creates a serializer." },
     { "close", (PyCFunction)Application_Close, METH_NOARGS, "Closes the application." },
     { "__enter__", (PyCFunction)Application_self, METH_NOARGS, "" },
     { "__exit__",  (PyCFunction)Application_exit, METH_VARARGS, "" },

@@ -8,6 +8,7 @@
 #include "Class.h"
 #include "Operation.h"
 #include "Instance.h"
+#include "Serializer.h"
 
 #include <datetime.h>
 
@@ -43,6 +44,10 @@ PyMODINIT_FUNC initmi(void)
     if (PyType_Ready(&OperationType) < 0)
         return;
 
+    SerializerType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&SerializerType) < 0)
+        return;
+
     m = Py_InitModule3("mi", mi_methods, "MI module.");
     if (m == NULL)
         return;
@@ -61,6 +66,9 @@ PyMODINIT_FUNC initmi(void)
 
     Py_INCREF(&OperationType);
     PyModule_AddObject(m, "Operation", (PyObject*)&OperationType);
+
+    Py_INCREF(&SerializerType);
+    PyModule_AddObject(m, "Serializer", (PyObject*)&SerializerType);
 
     PyMIError = PyErr_NewException("PyMI.error", NULL, NULL);
     Py_INCREF(PyMIError);

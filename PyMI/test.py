@@ -38,3 +38,25 @@ with mi.Application() as a:
                     print(i[j])
 
                 i = q.get_next_instance()
+
+
+import wmi
+conn = wmi.WMI(moniker="root\\virtualization\\v2")
+svc = conn.Msvm_VirtualSystemManagementService()[0]
+vm = conn.query("select * from Msvm_ComputerSystem where ElementName = 'nano1'")[0]
+
+vssd = vm.associators(
+        wmi_association_class="Msvm_SettingsDefineState",
+        wmi_result_class="Msvm_VirtualSystemSettingData")[0]
+
+(ret_val, summary_info) = svc.GetSummaryInformation(
+        [4, 100, 103, 105],
+        [vssd.path_()])
+
+print("Result: %s" % ret_val)
+summary_info = summary_info[0]
+
+print("vCPUs: %s" % summary_info.NumberOfProcessors)
+print("EnabledState: %s" % summary_info.EnabledState)
+print("Memory: %s" % summary_info.MemoryUsage)
+print("UpTime: %s" % summary_info.UpTime)

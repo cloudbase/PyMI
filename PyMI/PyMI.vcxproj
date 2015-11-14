@@ -161,6 +161,7 @@
     <ClInclude Include="Instance.h" />
     <ClInclude Include="Operation.h" />
     <ClInclude Include="PyMI.h" />
+    <ClInclude Include="Serializer.h" />
     <ClInclude Include="Session.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -172,6 +173,7 @@
     <ClCompile Include="Instance.cpp" />
     <ClCompile Include="Operation.cpp" />
     <ClCompile Include="PyMI.cpp" />
+    <ClCompile Include="Serializer.cpp" />
     <ClCompile Include="Session.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -185,6 +187,7 @@
     <None Include="benchmark.py" />
     <None Include="benchmark2.py" />
     <None Include="test.py" />
+    <None Include="test_vmutilsv2.py" />
     <None Include="wmi.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

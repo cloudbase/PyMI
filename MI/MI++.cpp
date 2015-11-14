@@ -79,7 +79,9 @@ Instance* Application::NewMethodParamsInstance(const Class& miClass, const std::
             auto& param = it.second;
             for (auto const &it2 : param.m_qualifiers)
             {
-                if (it2.second.m_name == L"In")
+                std::wstring name = it2.second.m_name;
+                std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+                if (name == L"in")
                 {
                     instance->AddElement(param.m_name, NULL, param.m_type);
                 }
@@ -93,6 +95,13 @@ Instance* Application::NewMethodParamsInstance(const Class& miClass, const std::
     }
 
     return instance;
+}
+
+Serializer* Application::NewSerializer()
+{
+    MI_Serializer serializer;
+    MICheckResult(::MI_Application_NewSerializer(&this->m_app, 0, L"MI_XML", &serializer));
+    return new Serializer(serializer);
 }
 
 unsigned Class::GetMethodCount() const
@@ -608,4 +617,72 @@ Instance* Operation::GetNextInstance()
     }
 
     return NULL;
+}
+
+
+std::wstring Serializer::SerializeInstance(const Instance& instance, bool includeClass)
+{
+    MI_Uint32 flags = includeClass ? MI_SERIALIZER_FLAGS_INSTANCE_WITH_CLASS : 0;
+    MI_Uint32 bufferSizeNeeded = 0;
+    ::MI_Serializer_SerializeInstance(&m_serializer, flags, instance.m_instance, NULL, 0, &bufferSizeNeeded);
+
+    MI_Uint8* buffer = new MI_Uint8[bufferSizeNeeded];
+    try
+    {
+        MICheckResult(::MI_Serializer_SerializeInstance(&m_serializer, flags, instance.m_instance, buffer, bufferSizeNeeded, &bufferSizeNeeded));
+        return std::wstring((wchar_t*)buffer, bufferSizeNeeded / sizeof(wchar_t));
+    }
+    catch (std::exception&)
+    {
+        delete[] buffer;
+        throw;
+    }
+}
+
+std::wstring Serializer::SerializeClass(const Class& miClass, bool deep)
+{
+    MI_Uint32 flags = deep ? MI_SERIALIZER_FLAGS_CLASS_DEEP : 0;
+    MI_Uint32 bufferSizeNeeded = 0;
+    ::MI_Serializer_SerializeClass(&m_serializer, flags, miClass.m_class, NULL, 0, &bufferSizeNeeded);
+
+    MI_Uint8* buffer = new MI_Uint8[bufferSizeNeeded];
+    try
+    {
+        MICheckResult(::MI_Serializer_SerializeClass(&m_serializer, flags, miClass.m_class, buffer, bufferSizeNeeded, &bufferSizeNeeded));
+        return std::wstring((wchar_t*)buffer, bufferSizeNeeded / sizeof(wchar_t));
+    }
+    catch (std::exception&)
+    {
+        delete[] buffer;
+        throw;
+    }
+
+}
+
+bool Serializer::IsClosed()
+{
+    MI_Serializer nullSerializer;
+    ZeroMemory(&nullSerializer, sizeof(MI_Serializer));
+    return memcmp(&this->m_serializer, &nullSerializer, sizeof(MI_Serializer)) == 0;
+}
+
+void Serializer::Close()
+{
+    MICheckResult(::MI_Serializer_Close(&m_serializer));
+    ZeroMemory(&this->m_serializer, sizeof(MI_Serializer));
+}
+
+Serializer::~Serializer()
+{
+    try
+    {
+        if (!this->IsClosed())
+        {
+            this->Close();
+        }
+    }
+    catch (std::exception&)
+    {
+        // Ignore
+    }
 }

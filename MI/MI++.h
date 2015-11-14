@@ -12,6 +12,7 @@ namespace MI
     class Instance;
     class Operation;
     class Class;
+    class Serializer;
 
     class Application
     {
@@ -29,6 +30,7 @@ namespace MI
         Instance* NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
         Instance* NewInstanceFromClass(const std::wstring& className, const Class& miClass);
         Session* NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
+        Serializer* NewSerializer();
     };
 
     class Session
@@ -118,6 +120,7 @@ namespace MI
         friend Application;
         friend Instance;
         friend Operation;
+        friend Serializer;
 
     public:
         unsigned GetElementsCount() const;
@@ -144,6 +147,7 @@ namespace MI
         friend Application;
         friend Operation;
         friend Session;
+        friend Serializer;
 
     public:
         Instance(MI_Instance* instance, bool ownsInstance) : m_instance(instance), m_ownsInstance(ownsInstance) {}
@@ -184,5 +188,21 @@ namespace MI
         void Close();
         bool IsClosed();
         virtual ~Operation();
+    };
+
+    class Serializer
+    {
+    private:
+        MI_Serializer m_serializer;
+        Serializer(MI_Serializer& serializer) : m_serializer(serializer) {}
+
+        friend Application;
+
+    public:
+        std::wstring SerializeInstance(const Instance& instance, bool includeClass=false);
+        std::wstring SerializeClass(const Class& miClass, bool deep=false);
+        void Close();
+        bool IsClosed();
+        virtual ~Serializer();
     };
 };

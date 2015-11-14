@@ -58,8 +58,8 @@ def test_wmi():
 
 if __name__ == '__main__':
     import timeit
-    t1 = timeit.timeit("test_mi()", setup="from __main__ import test_mi", number=100)
     t2 = timeit.timeit("test_wmi()", setup="from __main__ import test_wmi", number=100)
+    t1 = timeit.timeit("test_mi()", setup="from __main__ import test_mi", number=100)
 
     print "MI: %s" % t1
     print "WMI %s" % t2

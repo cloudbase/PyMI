@@ -45,6 +45,9 @@
     <ClInclude Include="PyMI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Serializer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -71,11 +74,15 @@
     <ClCompile Include="Session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Serializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="test.py" />
     <None Include="benchmark.py" />
     <None Include="benchmark2.py" />
     <None Include="wmi.py" />
+    <None Include="test_vmutilsv2.py" />
   </ItemGroup>
 </Project>
