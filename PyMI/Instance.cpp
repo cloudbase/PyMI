@@ -100,11 +100,11 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
 
         if (i >= 0)
         {
-            self->instance->SetElement(i, &miValue, miType);
+            self->instance->SetElement(i, value == Py_None? NULL : &miValue, miType);
         }
         else
         {
-            self->instance->SetElement(w, &miValue, miType);
+            self->instance->SetElement(w, value == Py_None ? NULL : &miValue, miType);
         }
 
         return 0;

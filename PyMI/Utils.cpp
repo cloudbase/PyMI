@@ -37,6 +37,10 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
 {
     ZeroMemory(&value, sizeof(value));
 
+    if (pyValue == Py_None)
+    {
+        return;
+    }
     if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyBool_Type)))
     {
         value.boolean = PyObject_IsTrue(pyValue) ? MI_TRUE : MI_FALSE;
@@ -178,6 +182,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         {
             size = PyList_Size(pyValue);
         }
+
+        if (size == 0)
+            return;
 
         switch (valueType)
         {
