@@ -79,7 +79,7 @@ static PyObject* Serializer_SerializeClass(Serializer* self, PyObject* args, PyO
 {
     PyObject* miClass = NULL;
     PyObject* deepObj = NULL;
-    static char *kwlist[] = { "miClass", "deep", NULL };
+    static char *kwlist[] = { "mi_class", "deep", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &miClass, &deepObj))
         return NULL;
 

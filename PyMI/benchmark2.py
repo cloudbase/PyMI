@@ -13,7 +13,7 @@
                     with s.exec_query(u"root/virtualization/v2", u"select * from Msvm_ComputerSystem where ElementName = 'nano1'") as q1:
                         vm = q1.get_next_instance()
 
-                        with s.get_associators(u"root/virtualization/v2", vm, assocClass=u"Msvm_SettingsDefineState", resultClass=u"Msvm_VirtualSystemSettingData") as q2:
+                        with s.get_associators(u"root/virtualization/v2", vm, assoc_class=u"Msvm_SettingsDefineState", result_class=u"Msvm_VirtualSystemSettingData") as q2:
                             vssd = q2.get_next_instance()
 
                             p[u'SettingData'] = (vssd,) 

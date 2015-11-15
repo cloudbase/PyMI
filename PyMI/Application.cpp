@@ -17,7 +17,7 @@ static PyObject* Application_new(PyTypeObject *type, PyObject *args, PyObject *k
 static int Application_init(Application *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* appId = L"";
-    static char *kwlist[] = { "appId", NULL };
+    static char *kwlist[] = { "app_id", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|u", kwlist, &appId))
         return -1;
 
@@ -38,7 +38,7 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
     wchar_t* protocol = L"";
     wchar_t* computerName = L".";
 
-    static char *kwlist[] = { "protocol", "computerName", NULL };
+    static char *kwlist[] = { "protocol", "computer_name", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|uu", kwlist, &protocol, &computerName))
         return NULL;
 
@@ -70,7 +70,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
     PyObject* pyClass = NULL;
     wchar_t* methodName = NULL;
 
-    static char *kwlist[] = { "miclass", "methodName", NULL };
+    static char *kwlist[] = { "mi_class", "method_name", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou", kwlist, &pyClass, &methodName))
         return NULL;
 
@@ -92,7 +92,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
 static PyObject* Application_NewInstance(Application *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* className = NULL;
-    static char *kwlist[] = { "className", NULL };
+    static char *kwlist[] = { "class_name", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &className))
         return NULL;
 
@@ -112,7 +112,7 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
 {
     wchar_t* className = NULL;
     PyObject* miClass = NULL;
-    static char *kwlist[] = { "className", "miClass", NULL };
+    static char *kwlist[] = { "class_name", "mi_class", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &className, &miClass))
         return NULL;
 

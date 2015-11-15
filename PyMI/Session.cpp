@@ -63,7 +63,7 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     wchar_t* resultRole = L"";
     PyObject* keysOnlyObj = NULL;
 
-    static char *kwlist[] = { "ns", "instance", "assocClass", "resultClass", "role", "resultRole", "keysOnly", NULL };
+    static char *kwlist[] = { "ns", "instance", "assoc_class", "result_class", "role", "result_role", "keys_only", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|uuuuO", kwlist, &ns, &instance, &assocClass, &resultClass, &role, &resultRole, &keysOnlyObj))
         return NULL;
 
@@ -234,7 +234,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
     wchar_t* methodName = NULL;
     PyObject* inboundParams = NULL;
 
-    static char *kwlist[] = { "instance", "methodName", "inboundParams", NULL };
+    static char *kwlist[] = { "instance", "method_name", "inbound_params", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|O", kwlist, &instance, &methodName, &inboundParams))
         return NULL;
 
