@@ -187,7 +187,9 @@ std::vector<std::wstring> Class::GetKey()
         ClassElement element = (*this)[i];
         for (auto const &it : element.m_qualifiers)
         {
-            if (it.second.m_name == L"key")
+            std::wstring name = it.second.m_name;
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+            if (name == L"key")
             {
                 key.push_back(element.m_name);
             }
@@ -379,12 +381,11 @@ void Session::CreateInstance(const std::wstring& ns, const Instance& instance)
     operation.GetNextInstance();
 }
 
-Instance* Session::GetInstance(const std::wstring& ns, const Instance& keyInstance)
+Operation* Session::GetInstance(const std::wstring& ns, const Instance& keyInstance)
 {
     MI_Operation op;
     ::MI_Session_GetInstance(&this->m_session, 0, NULL, ns.c_str(), keyInstance.m_instance, NULL, &op);
-    Operation operation(op);
-    return operation.GetNextInstance();
+    return new Operation(op);
 }
 
 Operation* Session::GetClass(const std::wstring& ns, const std::wstring& className)

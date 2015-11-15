@@ -204,6 +204,30 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
     }
 }
 
+static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    PyObject* keyInstance = NULL;
+
+    static char *kwlist[] = { "ns", "key_instance", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &keyInstance))
+        return NULL;
+
+    if (!PyObject_IsInstance(keyInstance, reinterpret_cast<PyObject*>(&InstanceType)))
+        return NULL;
+
+    try
+    {
+        MI::Operation* op = self->session->GetInstance(ns, *((Instance*)keyInstance)->instance);
+        return (PyObject*)Operation_New(op);
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
 {
     PyObject* instance = NULL;
@@ -255,6 +279,7 @@ static PyMethodDef Session_methods[] = {
     { "create_instance", (PyCFunction)Session_CreateInstance, METH_VARARGS | METH_KEYWORDS, "Creates an instance." },
     { "modify_instance", (PyCFunction)Session_ModifyInstance, METH_VARARGS | METH_KEYWORDS, "Modifies an instance." },
     { "delete_instance", (PyCFunction)Session_DeleteInstance, METH_VARARGS | METH_KEYWORDS, "Deletes an instance." },
+    { "get_instance", (PyCFunction)Session_GetInstance, METH_VARARGS | METH_KEYWORDS, "Retrieves an instance." },
     { "close", (PyCFunction)Session_Close, METH_NOARGS, "Closes the session." },
     { "__enter__", (PyCFunction)Session_self, METH_NOARGS, "" },
     { "__exit__",  (PyCFunction)Session_exit, METH_VARARGS, "" },

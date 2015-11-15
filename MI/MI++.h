@@ -49,7 +49,7 @@ namespace MI
         void ModifyInstance(const std::wstring& ns, const Instance& instance);
         void DeleteInstance(const std::wstring& ns, const Instance& instance);
         Operation* GetClass(const std::wstring& ns, const std::wstring& className);
-        Instance* GetInstance(const std::wstring& ns, const Instance& keyInstance);
+        Operation* GetInstance(const std::wstring& ns, const Instance& keyInstance);
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
                                   const std::wstring& resultRole = L"", bool keysOnly = false);
