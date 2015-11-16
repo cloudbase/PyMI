@@ -184,10 +184,6 @@
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="benchmark.py" />
-    <None Include="benchmark2.py" />
-    <None Include="test.py" />
-    <None Include="test_vmutilsv2.py" />
     <None Include="wmi.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

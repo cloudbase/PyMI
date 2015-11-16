@@ -79,10 +79,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="test.py" />
-    <None Include="benchmark.py" />
-    <None Include="benchmark2.py" />
     <None Include="wmi.py" />
-    <None Include="test_vmutilsv2.py" />
   </ItemGroup>
 </Project>
