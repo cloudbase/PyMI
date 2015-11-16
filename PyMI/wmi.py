@@ -14,6 +14,7 @@
 #    under the License.
 
 import re
+import six
 
 import mi
 
@@ -36,12 +37,12 @@ class _Instance(object):
 
     def __getattr__(self, name):
         try:
-            return self._instance[unicode(name)]
+            return self._instance[six.text_type(name)]
         except mi.error:
             return _Method(self._conn, self, name)
 
     def __setattr__(self, name, value):
-        self._instance[unicode(name)] = value
+        self._instance[six.text_type(name)] = value
 
     def associators(self, wmi_association_class=None, wmi_result_class=None):
         return self._conn.get_associators(
@@ -57,7 +58,7 @@ class _Instance(object):
 class _Class(object):
     def __init__(self, conn, className, cls):
         self._conn = conn
-        self.class_name = unicode(className)
+        self.class_name = six.text_type(className)
         self._cls = cls
 
     def __call__(self, *argc, **argv):
@@ -97,10 +98,10 @@ class _Class(object):
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2",
                  protocol=mi.PROTOCOL_WMIDCOM):
-        self._ns = unicode(ns)
+        self._ns = six.text_type(ns)
         self._app = mi.Application()
         self._session = self._app.create_session(
-            computer_name=unicode(computer_name), protocol=unicode(protocol))
+            computer_name=six.text_type(computer_name), protocol=six.text_type(protocol))
 
     def __del__(self):
         self._session = None
@@ -108,7 +109,7 @@ class _Connection(object):
 
     def __getattr__(self, name):
         with self._session.get_class(
-                ns=self._ns, className=unicode(name)) as q:
+                ns=self._ns, className=six.text_type(name)) as q:
             cls = q.get_next_class().clone()
             return _Class(self, name, cls)
 
@@ -121,7 +122,7 @@ class _Connection(object):
         return l
 
     def query(self, wql):
-        with self._session.exec_query(ns=self._ns, query=unicode(wql)) as q:
+        with self._session.exec_query(ns=self._ns, query=six.text_type(wql)) as q:
             return self._get_instances(q)
 
     def get_associators(self, instance, wmi_association_class=None,
@@ -133,8 +134,8 @@ class _Connection(object):
 
         with self._session.get_associators(
                 ns=self._ns, instance=instance._instance,
-                assoc_class=unicode(wmi_association_class),
-                result_class=unicode(wmi_result_class)) as q:
+                assoc_class=six.text_type(wmi_association_class),
+                result_class=six.text_type(wmi_result_class)) as q:
             return self._get_instances(q)
 
     def _wrap_element(self, name, el_type, value):
@@ -162,7 +163,7 @@ class _Connection(object):
 
     def invoke_method(self, instance, method_name, *args, **kwargs):
         cls = instance._instance.get_class()
-        params = self._app.create_method_params(cls, unicode(method_name))
+        params = self._app.create_method_params(cls, six.text_type(method_name))
 
         for i, v in enumerate(args):
             params[i] = v
@@ -170,7 +171,7 @@ class _Connection(object):
             params[k] = v
 
         with self._session.invoke_method(
-                instance._instance, unicode(method_name), params) as op:
+                instance._instance, six.text_type(method_name), params) as op:
             l = []
             r = op.get_next_instance()
             for i in xrange(0, len(r)):
@@ -196,7 +197,7 @@ class _Connection(object):
         c = self.get_class(class_name)
         key_instance = self.new_instance_from_class(c)
         for k, v in key.items():
-            key_instance._instance[unicode(k)] = v
+            key_instance._instance[six.text_type(k)] = v
         try:
             with self._session.get_instance(
                     self._ns, key_instance._instance) as op:
