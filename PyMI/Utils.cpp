@@ -125,10 +125,11 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             {
                 throw OutOfMemoryException();
             }
-            if (::MultiByteToWideChar(CP_ACP, 0, s, len, value.string, len) != len)
+            if (::MultiByteToWideChar(CP_ACP, 0, s, len + 1, value.string, len + 1) != len + 1)
             {
                 throw MI::Exception(L"MultiByteToWideChar failed");
             }
+            break;
         default:
             throw TypeConversionException();
         }
@@ -149,7 +150,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
                 throw OutOfMemoryException();
             }
 
-            if (PyUnicode_AsWideChar((PyUnicodeObject*)pyValue, value.string, len) < 0)
+            if (PyUnicode_AsWideChar((PyUnicodeObject*)pyValue, value.string, len + 1) < 0)
             {
                 throw MI::Exception(L"PyUnicode_AsWideChar failed");
             }
