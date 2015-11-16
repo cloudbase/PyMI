@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <PythonDir_27_x86>c:\Python27</PythonDir_27_x86>
+    <PythonDir_27_x64>c:\Python27_x64</PythonDir_27_x64>
+    <PythonDir_35_x86>c:\Python35</PythonDir_35_x86>
+    <PythonDir_35_x64>c:\Python35_x64</PythonDir_35_x64>
+    <PythonDir_34_x86>c:\Python34</PythonDir_34_x86>
+    <PythonDir_34_x64>c:\Python34_x64</PythonDir_34_x64>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="PythonDir_27_x86">
+      <Value>$(PythonDir_27_x86)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_27_x64">
+      <Value>$(PythonDir_27_x64)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_35_x86">
+      <Value>$(PythonDir_35_x86)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_35_x64">
+      <Value>$(PythonDir_35_x64)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_34_x86">
+      <Value>$(PythonDir_34_x86)</Value>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_34_x64">
+      <Value>$(PythonDir_34_x64)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
