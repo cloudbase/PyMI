@@ -41,6 +41,9 @@ with mi.Application() as a:
 
 
 import wmi
+# Simple way to check we're loading the right module
+wmi._Connection
+
 conn = wmi.WMI(moniker="root\\virtualization\\v2")
 svc = conn.Msvm_VirtualSystemManagementService()[0]
 vm = conn.query("select * from Msvm_ComputerSystem where ElementName = 'nano1'")[0]
