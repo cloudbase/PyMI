@@ -137,18 +137,28 @@ class _Connection(object):
                 result_class=unicode(wmi_result_class)) as q:
             return self._get_instances(q)
 
-    def _wrap_instances(self, l):
-        for i, o in enumerate(l):
-            if isinstance(o, mi.Instance):
-                l[i] = o.get_path()
-                # TODO: distinguish instances and references
-                # l[i] = _Instance(self, o)
-            if isinstance(o, list):
-                self._wrap_instances(o)
-            if isinstance(o, tuple):
-                tmp = list(o)
-                self._wrap_instances(tmp)
-                l[i] = tuple(tmp)
+    def _wrap_element(self, name, el_type, value):
+        if isinstance(value, mi.Instance):
+            # MI_INSTANCE
+            if el_type == 15:
+                return _Instance(self, value)
+            # MI_REFERENCE
+            elif el_type == 14:
+                return value.get_path()
+            else:
+                raise Exception(
+                    "Unsupported instance element type: %s" % el_type)
+        if isinstance(value, (tuple, list)):
+            # MI_REFERENCEA
+            if el_type == 30:
+                return tuple([i.get_path() for i in value])
+            # MI_INSTANCEA
+            if el_type == 31:
+                return tuple([_Instance(self, i) for i in value])
+            else:
+                return tuple(value)
+        else:
+            return value
 
     def invoke_method(self, instance, method_name, *args, **kwargs):
         cls = instance._instance.get_class()
@@ -164,8 +174,7 @@ class _Connection(object):
             l = []
             r = op.get_next_instance()
             for i in xrange(0, len(r)):
-                l.append(r[i])
-            self._wrap_instances(l)
+                l.append(self._wrap_element(*r.get_element(i)))
             return tuple(l)
 
     def new_instance_from_class(self, cls):
