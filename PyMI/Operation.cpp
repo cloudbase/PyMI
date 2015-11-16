@@ -28,7 +28,7 @@ static void Operation_dealloc(Operation* self)
         self->operation = NULL;
     }
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* Operation_Cancel(Operation* self, PyObject*)
@@ -130,8 +130,7 @@ static PyMethodDef Operation_methods[] = {
 };
 
 PyTypeObject OperationType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "mi.operation",             /*tp_name*/
     sizeof(Operation),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/

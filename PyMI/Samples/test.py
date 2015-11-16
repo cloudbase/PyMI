@@ -1,4 +1,5 @@
 ﻿import mi
+import six
 
 with mi.Application() as a:
     with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
@@ -17,7 +18,7 @@ with mi.Application() as a:
                     with s.invoke_method(i, u"GetOwner") as q1:
                         owner = q1.get_next_instance()
                         print(owner.get_class_name())
-                        for j in xrange(0, len(owner)):
+                        for j in six.moves.range(0, len(owner)):
                             print(owner[j])
 
                     params = a.create_instance(u"__parameters")
@@ -34,7 +35,7 @@ with mi.Application() as a:
                 print(i.name)
                 print(i[u'name'])
                 print(i['name'])
-                for j in xrange(0, len(i)):
+                for j in six.moves.range(0, len(i)):
                     print(i[j])
 
                 i = q.get_next_instance()

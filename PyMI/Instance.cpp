@@ -27,7 +27,7 @@ static void Instance_dealloc(Instance* self)
         self->instance = NULL;
     }
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -42,7 +42,7 @@ MI::ValueElement GetElement(Instance *self, PyObject *item)
     MI::ValueElement element;
     if (i >= 0)
     {
-        return (*self->instance)[i];
+        return (*self->instance)[(unsigned)i];
     }
     else
     {
@@ -71,7 +71,11 @@ static PyObject* Instance_GetElement(Instance *self, PyObject *item)
         MI::ValueElement element = GetElement(self, item);
         PyObject* tuple = PyTuple_New(3);
         PyTuple_SetItem(tuple, 0, PyUnicode_FromWideChar(element.m_name.c_str(), element.m_name.length()));
+#ifdef IS_PY3K
+        PyTuple_SetItem(tuple, 1, PyLong_FromLong(element.m_type));
+#else
         PyTuple_SetItem(tuple, 1, PyInt_FromLong(element.m_type));
+#endif
         PyTuple_SetItem(tuple, 2, MI2Py(element.m_value, element.m_type, element.m_flags));
         return tuple;
     }
@@ -113,7 +117,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
         MI_Type miType;
         if (i >= 0)
         {
-            miType = self->instance->GetElementType(i);
+            miType = self->instance->GetElementType((unsigned)i);
         }
         else
         {
@@ -124,7 +128,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
 
         if (i >= 0)
         {
-            self->instance->SetElement(i, value == Py_None? NULL : &miValue, miType);
+            self->instance->SetElement((unsigned)i, value == Py_None? NULL : &miValue, miType);
         }
         else
         {
@@ -240,8 +244,7 @@ static PyMappingMethods Instance_as_mapping = {
 };
 
 PyTypeObject InstanceType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "mi.Instance",             /*tp_name*/
     sizeof(Instance),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/

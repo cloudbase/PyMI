@@ -18,7 +18,17 @@ static PyMethodDef mi_methods[] = {
     { NULL, NULL, 0, NULL }  /* Sentinel */
 };
 
-PyMODINIT_FUNC initmi(void)
+#ifdef IS_PY3K
+static PyModuleDef mimodule = {
+    PyModuleDef_HEAD_INIT,
+    "mi",
+    "Management Infrastructure API module.",
+    -1,
+    mi_methods
+};
+#endif
+
+PyObject* initmi(void)
 {
     PyDateTime_IMPORT;
 
@@ -26,31 +36,37 @@ PyMODINIT_FUNC initmi(void)
 
     ApplicationType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&ApplicationType) < 0)
-        return;
+        return NULL;
 
     SessionType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&SessionType) < 0)
-        return;
+        return NULL;
 
     ClassType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&ClassType) < 0)
-        return;
+        return NULL;
 
     InstanceType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&InstanceType) < 0)
-        return;
+        return NULL;
 
     OperationType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&OperationType) < 0)
-        return;
+        return NULL;
 
     SerializerType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&SerializerType) < 0)
-        return;
+        return NULL;
 
+#ifdef IS_PY3K
+    m = PyModule_Create(&mimodule);
+    if (m == NULL)
+        return NULL;
+#else
     m = Py_InitModule3("mi", mi_methods, "MI module.");
     if (m == NULL)
-        return;
+        return NULL;
+#endif
 
     Py_INCREF(&ApplicationType);
     PyModule_AddObject(m, "Application", (PyObject*)&ApplicationType);
@@ -76,4 +92,14 @@ PyMODINIT_FUNC initmi(void)
 
     PyObject_SetAttrString(m, "PROTOCOL_WINRM", PyUnicode_FromString("WINRM"));
     PyObject_SetAttrString(m, "PROTOCOL_WMIDCOM", PyUnicode_FromString("WMIDCOM"));
+
+    return m;
+}
+
+PyMODINIT_FUNC PyInit_mi(void)
+{
+    PyObject* m = initmi();
+#ifdef IS_PY3K
+    return m;
+#endif
 }

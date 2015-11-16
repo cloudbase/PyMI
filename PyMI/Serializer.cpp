@@ -21,7 +21,7 @@ static void Serializer_dealloc(Serializer* self)
         self->serializer = NULL;
     }
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static int Serializer_init(Serializer* self, PyObject* args, PyObject* kwds)
@@ -113,8 +113,7 @@ static PyMethodDef Serializer_methods[] = {
 };
 
 PyTypeObject SerializerType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "mi.Serializer",             /*tp_name*/
     sizeof(Serializer),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/

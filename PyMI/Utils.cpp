@@ -11,14 +11,17 @@ bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
     w[0] = NULL;
     i = -1;
 
+#ifndef IS_PY3K
     if (PyString_Check(item))
     {
         char* s = PyString_AsString(item);
         ::MultiByteToWideChar(CP_ACP, 0, s, -1, w, 1024);
     }
-    else if (PyUnicode_Check(item))
+    else
+#endif
+    if (PyUnicode_Check(item))
     {
-        if (PyUnicode_AsWideChar((PyUnicodeObject*)item, w, 1024) < 0)
+        if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)item, w, 1024) < 0)
             return false;
     }
     else if (PyIndex_Check(item))
@@ -77,6 +80,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             throw TypeConversionException();
         }
     }
+#ifndef IS_PY3K
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyInt_Type)))
     {
         switch (valueType)
@@ -134,6 +138,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             throw TypeConversionException();
         }
     }
+#endif
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyUnicode_Type)))
     {
         Py_ssize_t len = 0;
@@ -150,7 +155,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
                 throw OutOfMemoryException();
             }
 
-            if (PyUnicode_AsWideChar((PyUnicodeObject*)pyValue, value.string, len + 1) < 0)
+            if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)pyValue, value.string, len + 1) < 0)
             {
                 throw MI::Exception(L"PyUnicode_AsWideChar failed");
             }
@@ -190,15 +195,15 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         switch (valueType)
         {
         case MI_UINT32A:
-            value.uint32a.size = size;
+            value.uint32a.size = (unsigned)size;
             value.uint32a.data = (MI_Uint32*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint32) * size);
             break;
         case MI_STRINGA:
-            value.stringa.size = size;
+            value.stringa.size = (unsigned)size;
             value.stringa.data = (MI_Char**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Char*) * size);
             break;
         case MI_REFERENCEA:
-            value.referencea.size = size;
+            value.referencea.size = (unsigned)size;
             value.referencea.data = (MI_Instance**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Instance*) * size);
             break;
         default:

@@ -28,7 +28,7 @@ static void Session_dealloc(Session* self)
         self->session = NULL;
     }
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds)
@@ -287,8 +287,7 @@ static PyMethodDef Session_methods[] = {
 };
 
 PyTypeObject SessionType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "mi.Session",             /*tp_name*/
     sizeof(Session),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/

@@ -25,5 +25,11 @@
 #undef _DEBUG_TMP
 #endif
 
+#if PY_MAJOR_VERSION >= 3
+#define IS_PY3K
+#define PYUNICODEASVARCHARARG1TYPE PyObject
+#else
+#define PYUNICODEASVARCHARARG1TYPE PyUnicodeObject
+#endif
 
 // TODO: reference additional headers your program requires here

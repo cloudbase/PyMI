@@ -26,7 +26,7 @@ static void Class_dealloc(Class* self)
         self->miClass = NULL;
     }
 
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* Class_subscript(Class *self, PyObject *item)
@@ -42,7 +42,7 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
         MI::ClassElement element;
         if (i >= 0)
         {
-            element = (*self->miClass)[i];
+            element = (*self->miClass)[(unsigned)i];
         }
         else
         {
@@ -119,8 +119,7 @@ static PyMappingMethods Class_as_mapping = {
 };
 
 PyTypeObject ClassType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                         /*ob_size*/
+    PyVarObject_HEAD_INIT(NULL, 0)
     "mi.Class",             /*tp_name*/
     sizeof(Class),             /*tp_basicsize*/
     0,                         /*tp_itemsize*/

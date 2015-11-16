@@ -174,7 +174,7 @@ class _Connection(object):
                 instance._instance, six.text_type(method_name), params) as op:
             l = []
             r = op.get_next_instance()
-            for i in xrange(0, len(r)):
+            for i in six.moves.range(0, len(r)):
                 l.append(self._wrap_element(*r.get_element(i)))
             return tuple(l)
 
