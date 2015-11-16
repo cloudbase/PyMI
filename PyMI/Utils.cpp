@@ -173,7 +173,7 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)) ||
              PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyList_Type)))
     {
-        bool isTuple = PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type));
+        bool isTuple = PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)) != 0;
         Py_ssize_t size = 0;
         if (isTuple)
         {
