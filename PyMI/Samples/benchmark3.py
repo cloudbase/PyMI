@@ -22,7 +22,8 @@ def run_test():
     if u.vm_exists(VM_NAME):
         u.destroy_vm(VM_NAME)
 
-    u.create_vm(VM_NAME, 256, 1, False, 1.0, 1, 'blah')
+    u.create_vm(VM_NAME, False, 1, "c:\\openstack\\test", ['blah'])
+    u.update_vm(VM_NAME, 256, 256, 1, 1, False, 1.0)
 
     u.get_vm_summary_info(VM_NAME)
     u.list_instances()
