@@ -1,3 +1,20 @@
+﻿# Copyright 2015 Cloudbase Solutions Srl
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+import re
+
 import mi
 
 
@@ -8,13 +25,14 @@ class _Method(object):
         self._method_name = method_name
 
     def __call__(self, *args, **kwargs):
-        return self._conn.invoke_method(self._instance, self._method_name, *args, **kwargs)
+        return self._conn.invoke_method(
+            self._instance, self._method_name, *args, **kwargs)
 
 
 class _Instance(object):
     def __init__(self, conn, instance):
-        self._conn = conn
-        self._instance = instance
+        object.__setattr__(self, "_conn", conn)
+        object.__setattr__(self, "_instance", instance)
 
     def __getattr__(self, name):
         try:
@@ -22,8 +40,12 @@ class _Instance(object):
         except mi.error:
             return _Method(self._conn, self, name)
 
+    def __setattr__(self, name, value):
+        self._instance[unicode(name)] = value
+
     def associators(self, wmi_association_class=None, wmi_result_class=None):
-        return self._conn.get_associators(self, wmi_association_class, wmi_result_class)
+        return self._conn.get_associators(
+            self, wmi_association_class, wmi_result_class)
 
     def path_(self):
         return self._instance
@@ -35,7 +57,7 @@ class _Instance(object):
 class _Class(object):
     def __init__(self, conn, className, cls):
         self._conn = conn
-        self._className = unicode(className)
+        self.class_name = unicode(className)
         self._cls = cls
 
     def __call__(self, *argc, **argv):
@@ -63,8 +85,8 @@ class _Class(object):
 
         wql = (u"select %(fields)s from %(className)s%(where)s" %
                {"fields": fields,
-                "className": self._className,
-                "where": where});
+                "className": self.class_name,
+                "where": where})
 
         return self._conn.query(wql)
 
@@ -72,14 +94,13 @@ class _Class(object):
         return self._conn.new_instance_from_class(self)
 
 
-
 class _Connection(object):
-    def __init__(self, computerName=".", ns="root/cimv2",
+    def __init__(self, computer_name=".", ns="root/cimv2",
                  protocol=mi.PROTOCOL_WMIDCOM):
         self._ns = unicode(ns)
         self._app = mi.Application()
         self._session = self._app.create_session(
-            computerName=unicode(computerName), protocol=unicode(protocol))
+            computer_name=unicode(computer_name), protocol=unicode(protocol))
 
     def __del__(self):
         self._session = None
@@ -87,12 +108,12 @@ class _Connection(object):
 
     def __getattr__(self, name):
         with self._session.get_class(
-            ns=self._ns, className=unicode(name)) as q:
+                ns=self._ns, className=unicode(name)) as q:
             cls = q.get_next_class().clone()
             return _Class(self, name, cls)
 
     def _get_instances(self, op):
-        l = []            
+        l = []
         i = op.get_next_instance()
         while i is not None:
             l.append(_Instance(self, i.clone()))
@@ -103,17 +124,25 @@ class _Connection(object):
         with self._session.exec_query(ns=self._ns, query=unicode(wql)) as q:
             return self._get_instances(q)
 
-    def get_associators(self, instance, wmi_association_class=None, wmi_result_class=None):
+    def get_associators(self, instance, wmi_association_class=None,
+                        wmi_result_class=None):
+        if wmi_association_class is None:
+            wmi_association_class = u""
+        if wmi_result_class is None:
+            wmi_result_class = u""
+
         with self._session.get_associators(
                 ns=self._ns, instance=instance._instance,
-                assocClass=unicode(wmi_association_class),
-                resultClass=unicode(wmi_result_class)) as q:
+                assoc_class=unicode(wmi_association_class),
+                result_class=unicode(wmi_result_class)) as q:
             return self._get_instances(q)
 
     def _wrap_instances(self, l):
         for i, o in enumerate(l):
             if isinstance(o, mi.Instance):
-                l[i] = _Instance(self, o)
+                l[i] = o.get_path()
+                # TODO: distinguish instances and references
+                # l[i] = _Instance(self, o)
             if isinstance(o, list):
                 self._wrap_instances(o)
             if isinstance(o, tuple):
@@ -128,10 +157,10 @@ class _Connection(object):
         for i, v in enumerate(args):
             params[i] = v
         for k, v in kwargs.items():
-            print k
             params[k] = v
 
-        with self._session.invoke_method(instance._instance, unicode(method_name), params) as op:
+        with self._session.invoke_method(
+                instance._instance, unicode(method_name), params) as op:
             l = []
             r = op.get_next_instance()
             for i in xrange(0, len(r)):
@@ -140,12 +169,67 @@ class _Connection(object):
             return tuple(l)
 
     def new_instance_from_class(self, cls):
-        return _Instance(self, self._app.create_instance_from_class(cls._className, cls._cls))
+        return _Instance(
+            self, self._app.create_instance_from_class(
+                cls.class_name, cls._cls))
 
     def serialize_instance(self, instance):
         with self._app.create_serializer() as s:
             return s.serialize_instance(instance._instance)
 
+    def get_class(self, class_name):
+        with self._session.get_class(ns=self._ns, className=class_name) as op:
+            cls = op.get_next_class()
+            if cls:
+                return _Class(self, class_name, cls.clone())
+
+    def get_instance(self, class_name, key):
+        c = self.get_class(class_name)
+        key_instance = self.new_instance_from_class(c)
+        for k, v in key.items():
+            key_instance._instance[unicode(k)] = v
+        try:
+            with self._session.get_instance(
+                    self._ns, key_instance._instance) as op:
+                instance = op.get_next_instance()
+                if instance:
+                    return _Instance(self, instance.clone())
+        except mi.error:
+            return None
+
+
+_PROTOCOL = "winmgmts:"
+
+
+def _parse_moniker(moniker):
+    computer_name = '.'
+    namespace = None
+    path = None
+    class_name = None
+    key = None
+    m = re.match("(?:" + _PROTOCOL + r")?//([^/]+)/(.*):(.*)", moniker)
+    if m:
+        computer_name, namespace, path = m.groups()
+        if path:
+            m = re.match("([^.]+).(.*)", path)
+            if m:
+                key = {}
+                class_name, kvs = m.groups()
+                for kv in kvs.split(","):
+                    m = re.match("([^=]+)=\"(.*)\"", kv)
+                    name, value = m.groups()
+                    key[name] = value
+            else:
+                class_name = path
+    else:
+        namespace = moniker
+    return (computer_name, namespace, class_name, key)
+
 
 def WMI(moniker="root/cimv2", privileges=None):
-    return _Connection(computerName=".", ns=moniker)
+    computer_name, ns, class_name, key = _parse_moniker(moniker)
+    conn = _Connection(computer_name=computer_name, ns=ns)
+    if not class_name:
+        return conn
+    else:
+        return conn.get_instance(class_name, key)
