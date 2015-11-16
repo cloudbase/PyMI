@@ -30,26 +30,50 @@ static void Instance_dealloc(Instance* self)
     self->ob_type->tp_free((PyObject*)self);
 }
 
+
+MI::ValueElement GetElement(Instance *self, PyObject *item)
+{
+    // TODO: size buffer based on actual size
+    wchar_t w[1024];
+    Py_ssize_t i;
+    if (!GetIndexOrName(item, w, i))
+        throw MI::Exception(L"Cannot find element");
+
+    MI::ValueElement element;
+    if (i >= 0)
+    {
+        return (*self->instance)[i];
+    }
+    else
+    {
+        return (*self->instance)[w];
+    }
+}
+
 static PyObject* Instance_subscript(Instance *self, PyObject *item)
 {
     try
     {
-        // TODO: size buffer based on actual size
-        wchar_t w[1024];
-        Py_ssize_t i;
-        if (!GetIndexOrName(item, w, i))
-            return NULL;
-
-        MI::ValueElement element;
-        if (i >= 0)
-        {
-            element = (*self->instance)[i];
-        }
-        else
-        {
-            element = (*self->instance)[w];
-        }
+        MI::ValueElement element = GetElement(self, item);
         return MI2Py(element.m_value, element.m_type, element.m_flags);
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* Instance_GetElement(Instance *self, PyObject *item)
+{
+    try
+    {
+        MI::ValueElement element = GetElement(self, item);
+        PyObject* tuple = PyTuple_New(3);
+        PyTuple_SetItem(tuple, 0, PyUnicode_FromWideChar(element.m_name.c_str(), element.m_name.length()));
+        PyTuple_SetItem(tuple, 1, PyInt_FromLong(element.m_type));
+        PyTuple_SetItem(tuple, 2, MI2Py(element.m_value, element.m_type, element.m_flags));
+        return tuple;
     }
     catch (std::exception& ex)
     {
@@ -201,6 +225,7 @@ static PyMemberDef Instance_members[] = {
 
 static PyMethodDef Instance_methods[] = {
     { "__getitem__", (PyCFunction)Instance_subscript, METH_O | METH_COEXIST, "" },
+    { "get_element", (PyCFunction)Instance_GetElement, METH_O, "Returns an element by either index or name" },
     { "get_path", (PyCFunction)Instance_GetPath, METH_NOARGS, "" },
     { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
     { "get_class", (PyCFunction)Instance_GetClass, METH_NOARGS, "" },
