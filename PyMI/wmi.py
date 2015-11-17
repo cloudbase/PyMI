@@ -225,7 +225,7 @@ def _parse_moniker(moniker):
     path = None
     class_name = None
     key = None
-    m = re.match("(?:" + _PROTOCOL + r")?//([^/]+)/(.*):(.*)", moniker)
+    m = re.match("(?:" + _PROTOCOL + r")?//([^/]+)/([^:]*)(?::(.*))?", moniker)
     if m:
         computer_name, namespace, path = m.groups()
         if path:
