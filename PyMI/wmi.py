@@ -94,6 +94,11 @@ class _Class(object):
     def new(self):
         return self._conn.new_instance_from_class(self)
 
+    def watch_for(self, notification_type="operation",
+                  delay_secs=1, fields=[], **where_clause):
+        # TODO: implement
+        pass
+
 
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2",
@@ -101,7 +106,8 @@ class _Connection(object):
         self._ns = six.text_type(ns)
         self._app = mi.Application()
         self._session = self._app.create_session(
-            computer_name=six.text_type(computer_name), protocol=six.text_type(protocol))
+            computer_name=six.text_type(computer_name),
+            protocol=six.text_type(protocol))
 
     def __del__(self):
         self._session = None
@@ -122,7 +128,8 @@ class _Connection(object):
         return l
 
     def query(self, wql):
-        with self._session.exec_query(ns=self._ns, query=six.text_type(wql)) as q:
+        with self._session.exec_query(
+                ns=self._ns, query=six.text_type(wql)) as q:
             return self._get_instances(q)
 
     def get_associators(self, instance, wmi_association_class=None,
@@ -163,7 +170,8 @@ class _Connection(object):
 
     def invoke_method(self, instance, method_name, *args, **kwargs):
         cls = instance._instance.get_class()
-        params = self._app.create_method_params(cls, six.text_type(method_name))
+        params = self._app.create_method_params(
+            cls, six.text_type(method_name))
 
         for i, v in enumerate(args):
             params[i] = v
