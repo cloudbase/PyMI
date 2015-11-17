@@ -30,6 +30,12 @@ class _Method(object):
             self._instance, self._method_name, *args, **kwargs)
 
 
+class _Path(object):
+    def __init__(self):
+        # TODO: implement
+        self.Class = "Msvm_ConcreteJob"
+
+
 class _Instance(object):
     def __init__(self, conn, instance):
         object.__setattr__(self, "_conn", conn)
@@ -37,19 +43,24 @@ class _Instance(object):
 
     def __getattr__(self, name):
         try:
-            return self._instance[six.text_type(name)]
+            return _wrap_element(self._conn, *self._instance.get_element(name))
         except mi.error:
             return _Method(self._conn, self, name)
 
     def __setattr__(self, name, value):
-        self._instance[six.text_type(name)] = value
+        _, el_type, _ = self._instance.get_element(name)
+        self._instance[six.text_type(name)] = _unwrap_element(
+            self._instance, el_type, value)
 
     def associators(self, wmi_association_class=None, wmi_result_class=None):
         return self._conn.get_associators(
             self, wmi_association_class, wmi_result_class)
 
+    def path(self):
+        return _Path()
+
     def path_(self):
-        return self._instance
+        return self._instance.get_path()
 
     def GetText_(self, text_format):
         return self._conn.serialize_instance(self)
@@ -128,6 +139,7 @@ class _Connection(object):
         return l
 
     def query(self, wql):
+        wql = wql.replace("\\", "\\\\")
         with self._session.exec_query(
                 ns=self._ns, query=six.text_type(wql)) as q:
             return self._get_instances(q)
@@ -145,45 +157,24 @@ class _Connection(object):
                 result_class=six.text_type(wmi_result_class)) as q:
             return self._get_instances(q)
 
-    def _wrap_element(self, name, el_type, value):
-        if isinstance(value, mi.Instance):
-            # MI_INSTANCE
-            if el_type == 15:
-                return _Instance(self, value)
-            # MI_REFERENCE
-            elif el_type == 14:
-                return value.get_path()
-            else:
-                raise Exception(
-                    "Unsupported instance element type: %s" % el_type)
-        if isinstance(value, (tuple, list)):
-            # MI_REFERENCEA
-            if el_type == 30:
-                return tuple([i.get_path() for i in value])
-            # MI_INSTANCEA
-            if el_type == 31:
-                return tuple([_Instance(self, i) for i in value])
-            else:
-                return tuple(value)
-        else:
-            return value
-
     def invoke_method(self, instance, method_name, *args, **kwargs):
         cls = instance._instance.get_class()
         params = self._app.create_method_params(
             cls, six.text_type(method_name))
 
         for i, v in enumerate(args):
-            params[i] = v
+            _, el_type, _ = params.get_element(i)
+            params[i] = _unwrap_element(params, el_type, v)
         for k, v in kwargs.items():
-            params[k] = v
+            _, el_type, _ = params.get_element(k)
+            params[k] = _unwrap_element(params, el_type, v)
 
         with self._session.invoke_method(
                 instance._instance, six.text_type(method_name), params) as op:
             l = []
             r = op.get_next_instance()
             for i in six.moves.range(0, len(r)):
-                l.append(self._wrap_element(*r.get_element(i)))
+                l.append(_wrap_element(self, *r.get_element(i)))
             return tuple(l)
 
     def new_instance_from_class(self, cls):
@@ -216,16 +207,56 @@ class _Connection(object):
             return None
 
 
-_PROTOCOL = "winmgmts:"
+def _wrap_element(conn, name, el_type, value):
+    if isinstance(value, mi.Instance):
+        if el_type == mi.MI_INSTANCE:
+            return _Instance(conn, value)
+        elif el_type == mi.MI_REFERENCE:
+            return value.get_path()
+        else:
+            raise Exception(
+                "Unsupported instance element type: %s" % el_type)
+    if isinstance(value, (tuple, list)):
+        if el_type == mi.MI_REFERENCEA:
+            return tuple([i.get_path() for i in value])
+        elif el_type == mi.MI_INSTANCEA:
+            return tuple([_Instance(conn, i) for i in value])
+        else:
+            return tuple(value)
+    else:
+        return value
+
+
+def _unwrap_element(instance, el_type, value):
+    if value is not None:
+        if el_type == mi.MI_REFERENCE:
+            return WMI(value)._instance
+        elif el_type == mi.MI_INSTANCE:
+            return value._instance
+        if el_type == mi.MI_REFERENCEA:
+            l = []
+            for item in value:
+                l.append(_unwrap_element(value, mi.MI_REFERENCE, item))
+            return tuple(l)
+        elif el_type == mi.MI_INSTANCEA:
+            l = []
+            for item in value:
+                l.append(_unwrap_element(value, mi.MI_INSTANCE, item))
+            return tuple(l)
+        elif el_type == mi.MI_STRING:
+            return six.text_type(value)
+        else:
+            return value
 
 
 def _parse_moniker(moniker):
+    PROTOCOL = "winmgmts:"
     computer_name = '.'
     namespace = None
     path = None
     class_name = None
     key = None
-    m = re.match("(?:" + _PROTOCOL + r")?//([^/]+)/([^:]*)(?::(.*))?", moniker)
+    m = re.match("(?:" + PROTOCOL + r")?//([^/]+)/([^:]*)(?::(.*))?", moniker)
     if m:
         computer_name, namespace, path = m.groups()
         if path:
@@ -245,7 +276,8 @@ def _parse_moniker(moniker):
 
 
 def WMI(moniker="root/cimv2", privileges=None):
-    computer_name, ns, class_name, key = _parse_moniker(moniker)
+    computer_name, ns, class_name, key = _parse_moniker(
+        moniker.replace("\\", "/"))
     conn = _Connection(computer_name=computer_name, ns=ns)
     if not class_name:
         return conn
