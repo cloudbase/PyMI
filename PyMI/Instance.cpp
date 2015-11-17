@@ -33,11 +33,9 @@ static void Instance_dealloc(Instance* self)
 
 MI::ValueElement GetElement(Instance *self, PyObject *item)
 {
-    // TODO: size buffer based on actual size
-    wchar_t w[1024];
+    std::wstring name;
     Py_ssize_t i;
-    if (!GetIndexOrName(item, w, i))
-        throw MI::Exception(L"Cannot find element");
+    GetIndexOrName(item, name, i);
 
     MI::ValueElement element;
     if (i >= 0)
@@ -46,7 +44,7 @@ MI::ValueElement GetElement(Instance *self, PyObject *item)
     }
     else
     {
-        return (*self->instance)[w];
+        return (*self->instance)[name];
     }
 }
 
@@ -103,12 +101,9 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
 {
     try
     {
-        // TODO: size buffer based on actual size
-        wchar_t w[1024];
-        w[0] = NULL;
+        std::wstring name;
         Py_ssize_t i = 0;
-        if (!GetIndexOrName(item, w, i))
-            return NULL;
+        GetIndexOrName(item, name, i);
 
         bool addElement = false;
 
@@ -121,7 +116,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
         }
         else
         {
-            miType = self->instance->GetElementType(w);
+            miType = self->instance->GetElementType(name);
         }
 
         Py2MI(value, miValue, miType);
@@ -132,7 +127,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
         }
         else
         {
-            self->instance->SetElement(w, value == Py_None ? NULL : &miValue, miType);
+            self->instance->SetElement(name, value == Py_None ? NULL : &miValue, miType);
         }
 
         return 0;

@@ -6,34 +6,49 @@
 #include <datetime.h>
 
 
-bool GetIndexOrName(PyObject *item, wchar_t* w, Py_ssize_t& i)
+void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
 {
-    w[0] = NULL;
+    name.clear();
     i = -1;
 
 #ifndef IS_PY3K
     if (PyString_Check(item))
     {
         char* s = PyString_AsString(item);
-        ::MultiByteToWideChar(CP_ACP, 0, s, -1, w, 1024);
+        DWORD len = lstrlenA(s) + 1;
+        wchar_t* w = new wchar_t[len];
+
+        if (::MultiByteToWideChar(CP_ACP, 0, s, len, w, len) != len)
+        {
+            delete [] w;
+            throw MI::Exception(L"MultiByteToWideChar failed");
+        }
+        name.assign(w, len);
+        delete[] w;
     }
     else
 #endif
     if (PyUnicode_Check(item))
     {
-        if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)item, w, 1024) < 0)
-            return false;
+        DWORD len = PyUnicode_GetSize(item) + 1;
+        wchar_t* w = new wchar_t[len];
+
+        if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)item, w, len) < 0)
+        {
+            delete[] w;
+            throw MI::Exception(L"PyUnicode_AsWideChar failed");
+        }
+        name.assign(w, len);
+        delete[] w;
     }
     else if (PyIndex_Check(item))
     {
         i = PyNumber_AsSsize_t(item, PyExc_IndexError);
         if (i == -1 && PyErr_Occurred())
-            return false;
+            throw MI::Exception(L"Index error");
     }
     else
-        return false;
-
-    return true;
+        throw MI::Exception(L"Invalid name or index");
 }
 
 void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
@@ -122,15 +137,17 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         {
         case MI_STRING:
             s = PyString_AsString(pyValue);
-            len = lstrlenA(s);
+            len = lstrlenA(s) + 1;
             // Note: caller owns the memory
-            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, (len + 1) * sizeof(MI_Char));
+            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, len * sizeof(MI_Char));
             if (!value.string)
             {
                 throw OutOfMemoryException();
             }
-            if (::MultiByteToWideChar(CP_ACP, 0, s, len + 1, value.string, len + 1) != len + 1)
+            if (::MultiByteToWideChar(CP_ACP, 0, s, len, value.string, len) != len)
             {
+                HeapFree(GetProcessHeap(), 0, value.string);
+                value.string = NULL;
                 throw MI::Exception(L"MultiByteToWideChar failed");
             }
             break;
@@ -147,15 +164,15 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         {
         case MI_STRING:
             // TODO: use PyUnicode_GetLength on 3.x
-            len = PyUnicode_GetSize(pyValue);
+            len = PyUnicode_GetSize(pyValue) + 1;
             // Note: caller owns the memory
-            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, (len + 1) * sizeof(MI_Char));
+            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, len * sizeof(MI_Char));
             if (!value.string)
             {
                 throw OutOfMemoryException();
             }
 
-            if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)pyValue, value.string, len + 1) < 0)
+            if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)pyValue, value.string, len) < 0)
             {
                 throw MI::Exception(L"PyUnicode_AsWideChar failed");
             }

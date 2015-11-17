@@ -33,11 +33,9 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
 {
     try
     {
-        // TODO: size buffer based on actual size
-        wchar_t w[1024];
+        std::wstring name;
         Py_ssize_t i;
-        if (!GetIndexOrName(item, w, i))
-            return NULL;
+        GetIndexOrName(item, name, i);
 
         MI::ClassElement element;
         if (i >= 0)
@@ -46,7 +44,7 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
         }
         else
         {
-            element = (*self->miClass)[w];
+            element = (*self->miClass)[name];
         }
         return MI2Py(element.m_value, element.m_type, element.m_flags);
     }
