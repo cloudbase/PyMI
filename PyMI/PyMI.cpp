@@ -93,6 +93,39 @@ PyObject* _initmi(void)
     PyObject_SetAttrString(m, "PROTOCOL_WINRM", PyUnicode_FromString("WINRM"));
     PyObject_SetAttrString(m, "PROTOCOL_WMIDCOM", PyUnicode_FromString("WMIDCOM"));
 
+    PyObject_SetAttrString(m, "MI_BOOLEAN", PyLong_FromLong(MI_BOOLEAN));
+    PyObject_SetAttrString(m, "MI_UINT8", PyLong_FromLong(MI_UINT8));
+    PyObject_SetAttrString(m, "MI_SINT8", PyLong_FromLong(MI_SINT8));
+    PyObject_SetAttrString(m, "MI_UINT16", PyLong_FromLong(MI_UINT16));
+    PyObject_SetAttrString(m, "MI_SINT16", PyLong_FromLong(MI_SINT16));
+    PyObject_SetAttrString(m, "MI_UINT32", PyLong_FromLong(MI_UINT32));
+    PyObject_SetAttrString(m, "MI_SINT32", PyLong_FromLong(MI_SINT32));
+    PyObject_SetAttrString(m, "MI_UINT64", PyLong_FromLong(MI_UINT64));
+    PyObject_SetAttrString(m, "MI_SINT64", PyLong_FromLong(MI_SINT64));
+    PyObject_SetAttrString(m, "MI_REAL32", PyLong_FromLong(MI_REAL32));
+    PyObject_SetAttrString(m, "MI_REAL64", PyLong_FromLong(MI_REAL64));
+    PyObject_SetAttrString(m, "MI_CHAR16", PyLong_FromLong(MI_CHAR16));
+    PyObject_SetAttrString(m, "MI_DATETIME", PyLong_FromLong(MI_DATETIME));
+    PyObject_SetAttrString(m, "MI_STRING", PyLong_FromLong(MI_STRING));
+    PyObject_SetAttrString(m, "MI_REFERENCE", PyLong_FromLong(MI_REFERENCE));
+    PyObject_SetAttrString(m, "MI_INSTANCE", PyLong_FromLong(MI_INSTANCE));
+    PyObject_SetAttrString(m, "MI_UINT8A", PyLong_FromLong(MI_UINT8A));
+    PyObject_SetAttrString(m, "MI_SINT8A", PyLong_FromLong(MI_SINT8A));
+    PyObject_SetAttrString(m, "MI_UINT16A", PyLong_FromLong(MI_UINT16A));
+    PyObject_SetAttrString(m, "MI_SINT16A", PyLong_FromLong(MI_SINT16A));
+    PyObject_SetAttrString(m, "MI_UINT32A", PyLong_FromLong(MI_UINT32A));
+    PyObject_SetAttrString(m, "MI_SINT32A", PyLong_FromLong(MI_SINT32A));
+    PyObject_SetAttrString(m, "MI_UINT64A", PyLong_FromLong(MI_UINT64A));
+    PyObject_SetAttrString(m, "MI_SINT64A", PyLong_FromLong(MI_SINT64A));
+    PyObject_SetAttrString(m, "MI_REAL32A", PyLong_FromLong(MI_REAL32A));
+    PyObject_SetAttrString(m, "MI_REAL64A", PyLong_FromLong(MI_REAL64A));
+    PyObject_SetAttrString(m, "MI_CHAR16A", PyLong_FromLong(MI_CHAR16A));
+    PyObject_SetAttrString(m, "MI_DATETIMEA", PyLong_FromLong(MI_DATETIMEA));
+    PyObject_SetAttrString(m, "MI_STRINGA", PyLong_FromLong(MI_STRINGA));
+    PyObject_SetAttrString(m, "MI_REFERENCEA", PyLong_FromLong(MI_REFERENCEA));
+    PyObject_SetAttrString(m, "MI_INSTANCEA", PyLong_FromLong(MI_INSTANCEA));
+    PyObject_SetAttrString(m, "MI_ARRAY", PyLong_FromLong(MI_ARRAY));
+
     return m;
 }
 
