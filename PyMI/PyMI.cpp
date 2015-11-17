@@ -28,7 +28,7 @@ static PyModuleDef mimodule = {
 };
 #endif
 
-PyObject* initmi(void)
+PyObject* _initmi(void)
 {
     PyDateTime_IMPORT;
 
@@ -96,9 +96,13 @@ PyObject* initmi(void)
     return m;
 }
 
+#ifdef IS_PY3K
 PyMODINIT_FUNC PyInit_mi(void)
+#else
+PyMODINIT_FUNC initmi(void)
+#endif
 {
-    PyObject* m = initmi();
+    PyObject* m = _initmi();
 #ifdef IS_PY3K
     return m;
 #endif
