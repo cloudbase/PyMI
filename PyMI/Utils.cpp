@@ -71,6 +71,46 @@ void Py2MIString(PyObject* pyValue, MI_Value& value)
     }
 }
 
+unsigned GetItemSize(MI_Type valueType)
+{
+    switch (valueType)
+    {
+    case MI_BOOLEAN:
+        return sizeof(MI_Boolean);
+    case MI_SINT8:
+        return sizeof(MI_Sint8);
+    case MI_UINT8:
+        return sizeof(MI_Uint8);
+    case MI_SINT16:
+        return sizeof(MI_Sint16);
+    case MI_UINT16:
+        return sizeof(MI_Uint16);
+    case MI_SINT32:
+        return sizeof(MI_Sint32);
+    case MI_UINT32:
+        return sizeof(MI_Uint32);
+    case MI_SINT64:
+        return sizeof(MI_Sint64);
+    case MI_UINT64:
+        return sizeof(MI_Uint64);
+    case MI_REAL32:
+        return sizeof(MI_Real32);
+    case MI_REAL64:
+        return sizeof(MI_Real64);
+    case MI_CHAR16:
+        return sizeof(MI_Char16);
+    case MI_DATETIME:
+        return sizeof(MI_Datetime);
+    case MI_STRING:
+        return sizeof(MI_Char*);
+    case MI_INSTANCE:
+    case MI_REFERENCE:
+        return sizeof(MI_Instance*);
+    default:
+        throw TypeConversionException();
+    }
+}
+
 void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
 {
     ZeroMemory(&value, sizeof(value));
@@ -87,6 +127,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
     {
         switch (valueType)
         {
+        case MI_BOOLEAN:
+            value.boolean = (MI_Boolean)(PyLong_AsLong(pyValue) != 0);
+            break;
         case MI_UINT8:
             value.uint8 = (MI_Uint8)PyLong_AsUnsignedLong(pyValue);
             break;
@@ -98,6 +141,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             break;
         case MI_SINT16:
             value.sint16 = (MI_Sint16)PyLong_AsLong(pyValue);
+            break;
+        case MI_CHAR16:
+            value.char16 = (MI_Char16)PyLong_AsLong(pyValue);
             break;
         case MI_UINT32:
             value.uint32 = PyLong_AsUnsignedLong(pyValue);
@@ -111,6 +157,12 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         case MI_SINT64:
             value.sint64 = PyLong_AsLongLong(pyValue);
             break;
+        case MI_REAL32:
+            value.real32 = (float)PyLong_AsDouble(pyValue);
+            break;
+        case MI_REAL64:
+            value.real64 = PyLong_AsDouble(pyValue);
+            break;
         case MI_STRING:
             Py2MIString(pyValue, value);
             break;
@@ -123,6 +175,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
     {
         switch (valueType)
         {
+        case MI_BOOLEAN:
+            value.boolean = (MI_Boolean)(PyInt_AsLong(pyValue) != 0);
+            break;
         case MI_UINT8:
             value.uint8 = (MI_Uint8)PyInt_AsLong(pyValue);
             break;
@@ -135,6 +190,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         case MI_SINT16:
             value.sint16 = (MI_Sint16)PyInt_AsLong(pyValue);
             break;
+        case MI_CHAR16:
+            value.char16 = (MI_Char16)PyLong_AsLong(pyValue);
+            break;
         case MI_UINT32:
             value.uint32 = PyInt_AsLong(pyValue);
             break;
@@ -146,6 +204,12 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             break;
         case MI_SINT64:
             value.sint64 = PyInt_AsLong(pyValue);
+            break;
+        case MI_REAL32:
+            value.real32 = (float)PyInt_AsLong(pyValue);
+            break;
+        case MI_REAL64:
+            value.real64 = PyInt_AsLong(pyValue);
             break;
         case MI_STRING:
             Py2MIString(pyValue, value);
@@ -235,43 +299,13 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         if (size == 0)
             return;
 
-        switch (valueType)
-        {
-        case MI_SINT8A:
-            value.sint8a.size = (unsigned)size;
-            value.sint8a.data = (MI_Sint8*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Sint8) * size);
-            break;
-        case MI_UINT8A:
-            value.uint8a.size = (unsigned)size;
-            value.uint8a.data = (MI_Uint8*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint8) * size);
-            break;
-        case MI_SINT16A:
-            value.sint16a.size = (unsigned)size;
-            value.sint16a.data = (MI_Sint16*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Sint16) * size);
-            break;
-        case MI_UINT16A:
-            value.uint16a.size = (unsigned)size;
-            value.uint16a.data = (MI_Uint16*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint16) * size);
-            break;
-        case MI_SINT32A:
-            value.sint32a.size = (unsigned)size;
-            value.sint32a.data = (MI_Sint32*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Sint32) * size);
-            break;
-        case MI_UINT32A:
-            value.uint32a.size = (unsigned)size;
-            value.uint32a.data = (MI_Uint32*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint32) * size);
-            break;
-        case MI_STRINGA:
-            value.stringa.size = (unsigned)size;
-            value.stringa.data = (MI_Char**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Char*) * size);
-            break;
-        case MI_REFERENCEA:
-            value.referencea.size = (unsigned)size;
-            value.referencea.data = (MI_Instance**)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Instance*) * size);
-            break;
-        default:
-            throw TypeConversionException();
-        }
+        MI_Type itemType = (MI_Type)(valueType ^ MI_ARRAY);
+        unsigned itemSize = GetItemSize(itemType);
+
+        // All array members of the MI_Value union have "pointer", "size" members.
+        // It is safe to rely on one instead of referencing value.stringa, value.booleana, etc
+        value.uint8a.size = (unsigned)size;
+        value.uint8a.data = (MI_Uint8*)HeapAlloc(GetProcessHeap(), 0, itemSize * size);
 
         for (Py_ssize_t i = 0; i < size; i++)
         {
@@ -287,43 +321,8 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
                 pyObj = PyList_GetItem(pyValue, i);
             }
 
-            switch (valueType)
-            {
-            case MI_SINT8A:
-                Py2MI(pyObj, tmpVal, MI_SINT8);
-                value.sint8a.data[i] = tmpVal.sint8;
-                break;
-            case MI_UINT8A:
-                Py2MI(pyObj, tmpVal, MI_UINT8);
-                value.uint8a.data[i] = tmpVal.uint8;
-                break;
-            case MI_SINT16A:
-                Py2MI(pyObj, tmpVal, MI_SINT16);
-                value.sint16a.data[i] = tmpVal.sint16;
-                break;
-            case MI_UINT16A:
-                Py2MI(pyObj, tmpVal, MI_UINT16);
-                value.uint16a.data[i] = tmpVal.uint16;
-                break;
-            case MI_SINT32A:
-                Py2MI(pyObj, tmpVal, MI_SINT32);
-                value.sint32a.data[i] = tmpVal.sint32;
-                break;
-            case MI_UINT32A:
-                Py2MI(pyObj, tmpVal, MI_UINT32);
-                value.uint32a.data[i] = tmpVal.uint32;
-                break;
-            case MI_STRINGA:
-                Py2MI(pyObj, tmpVal, MI_STRING);
-                value.stringa.data[i] = tmpVal.string;
-                break;
-            case MI_REFERENCEA:
-                Py2MI(pyObj, tmpVal, MI_REFERENCE);
-                value.referencea.data[i] = tmpVal.reference;
-                break;
-            default:
-                throw TypeConversionException();
-            }
+            Py2MI(pyObj, tmpVal, itemType);
+            memcpy(&value.uint8a.data[i * itemSize], &tmpVal, itemSize);
         }
     }
     else
@@ -339,13 +338,35 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
     }
 }
 
+PyObject* MIArray2PyTuple(const MI_Value& value, MI_Type itemType)
+{
+    // All array members of the MI_Value union have "pointer", "size" members.
+    // It is safe to rely on one instead of referencing value.stringa, value.booleana, etc
+    MI_Uint32 size = value.uint8a.size;
+    PyObject* pyObj = PyTuple_New(size);
+    unsigned itemSize = GetItemSize(itemType);
+    for (MI_Uint32 i = 0; i < size; i++)
+    {
+        MI_Value tmpVal;
+        memcpy(&tmpVal, &value.uint8a.data[i * itemSize], itemSize);
+        if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, itemType, 0)))
+        {
+            Py_DECREF(pyObj);
+            throw MI::Exception(L"PyTuple_SetItem failed");
+        }
+    }
+    return pyObj;
+}
+
 PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
 {
     if (flags & MI_FLAG_NULL)
         Py_RETURN_NONE;
 
-    size_t len = 0;
-    PyObject* pyObj = NULL;
+    if (valueType & MI_ARRAY)
+    {
+        return MIArray2PyTuple(value, (MI_Type)(valueType ^ MI_ARRAY));
+    }
 
     switch (valueType)
     {
@@ -374,7 +395,7 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
     case MI_CHAR16:
         return PyLong_FromLong(value.char16);
     case MI_DATETIME:
-        // TODO: understand where this needs to be set
+        // TODO: understand where this import needs to be called
         PyDateTime_IMPORT;
         if (value.datetime.isTimestamp)
         {
@@ -389,111 +410,13 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
         }
         break;
     case MI_STRING:
-        len = wcslen(value.string);
-        return PyUnicode_FromWideChar(value.string, len);
-    case MI_BOOLEANA:
-    case MI_SINT8A:
-    case MI_UINT8A:
-    case MI_SINT16A:
-        return NULL;
-    case MI_UINT16A:
-        pyObj = PyTuple_New(value.uint16a.size);
-        for (MI_Uint32 i = 0; i < value.uint16a.size; i++)
-        {
-            MI_Value tmpVal;
-            tmpVal.uint16 = value.uint16a.data[i];
-            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_UINT16, 0)))
-            {
-                Py_DECREF(pyObj);
-                throw MI::Exception(L"PyTuple_SetItem failed");
-            }
-        }
-        return pyObj;
-    case MI_SINT32A:
-        return NULL;
-    case MI_UINT32A:
-        pyObj = PyTuple_New(value.uint32a.size);
-        for (MI_Uint32 i = 0; i < value.uint32a.size; i++)
-        {
-            MI_Value tmpVal;
-            tmpVal.uint32 = value.uint32a.data[i];
-            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_UINT32, 0)))
-            {
-                Py_DECREF(pyObj);
-                throw MI::Exception(L"PyTuple_SetItem failed");
-            }
-        }
-        return pyObj;
-    case MI_SINT64A:
-        return NULL;
-    case MI_UINT64A:
-        return NULL;
-    case MI_REAL32A:
-        return NULL;
-    case MI_REAL64A:
-        return NULL;
-    case MI_CHAR16A:
-        return NULL;
-    case MI_DATETIMEA:
-        pyObj = PyTuple_New(value.datetimea.size);
-        for (MI_Uint32 i = 0; i < value.datetimea.size; i++)
-        {
-            MI_Value tmpVal;
-            tmpVal.datetime = value.datetimea.data[i];
-            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_DATETIME, 0)))
-            {
-                Py_DECREF(pyObj);
-                throw MI::Exception(L"PyTuple_SetItem failed");
-            }
-        }
-        return pyObj;
-    case MI_STRINGA:
-        pyObj = PyTuple_New(value.stringa.size);
-        for (MI_Uint32 i = 0; i < value.stringa.size; i++)
-        {
-            MI_Value tmpVal;
-            tmpVal.string = value.stringa.data[i];
-            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_STRING, 0)))
-            {
-                Py_DECREF(pyObj);
-                throw MI::Exception(L"PyTuple_SetItem failed");
-            }
-        }
-        return pyObj;
+        return PyUnicode_FromWideChar(value.string, wcslen(value.string));
     case MI_INSTANCE:
-        pyObj = (PyObject*)Instance_New(new MI::Instance(value.instance, false));
-        return pyObj;
+        return (PyObject*)Instance_New(new MI::Instance(value.instance, false));
     case MI_REFERENCE:
-        pyObj = (PyObject*)Instance_New(new MI::Instance(value.reference, false));
-        return pyObj;
-    case MI_INSTANCEA:
-        pyObj = PyTuple_New(value.instancea.size);
-        for (unsigned i = 0; i < value.instancea.size; i++)
-        {
-            MI_Value tmpVal;
-            tmpVal.instance = value.instancea.data[i];
-            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_INSTANCE, 0)))
-            {
-                Py_DECREF(pyObj);
-                throw MI::Exception(L"PyTuple_SetItem failed");
-            }
-        }
-        return pyObj;
-    case MI_REFERENCEA:
-        pyObj = PyTuple_New(value.stringa.size);
-        for (unsigned i = 0; i < value.referencea.size; i++)
-        {
-            MI_Value tmpVal;
-            tmpVal.reference = value.referencea.data[i];
-            if (PyTuple_SetItem(pyObj, i, MI2Py(tmpVal, MI_REFERENCE, 0)))
-            {
-                Py_DECREF(pyObj);
-                throw MI::Exception(L"PyTuple_SetItem failed");
-            }
-        }
-        return pyObj;
+        return (PyObject*)Instance_New(new MI::Instance(value.reference, false));
     default:
-        return NULL;
+        throw TypeConversionException();
     }
 }
 
