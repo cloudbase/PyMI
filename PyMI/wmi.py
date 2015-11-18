@@ -49,8 +49,7 @@ class _Instance(object):
 
     def __setattr__(self, name, value):
         _, el_type, _ = self._instance.get_element(name)
-        self._instance[six.text_type(name)] = _unwrap_element(
-            self._instance, el_type, value)
+        self._instance[six.text_type(name)] = _unwrap_element(el_type, value)
 
     def associators(self, wmi_association_class=None, wmi_result_class=None):
         return self._conn.get_associators(
@@ -164,10 +163,10 @@ class _Connection(object):
 
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
-            params[i] = _unwrap_element(params, el_type, v)
+            params[i] = _unwrap_element(el_type, v)
         for k, v in kwargs.items():
             _, el_type, _ = params.get_element(k)
-            params[k] = _unwrap_element(params, el_type, v)
+            params[k] = _unwrap_element(el_type, v)
 
         with self._session.invoke_method(
                 instance._instance, six.text_type(method_name), params) as op:
@@ -227,21 +226,21 @@ def _wrap_element(conn, name, el_type, value):
         return value
 
 
-def _unwrap_element(instance, el_type, value):
+def _unwrap_element(el_type, value):
     if value is not None:
         if el_type == mi.MI_REFERENCE:
             return WMI(value)._instance
         elif el_type == mi.MI_INSTANCE:
             return value._instance
-        if el_type == mi.MI_REFERENCEA:
+        elif el_type == mi.MI_BOOLEAN:
+            if isinstance(value, (str, six.text_type)):
+                return value.lower() in ['true', 'yes', '1']
+            else:
+                return value
+        elif el_type & mi.MI_ARRAY:
             l = []
             for item in value:
-                l.append(_unwrap_element(value, mi.MI_REFERENCE, item))
-            return tuple(l)
-        elif el_type == mi.MI_INSTANCEA:
-            l = []
-            for item in value:
-                l.append(_unwrap_element(value, mi.MI_INSTANCE, item))
+                l.append(_unwrap_element(el_type ^ mi.MI_ARRAY, item))
             return tuple(l)
         else:
             return value
