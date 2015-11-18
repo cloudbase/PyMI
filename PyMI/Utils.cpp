@@ -30,7 +30,7 @@ void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
 #endif
     if (PyUnicode_Check(item))
     {
-        DWORD len = PyUnicode_GetSize(item) + 1;
+        Py_ssize_t len = PyUnicode_GetSize(item) + 1;
         wchar_t* w = new wchar_t[len];
 
         if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)item, w, len) < 0)
@@ -237,6 +237,26 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
 
         switch (valueType)
         {
+        case MI_SINT8A:
+            value.sint8a.size = (unsigned)size;
+            value.sint8a.data = (MI_Sint8*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Sint8) * size);
+            break;
+        case MI_UINT8A:
+            value.uint8a.size = (unsigned)size;
+            value.uint8a.data = (MI_Uint8*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint8) * size);
+            break;
+        case MI_SINT16A:
+            value.sint16a.size = (unsigned)size;
+            value.sint16a.data = (MI_Sint16*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Sint16) * size);
+            break;
+        case MI_UINT16A:
+            value.uint16a.size = (unsigned)size;
+            value.uint16a.data = (MI_Uint16*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint16) * size);
+            break;
+        case MI_SINT32A:
+            value.sint32a.size = (unsigned)size;
+            value.sint32a.data = (MI_Sint32*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Sint32) * size);
+            break;
         case MI_UINT32A:
             value.uint32a.size = (unsigned)size;
             value.uint32a.data = (MI_Uint32*)HeapAlloc(GetProcessHeap(), 0, sizeof(MI_Uint32) * size);
@@ -269,6 +289,26 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
 
             switch (valueType)
             {
+            case MI_SINT8A:
+                Py2MI(pyObj, tmpVal, MI_SINT8);
+                value.sint8a.data[i] = tmpVal.sint8;
+                break;
+            case MI_UINT8A:
+                Py2MI(pyObj, tmpVal, MI_UINT8);
+                value.uint8a.data[i] = tmpVal.uint8;
+                break;
+            case MI_SINT16A:
+                Py2MI(pyObj, tmpVal, MI_SINT16);
+                value.sint16a.data[i] = tmpVal.sint16;
+                break;
+            case MI_UINT16A:
+                Py2MI(pyObj, tmpVal, MI_UINT16);
+                value.uint16a.data[i] = tmpVal.uint16;
+                break;
+            case MI_SINT32A:
+                Py2MI(pyObj, tmpVal, MI_SINT32);
+                value.sint32a.data[i] = tmpVal.sint32;
+                break;
             case MI_UINT32A:
                 Py2MI(pyObj, tmpVal, MI_UINT32);
                 value.uint32a.data[i] = tmpVal.uint32;
