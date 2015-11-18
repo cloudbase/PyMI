@@ -264,7 +264,8 @@ def _parse_moniker(moniker):
                 for kv in kvs.split(","):
                     m = re.match("([^=]+)=\"(.*)\"", kv)
                     name, value = m.groups()
-                    key[name] = value
+                    # TODO: improve unescaping
+                    key[name] = value.replace("//", "\\")
             else:
                 class_name = path
     else:
