@@ -19,6 +19,15 @@ void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
     }
 }
 
+void ReplaceAll(std::wstring& str, const std::wstring& from, const std::wstring& to)
+{
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();
+    }
+}
+
 Application::Application(const std::wstring& appId)
 {
     this->m_app = MI_APPLICATION_NULL;
@@ -460,8 +469,17 @@ std::wstring Instance::GetPath()
         {
             o << L",";
         }
-        // TODO: handle non strings and escaping
-        o << it << L"=\"" << element.m_value.string << L"\"";
+        // TODO: handle non strings
+        if (element.m_type != MI_STRING)
+        {
+            throw Exception(L"Unsupported key type in path generation");
+        }
+
+        std::wstring value = element.m_value.string;
+        ReplaceAll(value, L"\\", L"\\\\");
+        ReplaceAll(value, L"\"", L"\\\"");
+
+        o << it << L"=\"" << value << L"\"";
         isFirst = false;
     }
     return o.str();
