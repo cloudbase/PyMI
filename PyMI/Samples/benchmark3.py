@@ -25,6 +25,16 @@ def run_test():
     u.create_vm(VM_NAME, False, 1, "c:\\openstack\\test", ['blah'])
     u.update_vm(VM_NAME, 256, 256, 1, 1, False, 1.0)
 
+    u.set_boot_order(VM_NAME, (0, 1, 2, 3))
+
+    u.create_nic(VM_NAME, "nic1", "00:99:99:99:99:99")
+
+    u.create_scsi_controller(VM_NAME)
+    ctrl = u.get_vm_ide_controller(VM_NAME, 0)
+    u.attach_ide_drive(
+        VM_NAME, "c:\\VHDs\\test.vhdx", 0, 0, constants.DISK)
+
+
     u.get_vm_summary_info(VM_NAME)
     u.list_instances()
     u.get_vm_id(VM_NAME)
@@ -49,12 +59,12 @@ def test_wmi():
 
 if __name__ == '__main__':
     import timeit
-    print("Running with old WMI module...")
-    t_old = timeit.timeit(
-        "test_wmi()", setup="from __main__ import test_wmi", number=50)
     print("Running with new WMI module...")
     t_new = timeit.timeit(
-        "test_mi()", setup="from __main__ import test_mi", number=50)
+        "test_mi()", setup="from __main__ import test_mi", number=1)
+    print("Running with old WMI module...")
+    t_old = timeit.timeit(
+        "test_wmi()", setup="from __main__ import test_wmi", number=1)
 
     print("Old WMI module: %s seconds" % t_old)
     print("New WMI module: %s seconds" % t_new)
