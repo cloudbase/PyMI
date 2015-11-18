@@ -31,9 +31,9 @@ class _Method(object):
 
 
 class _Path(object):
-    def __init__(self):
-        # TODO: implement
-        self.Class = "Msvm_ConcreteJob"
+    def __init__(self, mi_class):
+        # TODO: add server, namespace
+        self.Class = mi_class
 
 
 class _Instance(object):
@@ -57,7 +57,7 @@ class _Instance(object):
             self, wmi_association_class, wmi_result_class)
 
     def path(self):
-        return _Path()
+        return _Path(self._instance.get_class_name())
 
     def path_(self):
         return self._instance.get_path()
@@ -243,8 +243,6 @@ def _unwrap_element(instance, el_type, value):
             for item in value:
                 l.append(_unwrap_element(value, mi.MI_INSTANCE, item))
             return tuple(l)
-        elif el_type == mi.MI_STRING:
-            return six.text_type(value)
         else:
             return value
 
