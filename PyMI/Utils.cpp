@@ -51,6 +51,26 @@ void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
         throw MI::Exception(L"Invalid name or index");
 }
 
+void Py2MIString(PyObject* pyValue, MI_Value& value)
+{
+    PyObject* pyStrValue = PyObject_CallMethod(pyValue, "__str__", NULL);
+    if (!pyStrValue)
+    {
+        throw MI::Exception(L"PyObject_CallMethod failed for __str__");
+    }
+
+    try
+    {
+        Py2MI(pyStrValue, value, MI_STRING);
+        Py_DECREF(pyStrValue);
+    }
+    catch (std::exception&)
+    {
+        Py_DECREF(pyStrValue);
+        throw;
+    }
+}
+
 void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
 {
     ZeroMemory(&value, sizeof(value));
@@ -91,6 +111,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         case MI_SINT64:
             value.sint64 = PyLong_AsLongLong(pyValue);
             break;
+        case MI_STRING:
+            Py2MIString(pyValue, value);
+            break;
         default:
             throw TypeConversionException();
         }
@@ -123,6 +146,9 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             break;
         case MI_SINT64:
             value.sint64 = PyInt_AsLong(pyValue);
+            break;
+        case MI_STRING:
+            Py2MIString(pyValue, value);
             break;
         default:
             throw TypeConversionException();
@@ -262,7 +288,14 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
     }
     else
     {
-        throw TypeConversionException();
+        switch (valueType)
+        {
+        case MI_STRING:
+            Py2MIString(pyValue, value);
+            break;
+        default:
+            throw TypeConversionException();
+        }
     }
 }
 
