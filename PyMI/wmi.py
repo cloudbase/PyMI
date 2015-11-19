@@ -64,6 +64,16 @@ class _Instance(object):
     def GetText_(self, text_format):
         return self._conn.serialize_instance(self)
 
+    def put(self):
+        if not self._instance.get_path():
+            self._conn.create_instance(self)
+        else:
+            self._conn.modify_instance(self)
+
+    def set(self, **kwargs):
+        for k, v in kwargs.items():
+            self.__setattr__(k, v)
+
 
 class _Class(object):
     def __init__(self, conn, className, cls):
@@ -112,22 +122,22 @@ class _Class(object):
 
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2",
-                 protocol=mi.PROTOCOL_WMIDCOM):
+                 protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
         self._ns = six.text_type(ns)
         self._app = mi.Application()
         self._session = self._app.create_session(
             computer_name=six.text_type(computer_name),
             protocol=six.text_type(protocol))
+        self._cache_classes = cache_classes
+        self._class_cache = {}
+        self._method_params_cache = {}
 
     def __del__(self):
         self._session = None
         self._app = None
 
     def __getattr__(self, name):
-        with self._session.get_class(
-                ns=self._ns, className=six.text_type(name)) as q:
-            cls = q.get_next_class().clone()
-            return _Class(self, name, cls)
+        return self.get_class(six.text_type(name))
 
     def _get_instances(self, op):
         l = []
@@ -158,8 +168,17 @@ class _Connection(object):
 
     def invoke_method(self, instance, method_name, *args, **kwargs):
         cls = instance._instance.get_class()
-        params = self._app.create_method_params(
-            cls, six.text_type(method_name))
+
+        params = None
+        if self._cache_classes:
+            params = self._method_params_cache.get((cls, method_name))
+
+        if params is None:
+            params = self._app.create_method_params(
+                cls, six.text_type(method_name))
+            if self._cache_classes:
+                self._method_params_cache[(cls, method_name)] = params
+                params = params.clone()
 
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
@@ -186,10 +205,21 @@ class _Connection(object):
             return s.serialize_instance(instance._instance)
 
     def get_class(self, class_name):
-        with self._session.get_class(ns=self._ns, className=class_name) as op:
-            cls = op.get_next_class()
-            if cls:
-                return _Class(self, class_name, cls.clone())
+        cls = None
+        if self._cache_classes:
+            cls = self._class_cache.get((self._ns, class_name))
+
+        if cls is None:
+            with self._session.get_class(
+                    ns=self._ns, className=class_name) as op:
+                cls = op.get_next_class()
+                if cls is not None:
+                    cls = cls.clone()
+                    if self._cache_classes:
+                        self._class_cache[(self._ns, class_name)] = cls
+
+        if cls:
+            return _Class(self, class_name, cls)
 
     def get_instance(self, class_name, key):
         c = self.get_class(class_name)
@@ -204,6 +234,12 @@ class _Connection(object):
                     return _Instance(self, instance.clone())
         except mi.error:
             return None
+
+    def create_instance(self, instance):
+        self._session.create_instance(self._ns, instance._instance)
+
+    def modify_instance(self, instance):
+        self._session.modify_instance(self._ns, instance._instance)
 
 
 def _wrap_element(conn, name, el_type, value):
@@ -229,7 +265,10 @@ def _wrap_element(conn, name, el_type, value):
 def _unwrap_element(el_type, value):
     if value is not None:
         if el_type == mi.MI_REFERENCE:
-            return WMI(value)._instance
+            instance = WMI(value)
+            if instance is None:
+                raise Exception("Reference not found: %s" % value)
+            return instance._instance
         elif el_type == mi.MI_INSTANCE:
             return value._instance
         elif el_type == mi.MI_BOOLEAN:
