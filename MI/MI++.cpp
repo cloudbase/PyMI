@@ -546,7 +546,7 @@ std::wstring Instance::GetNamespace()
     {
         const MI_Char* ns = NULL;
         MICheckResult(::MI_Instance_GetNameSpace(this->m_instance, &ns));
-        this->m_namespace = ns;
+        this->m_namespace = ns ? ns : L"";
     }
     return std::wstring(this->m_namespace);
 }
@@ -557,15 +557,7 @@ std::wstring Instance::GetServerName()
     {
         const MI_Char* serverName = NULL;
         MICheckResult(::MI_Instance_GetServerName(this->m_instance, &serverName));
-
-        if (serverName)
-        {
-            this->m_serverName = serverName;
-        }
-        else
-        {
-            this->m_serverName = L"";
-        }
+        this->m_serverName = serverName ? serverName : L"";
     }
     return std::wstring(this->m_serverName);
 }
