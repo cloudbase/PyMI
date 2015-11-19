@@ -11,13 +11,21 @@ path = sysconfig.get_python_lib()
 old_wmi_path = os.path.join(path, "wmi.py")
 
 VM_NAME = "wmi_benchmark_vm1"
+PORT_NAME = "port_name"
+SWITCH_NAME = 'external'
 
 
 def run_test():
+    from hyperv.neutron import utilsv2
+    from hyperv.neutron import security_groups_driver
     from hyperv.nova import constants
     from hyperv.nova import vmutilsv2
 
     u = vmutilsv2.VMUtilsV2()
+
+    net_utils = utilsv2.HyperVUtilsV2R2()
+    sg_gen = security_groups_driver.SecurityGroupRuleGeneratorR2()
+    sg_rules = sg_gen.create_default_sg_rules()
 
     if u.vm_exists(VM_NAME):
         u.destroy_vm(VM_NAME)
@@ -27,7 +35,7 @@ def run_test():
 
     u.set_boot_order(VM_NAME, (0, 1, 2, 3))
 
-    u.create_nic(VM_NAME, "nic1", "00:99:99:99:99:99")
+    u.create_nic(VM_NAME, PORT_NAME, "00:99:99:99:99:99")
 
     u.create_scsi_controller(VM_NAME)
     ctrl = u.get_vm_ide_controller(VM_NAME, 0)
@@ -39,6 +47,12 @@ def run_test():
     u.list_instances()
     u.get_vm_id(VM_NAME)
     u.set_vm_state(VM_NAME, constants.HYPERV_VM_STATE_ENABLED)
+
+    net_utils.connect_vnic_to_vswitch(SWITCH_NAME, PORT_NAME)
+    net_utils.set_vswitch_port_vlan_id(1000, PORT_NAME)
+    net_utils.create_security_rules(PORT_NAME, sg_rules)
+    net_utils.remove_all_security_rules(PORT_NAME)
+
     u.set_vm_state(VM_NAME, constants.HYPERV_VM_STATE_DISABLED)
     u.destroy_vm(VM_NAME)
 
