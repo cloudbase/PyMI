@@ -11,9 +11,9 @@
 *.userprefs
 
 # Build results
-[Dd]ebug/
+[Dd]ebug*/
 [Dd]ebugPublic/
-[Rr]elease/
+[Rr]elease*/
 [Rr]eleases/
 x64/
 x86/
@@ -230,3 +230,6 @@ _Pvt_Extensions
 .fake/
 
 *.pyc
+*.pyd
+*.egg-info
+dist

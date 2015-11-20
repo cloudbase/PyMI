@@ -5,7 +5,8 @@ from distutils import sysconfig
 
 
 path = os.path.dirname(os.path.abspath(__file__))
-mi_wmi_path = os.path.join(os.path.dirname(path), "wmi.py")
+mi_wmi_path = os.path.join(
+    os.path.join(os.path.dirname(path), "wmi"), "__init__.py")
 
 path = sysconfig.get_python_lib()
 old_wmi_path = os.path.join(path, "wmi.py")
@@ -38,10 +39,9 @@ def run_test():
     u.create_nic(VM_NAME, PORT_NAME, "00:99:99:99:99:99")
 
     u.create_scsi_controller(VM_NAME)
-    ctrl = u.get_vm_ide_controller(VM_NAME, 0)
+    u.get_vm_ide_controller(VM_NAME, 0)
     u.attach_ide_drive(
         VM_NAME, "c:\\VHDs\\test.vhdx", 0, 0, constants.DISK)
-
 
     u.get_vm_summary_info(VM_NAME)
     u.list_instances()

@@ -13,9 +13,10 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="ReadMe.txt" />
+    <Filter Include="Python">
+      <UniqueIdentifier>{30ce0327-f4e7-4c58-ab46-eecd70b49fa3}</UniqueIdentifier>
+      <Extensions>py</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -79,6 +80,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="wmi.py" />
+    <None Include="src\wmi\__init__.py">
+      <Filter>Python</Filter>
+    </None>
+    <None Include="setup.py">
+      <Filter>Python</Filter>
+    </None>
+    <None Include="README.rst" />
   </ItemGroup>
 </Project>
