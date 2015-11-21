@@ -54,7 +54,7 @@ Here's a simple example which enumerates all processes and kills any instance of
 WMI module basic usage
 ^^^^^^^^^^^^^^^^^^^^^^
 
-And here's the same example written using the *WMI* [#pywmi]_ module replacement,
+And here's the same example written using the *WMI* module replacement,
 which provides a simpler and higher level interface over the *mi* API: ::
 
     import wmi
