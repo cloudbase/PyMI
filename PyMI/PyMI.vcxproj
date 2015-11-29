@@ -286,6 +286,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;PYMI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -517,6 +518,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
+    <ClInclude Include="Callbacks.h" />
     <ClInclude Include="Class.h" />
     <ClInclude Include="Instance.h" />
     <ClInclude Include="Operation.h" />
@@ -529,6 +531,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="Callbacks.cpp" />
     <ClCompile Include="Class.cpp" />
     <ClCompile Include="Instance.cpp" />
     <ClCompile Include="Operation.cpp" />

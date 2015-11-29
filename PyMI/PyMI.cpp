@@ -30,6 +30,11 @@ static PyModuleDef mimodule = {
 
 PyObject* _initmi(void)
 {
+    if (!PyEval_ThreadsInitialized())
+    {
+        PyEval_InitThreads();
+    }
+
     PyDateTime_IMPORT;
 
     PyObject* m = NULL;

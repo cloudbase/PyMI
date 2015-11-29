@@ -14,6 +14,42 @@ namespace MI
     class Class;
     class Serializer;
 
+    class Callbacks
+    {
+    public:
+        virtual bool WriteError(Operation& operation, const Instance& instance)
+        {
+            return true;
+        }
+        virtual void WriteMessage(Operation& operation, unsigned channel, const std::wstring& message)
+        {
+        }
+        virtual void WriteProgress(Operation& operation, const std::wstring& activity, const std::wstring& currentOperation,
+                                   const std::wstring& statusDescription, unsigned percentageComplete,
+                                   unsigned secondsRemaining)
+        {
+        }
+        virtual void ClassResult(Operation& operation, const Class* miClass, bool moreResults, MI_Result resultCode,
+                                 const std::wstring& errorString, const Instance* errorDetails)
+        {
+        }
+        virtual void InstanceResult(Operation& operation, const Instance* instance, bool moreResults, MI_Result resultCode,
+                                    const std::wstring& errorString, const Instance* errorDetails)
+        {
+        }
+        virtual void IndicationResult(Operation& operation, const Instance* instance, const std::wstring& bookmark,
+                                      const std::wstring& machineID, bool moreResults, MI_Result resultCode,
+                                      const std::wstring& errorString, const Instance* errorDetails)
+        {
+        }
+        virtual void StreamedParameterResult(Operation& operation, const std::wstring& parameterName, MI_Type resultType, const MI_Value& result)
+        {
+        }
+        virtual ~Callbacks()
+        {
+        }
+    };
+
     class Application
     {
     private:
@@ -53,6 +89,7 @@ namespace MI
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
                                   const std::wstring& resultRole = L"", bool keysOnly = false);
+        Operation* Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks& callback, const std::wstring& dialect = L"WQL");
         void Close();
         bool IsClosed();
         virtual ~Session();
@@ -114,7 +151,6 @@ namespace MI
     private:
         MI_Class* m_class = NULL;
         bool m_ownsInstance = false;
-        Class(MI_Class* miClass, bool ownsInstance) : m_class(miClass), m_ownsInstance(ownsInstance) {}
         void Delete();
 
         friend Application;
@@ -123,6 +159,7 @@ namespace MI
         friend Serializer;
 
     public:
+        Class(MI_Class* miClass, bool ownsInstance) : m_class(miClass), m_ownsInstance(ownsInstance) {}
         unsigned GetElementsCount() const;
         std::vector<std::wstring> GetKey();
         ClassElement operator[] (const std::wstring& name) const;
@@ -175,12 +212,13 @@ namespace MI
     {
     private:
         MI_Operation m_operation;
-        Operation(MI_Operation& operation) : m_operation(operation) {}
         MI_Boolean m_hasMoreResults = TRUE;
+        bool m_ownsInstance = false;
 
         friend Session;
 
     public:
+        Operation(MI_Operation& operation, bool ownsInstance=true) : m_operation(operation), m_ownsInstance(ownsInstance) {}
         Instance* GetNextInstance();
         Class* GetNextClass();
         operator bool() { return m_hasMoreResults != FALSE; }

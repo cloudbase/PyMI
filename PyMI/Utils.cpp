@@ -5,6 +5,54 @@
 
 #include <datetime.h>
 
+void AllowThreads(std::function<void()> action)
+{
+    PyThreadState *_save;
+    _save = PyEval_SaveThread();
+
+    try
+    {
+        action();
+        PyEval_RestoreThread(_save);
+    }
+    catch(std::exception&)
+    {
+        PyEval_RestoreThread(_save);
+        throw;
+    }
+}
+
+void CallPythonCallback(PyObject* callable, const char* format, ...)
+{
+    va_list vargs;
+
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+    va_start(vargs, format);
+    PyObject* arglist = Py_VaBuildValue(format, vargs);
+    va_end(vargs);
+
+    if (arglist)
+    {
+        PyObject* result = PyObject_CallObject(callable, arglist);
+        Py_DECREF(arglist);
+        if (result)
+        {
+            Py_DECREF(result);
+        }
+        else
+        {
+            PyErr_Print();
+        }
+    }
+    else
+    {
+        PyErr_Print();
+    }
+
+    PyGILState_Release(gstate);
+}
 
 void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
 {

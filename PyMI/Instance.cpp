@@ -21,11 +21,11 @@ static int Instance_init(Instance* self, PyObject* args, PyObject* kwds)
 
 static void Instance_dealloc(Instance* self)
 {
-    if (self->instance)
+    if (self->instance && self->ownsInstance)
     {
         delete self->instance;
-        self->instance = NULL;
     }
+    self->instance = NULL;
 
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -211,10 +211,11 @@ static PyObject* Instance_GetClassName(Instance *self, PyObject*)
     }
 }
 
-Instance* Instance_New(MI::Instance* instance)
+Instance* Instance_New(MI::Instance* instance, bool ownsInstance)
 {
     Instance* obj = (Instance*)Instance_new(&InstanceType, NULL, NULL);
     obj->instance = instance;
+    obj->ownsInstance = ownsInstance;
     return obj;
 }
 

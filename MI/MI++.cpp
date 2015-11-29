@@ -6,7 +6,7 @@
 
 using namespace MI;
 
-void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
+static void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
 {
     if (result != MI_RESULT_OK)
     {
@@ -19,13 +19,213 @@ void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
     }
 }
 
-void ReplaceAll(std::wstring& str, const std::wstring& from, const std::wstring& to)
+static void ReplaceAll(std::wstring& str, const std::wstring& from, const std::wstring& to)
 {
     size_t start_pos = 0;
     while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }
+}
+
+static void MI_CALL MIOperationCallbackWriteError(MI_Operation* operation, void* callbackContext, MI_Instance* instance,
+    MI_Result(MI_CALL* writeErrorResult)(_In_ MI_Operation *operation, MI_OperationCallback_ResponseType response))
+{
+    MI_OperationCallback_ResponseType response = MI_OperationCallback_ResponseType_Yes;
+
+    if (callbackContext)
+    {
+        try
+        {
+            if (!((Callbacks*)callbackContext)->WriteError(Operation(*operation, false), Instance(instance, false)))
+            {
+                response = MI_OperationCallback_ResponseType_No;
+            }
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+    }
+
+    if (writeErrorResult)
+    {
+        writeErrorResult(operation, response);
+    }
+}
+
+static void MI_CALL MIOperationCallbackWriteMessage(MI_Operation* operation, void* callbackContext, MI_Uint32 channel, const MI_Char* message)
+{
+    if (callbackContext)
+    {
+        try
+        {
+            ((Callbacks*)callbackContext)->WriteMessage(Operation(*operation, false), channel, message);
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+    }
+}
+
+static void MI_CALL MIOperationCallbackWriteProgress(MI_Operation* operation, void* callbackContext, const MI_Char* activity,
+    const MI_Char* currentOperation, const MI_Char* statusDescription, MI_Uint32 percentageComplete, MI_Uint32 secondsRemaining)
+{
+    if (callbackContext)
+    {
+        try
+        {
+            ((Callbacks*)callbackContext)->WriteProgress(Operation(*operation, false), activity, currentOperation, statusDescription,
+                percentageComplete, secondsRemaining);
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+    }
+}
+
+static void MI_CALL MIOperationCallbackClass(MI_Operation* operation, void* callbackContext, const MI_Class* classResult,
+    MI_Boolean moreResults, MI_Result resultCode, const MI_Char* errorString, const MI_Instance* errorDetails,
+    MI_Result(MI_CALL* resultAcknowledgement)(MI_Operation* operation))
+{
+    if (callbackContext)
+    {
+        const Class* classResultObj = classResult ? new Class((MI_Class*)classResult, false) : NULL;
+        const Instance* errorDetailsObj = errorDetails ? new Instance((MI_Instance*)errorDetails, false) : NULL;
+
+        try
+        {
+            ((Callbacks*)callbackContext)->ClassResult(Operation(*operation, false), classResultObj, moreResults ? true : false,
+                resultCode, errorString ? errorString : L"", errorDetailsObj);
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+
+        if (classResultObj)
+        {
+            delete classResultObj;
+        }
+
+        if (errorDetailsObj)
+        {
+            delete errorDetailsObj;
+        }
+    }
+
+    if (resultAcknowledgement)
+    {
+        resultAcknowledgement(operation);
+    }
+}
+
+static void MI_CALL MIOperationCallbackInstance(MI_Operation* operation, void* callbackContext, const MI_Instance* instance, MI_Boolean moreResults,
+    MI_Result resultCode, const MI_Char* errorString, const MI_Instance* errorDetails, MI_Result(MI_CALL* resultAcknowledgement)(MI_Operation *operation))
+{
+    if (callbackContext)
+    {
+        const Instance* instanceObj = instance ? new Instance((MI_Instance*)instance, false) : NULL;
+        const Instance* errorDetailsObj = errorDetails ? new Instance((MI_Instance*)errorDetails, false) : NULL;
+
+        try
+        {
+            ((Callbacks*)callbackContext)->InstanceResult(Operation(*operation, false), instanceObj, moreResults ? true : false, resultCode,
+                errorString ? errorString : L"", errorDetailsObj);
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+
+        if (instanceObj)
+        {
+            delete instanceObj;
+        }
+
+        if (errorDetailsObj)
+        {
+            delete errorDetailsObj;
+        }
+    }
+
+    if (resultAcknowledgement)
+    {
+        resultAcknowledgement(operation);
+    }
+}
+
+static void MI_CALL MIOperationCallbackIndication(MI_Operation* operation, void* callbackContext, const MI_Instance* instance, const MI_Char* bookmark,
+    const MI_Char* machineID, MI_Boolean moreResults, MI_Result resultCode, const MI_Char* errorString, const MI_Instance* errorDetails,
+    MI_Result(MI_CALL* resultAcknowledgement)(MI_Operation *operation))
+{
+    if (callbackContext)
+    {
+        const Instance* instanceObj = instance ? new Instance((MI_Instance*)instance, false) : NULL;
+        const Instance* errorDetailsObj = errorDetails ? new Instance((MI_Instance*)errorDetails, false) : NULL;
+
+        try
+        {
+            ((Callbacks*)callbackContext)->IndicationResult(Operation(*operation, false), instanceObj, bookmark ? bookmark : L"", machineID ? machineID : L"",
+                moreResults ? true : false, resultCode, errorString ? errorString : L"", errorDetailsObj);
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+
+        if (instanceObj)
+        {
+            delete instanceObj;
+        }
+
+        if (errorDetailsObj)
+        {
+            delete errorDetailsObj;
+        }
+    }
+
+    if (resultAcknowledgement)
+    {
+        resultAcknowledgement(operation);
+    }
+}
+
+static void MI_CALL MIOperationCallbackStreamedParameter(MI_Operation* operation, void* callbackContext, const MI_Char* parameterName, MI_Type resultType,
+    const MI_Value* result, MI_Result(MI_CALL* resultAcknowledgement)(MI_Operation *operation))
+{
+    if (callbackContext)
+    {
+        try
+        {
+            ((Callbacks*)callbackContext)->StreamedParameterResult(Operation(*operation, false), parameterName, resultType, *result);
+        }
+        catch (std::exception&)
+        {
+            // Ignore
+        }
+    }
+
+    if (resultAcknowledgement)
+    {
+        resultAcknowledgement(operation);
+    }
+}
+
+static MI_OperationCallbacks GetMIOperationCallbacks(Callbacks& callback)
+{
+    MI_OperationCallbacks opCallbacks = MI_OPERATIONCALLBACKS_NULL;
+    opCallbacks.callbackContext = &callback;
+    opCallbacks.writeError = MIOperationCallbackWriteError;
+    opCallbacks.writeMessage = MIOperationCallbackWriteMessage;
+    opCallbacks.writeProgress = MIOperationCallbackWriteProgress;
+    opCallbacks.instanceResult = MIOperationCallbackInstance;
+    opCallbacks.indicationResult = MIOperationCallbackIndication;
+    opCallbacks.classResult = MIOperationCallbackClass;
+    opCallbacks.streamedParameterResult = MIOperationCallbackStreamedParameter;
+    return opCallbacks;
 }
 
 Application::Application(const std::wstring& appId)
@@ -264,7 +464,7 @@ Operation::~Operation()
 {
     try
     {
-        if (!this->IsClosed())
+        if (this->m_ownsInstance && !this->IsClosed())
         {
             this->Close();
         }
@@ -339,7 +539,7 @@ Operation* Session::ExecQuery(const std::wstring& ns, const std::wstring& query,
 }
 
 Operation* Session::GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass,
-                                   const std::wstring& resultClass, const std::wstring& role, const std::wstring& resultRole, bool keysOnly)
+    const std::wstring& resultClass, const std::wstring& role, const std::wstring& resultRole, bool keysOnly)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_AssociatorInstances(
@@ -402,6 +602,16 @@ Operation* Session::GetClass(const std::wstring& ns, const std::wstring& classNa
     MI_Class* miClass = NULL;
     MI_Operation op;
     ::MI_Session_GetClass(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, NULL, ns.c_str(), className.c_str(), NULL, &op);
+    return new Operation(op);
+}
+
+Operation* Session::Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks& callbacks, const std::wstring& dialect)
+{
+    MI_OperationCallbacks opCallbacks = GetMIOperationCallbacks(callbacks);
+    MI_Operation op;
+    // TODO: Add MI_SubscriptionDeliveryOptions for WinRM case
+    ::MI_Session_Subscribe(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, NULL, ns.c_str(), dialect.c_str(), query.c_str(),
+        NULL, &opCallbacks, &op);
     return new Operation(op);
 }
 

@@ -3,8 +3,10 @@
 #include "Application.h"
 #include "Operation.h"
 #include "Instance.h"
+#include "Callbacks.h"
 #include "Utils.h"
 #include "PyMI.h"
+
 
 static PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -24,9 +26,18 @@ static void Session_dealloc(Session* self)
 {
     if (self->session)
     {
-        delete self->session;
+        AllowThreads([&]() {
+            delete self->session;
+        });
         self->session = NULL;
     }
+
+    for (MI::Callbacks* callbacks : *self->operationCallbacks)
+    {
+        delete callbacks;
+    }
+    delete self->operationCallbacks;
+    self->operationCallbacks = NULL;
 
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -88,7 +99,10 @@ static PyObject* Session_Close(Session *self, PyObject*)
 {
     try
     {
-        self->session->Close();
+        AllowThreads([&]()
+        {
+            self->session->Close();
+        });
         Py_RETURN_NONE;
     }
     catch (std::exception& ex)
@@ -106,8 +120,12 @@ static PyObject* Session_self(Operation *self, PyObject*)
 
 static PyObject* Session_exit(Session* self, PyObject*)
 {
-    if (!self->session->IsClosed())
-        self->session->Close();
+    AllowThreads([&]()
+    {
+        if (!self->session->IsClosed())
+            self->session->Close();
+    });
+
     Py_RETURN_NONE;
 }
 
@@ -228,6 +246,37 @@ static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kw
     }
 }
 
+static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* ns = NULL;
+    wchar_t* query = NULL;
+    PyObject* indicationResultCallback = NULL;
+    wchar_t* dialect = L"WQL";
+
+    static char *kwlist[] = { "ns", "query", "indicationResult", "dialect", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uuO|u", kwlist, &ns, &query, &indicationResultCallback, &dialect))
+        return NULL;
+    if (!PyCallable_Check(indicationResultCallback)) {
+        PyErr_SetString(PyExc_TypeError, "parameter indicationResult must be callable");
+        return NULL;
+    }
+
+    PythonMICallbacks* callbacks = new PythonMICallbacks(indicationResultCallback);
+    try
+    {
+        MI::Operation* op = self->session->Subscribe(ns, query, *callbacks, dialect);
+        PyObject* obj = (PyObject*)Operation_New(op);
+        self->operationCallbacks->push_back(callbacks);
+        return obj;
+    }
+    catch (std::exception& ex)
+    {
+        delete callbacks;
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
 {
     PyObject* instance = NULL;
@@ -264,6 +313,7 @@ Session* Session_New(MI::Session* session)
 {
     Session* obj = (Session*)Session_new(&SessionType, NULL, NULL);
     obj->session = session;
+    obj->operationCallbacks = new std::vector<MI::Callbacks*>();
     return obj;
 }
 
@@ -280,6 +330,7 @@ static PyMethodDef Session_methods[] = {
     { "modify_instance", (PyCFunction)Session_ModifyInstance, METH_VARARGS | METH_KEYWORDS, "Modifies an instance." },
     { "delete_instance", (PyCFunction)Session_DeleteInstance, METH_VARARGS | METH_KEYWORDS, "Deletes an instance." },
     { "get_instance", (PyCFunction)Session_GetInstance, METH_VARARGS | METH_KEYWORDS, "Retrieves an instance." },
+    { "subscribe", (PyCFunction)Session_Subscribe, METH_VARARGS | METH_KEYWORDS, "Subscribes to events." },
     { "close", (PyCFunction)Session_Close, METH_NOARGS, "Closes the session." },
     { "__enter__", (PyCFunction)Session_self, METH_NOARGS, "" },
     { "__exit__",  (PyCFunction)Session_exit, METH_VARARGS, "" },
