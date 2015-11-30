@@ -16,6 +16,7 @@
 import datetime
 import re
 import six
+import threading
 
 import mi
 
@@ -146,27 +147,47 @@ class _Class(object):
 class _EventWatcher(object):
     def __init__(self, conn, wql):
         self._conn = conn
-        self._wql = wql
-        self._operation = None
-        self._timeout_ms = None
+        self._events_queue = []
+        self._error = None
+        self._event = threading.Event()
+        self._operation = self._conn.subscribe(
+            wql, self._indication_result)
+
+    def _process_events(self):
+        if self._error:
+            err = self._error
+            self._error = None
+            raise x_wmi(info=err[1])
+        if self._events_queue:
+            return self._events_queue.pop(0)
 
     def __call__(self, timeout_ms=-1):
-        if self._timeout_ms is not None and timeout_ms != self._timeout_ms:
-            raise Exception("Changing timeout_ms is not supported")
-
-        if not self._operation:
-            self._operation = self._conn.subscribe(self._wql, timeout_ms)
-            self._timeout_ms = timeout_ms
         try:
-            instance = self._operation.get_next_indication()
-            if instance:
-                return _Instance(
-                    self._conn, instance[u"TargetInstance"].clone())
-        except Exception as ex:
-            raise mi_to_wmi_exception(ex)
+            event = self._process_events()
+            if event:
+                return event
+
+            timeout = None
+            if timeout_ms >= 0:
+                timeout = timeout_ms / 1000.0
+            if not self._event.wait(timeout):
+                raise x_wmi_timed_out()
+            self._event.clear()
+
+            return self._process_events()
         finally:
             if not self._operation.has_more_results():
                 self.close()
+
+    def _indication_result(self, instance, bookmark, machine_id, more_results,
+                           result_code, error_string, error_details):
+        if instance:
+            event = instance[u"TargetInstance"]
+            self._events_queue.append(_Instance(self._conn, event.clone()))
+        if error_details:
+            self._error = (result_code, error_string,
+                           _Instance(self._conn, error_details.clone()))
+        self._event.set()
 
     def close(self):
         if self._operation:
@@ -174,6 +195,7 @@ class _EventWatcher(object):
             self._operation.close()
             self._operation = None
             self._timeout_ms = None
+        self._events_queue = []
 
     def __del__(self):
         self.close()
@@ -300,19 +322,9 @@ class _Connection(object):
     def modify_instance(self, instance):
         self._session.modify_instance(self._ns, instance._instance)
 
-    def subscribe(self, query, timeout_ms):
-        # In the MI API, 0 is the infinite timeout, not -1
-        if timeout_ms == 0:
-            timeout_ms = 1
-        elif timeout_ms < 0:
-            timeout_ms = 0
-        operation_options = self._app.create_operation_options()
-        operation_options.set_timeout(
-            datetime.timedelta(milliseconds=timeout_ms))
-
+    def subscribe(self, query, indication_result):
         return self._session.subscribe(
-            self._ns, six.text_type(query),
-            operation_options=operation_options)
+            self._ns, six.text_type(query), indication_result)
 
 
 def _wrap_element(conn, name, el_type, value):
