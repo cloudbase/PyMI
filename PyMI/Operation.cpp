@@ -49,7 +49,10 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
 {
     try
     {
-        MI::Instance* instance = self->operation->GetNextInstance();
+        MI::Instance* instance = NULL;
+        AllowThreads([&]() {
+            instance = self->operation->GetNextInstance();
+        });
         if (instance)
         {
             return (PyObject*)Instance_New(instance);
@@ -67,7 +70,10 @@ static PyObject* Operation_GetNextClass(Operation* self, PyObject*)
 {
     try
     {
-        MI::Class* miClass = self->operation->GetNextClass();
+        MI::Class* miClass = NULL;
+        AllowThreads([&]() {
+            miClass = self->operation->GetNextClass();
+        });
         if (miClass)
         {
             return (PyObject*)Class_New(miClass);

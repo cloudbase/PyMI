@@ -58,7 +58,9 @@ static void Application_dealloc(Application* self)
 {
     if (self->app)
     {
-        delete self->app;
+        AllowThreads([&]() {
+            delete self->app;
+        });
         self->app = NULL;
     }
 
@@ -149,7 +151,9 @@ static PyObject* Application_Close(Application *self, PyObject*)
 {
     try
     {
-        self->app->Close();
+        AllowThreads([&]() {
+            self->app->Close();
+        });
         Py_RETURN_NONE;
     }
     catch (std::exception& ex)
@@ -167,8 +171,10 @@ static PyObject* Application_self(Application *self, PyObject*)
 
 static PyObject* Application_exit(Application* self, PyObject*)
 {
-    if (!self->app->IsClosed())
-        self->app->Close();
+    AllowThreads([&]() {
+        if (!self->app->IsClosed())
+            self->app->Close();
+    });
     Py_RETURN_NONE;
 }
 
