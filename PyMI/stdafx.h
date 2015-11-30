@@ -30,6 +30,12 @@
 #define PYUNICODEASVARCHARARG1TYPE PyObject
 #else
 #define PYUNICODEASVARCHARARG1TYPE PyUnicodeObject
+
+#define PyDateTime_DELTA_GET_DAYS(o)         (((PyDateTime_Delta*)o)->days)
+#define PyDateTime_DELTA_GET_SECONDS(o)      (((PyDateTime_Delta*)o)->seconds)
+#define PyDateTime_DELTA_GET_MICROSECONDS(o)            \
+    (((PyDateTime_Delta*)o)->microseconds)
+
 #endif
 
 // TODO: reference additional headers your program requires here
