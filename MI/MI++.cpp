@@ -6,14 +6,27 @@
 
 using namespace MI;
 
-static void MICheckResult(MI_Result result, MI_Instance* extError = NULL)
+#define WMI_ERR_TIMEOUT 0x00040004
+
+static void MICheckResult(MI_Result result, const MI_Instance* extError = NULL)
 {
     if (result != MI_RESULT_OK)
     {
         if (extError)
         {
-            // TODO: do something with extError
-            ::MI_Instance_Delete(extError);
+            Instance instance((MI_Instance*)extError, false);
+            if (instance.GetClassName() == L"MSFT_WmiError")
+            {
+                MI_Char* message = instance[L"Message"].m_value.string;
+                ValueElement errorCode = instance[L"error_code"];
+                switch(errorCode.m_value.uint32)
+                {
+                case WMI_ERR_TIMEOUT:
+                    throw MITimeoutException(result, message);
+                default:
+                    throw MIException(result, message);
+                }
+            }
         }
         throw MIException(result);
     }
@@ -316,6 +329,13 @@ Serializer* Application::NewSerializer()
     return new Serializer(serializer);
 }
 
+OperationOptions* Application::NewOperationOptions()
+{
+    MI_OperationOptions operationOptions;
+    MICheckResult(::MI_Application_NewOperationOptions(&this->m_app, MI_FALSE, &operationOptions));
+    return new OperationOptions(operationOptions);
+}
+
 unsigned Class::GetMethodCount() const
 {
     MI_Uint32 count = 0;
@@ -507,6 +527,31 @@ Session* Application::NewSession(const std::wstring& protocol, const std::wstrin
     return new Session(session);
 }
 
+void OperationOptions::SetTimeout(const MI_Interval& timeout)
+{
+    MICheckResult(::MI_OperationOptions_SetTimeout(&this->m_operationOptions, &timeout));
+}
+
+MI_Interval OperationOptions::GetTimeout()
+{
+    MI_Interval timeout;
+    MICheckResult(::MI_OperationOptions_GetTimeout(&this->m_operationOptions, &timeout));
+    return timeout;
+}
+
+OperationOptions* OperationOptions::Clone()
+{
+    MI_OperationOptions clonedOperationOptions;
+    MICheckResult(::MI_OperationOptions_Clone(&this->m_operationOptions, &clonedOperationOptions));
+    return new OperationOptions(clonedOperationOptions);
+}
+
+OperationOptions::~OperationOptions()
+{
+    ::MI_OperationOptions_Delete(&this->m_operationOptions);
+    this->m_operationOptions = MI_OPERATIONOPTIONS_NULL;
+}
+
 bool Session::IsClosed()
 {
     MI_Session nullSession = MI_SESSION_NULL;
@@ -608,13 +653,14 @@ Operation* Session::GetClass(const std::wstring& ns, const std::wstring& classNa
     return new Operation(op);
 }
 
-Operation* Session::Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callbacks, const std::wstring& dialect)
+Operation* Session::Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callbacks,
+    OperationOptions* operationOptions, const std::wstring& dialect)
 {
     MI_OperationCallbacks opCallbacks = GetMIOperationCallbacks(callbacks);
     MI_Operation op;
     // TODO: Add MI_SubscriptionDeliveryOptions for WinRM case
-    ::MI_Session_Subscribe(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, NULL, ns.c_str(), dialect.c_str(), query.c_str(),
-        NULL, callbacks ? &opCallbacks : NULL, &op);
+    ::MI_Session_Subscribe(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, operationOptions ? &operationOptions->m_operationOptions : NULL,
+        ns.c_str(), dialect.c_str(), query.c_str(), NULL, callbacks ? &opCallbacks : NULL, &op);
     return new Operation(op);
 }
 
@@ -811,7 +857,7 @@ Class* Operation::GetNextClass()
 
         const MI_Class* miClass = NULL;
         MICheckResult(::MI_Operation_GetClass(&this->m_operation, &miClass, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
-        MICheckResult(miResult);
+        MICheckResult(miResult, compDetails);
 
         if (miClass)
         {
@@ -831,7 +877,7 @@ Instance* Operation::GetNextInstance()
         const MI_Instance* compDetails = NULL;
         const MI_Instance* miInstance = NULL;
         MICheckResult(::MI_Operation_GetInstance(&this->m_operation, &miInstance, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
-        MICheckResult(miResult);
+        MICheckResult(miResult, compDetails);
 
         if (miInstance)
         {
@@ -852,7 +898,7 @@ Instance* Operation::GetNextIndication()
         const MI_Instance* miInstance = NULL;
         // TODO: Add bookmark and machineID support
         MICheckResult(::MI_Operation_GetIndication(&this->m_operation, &miInstance, NULL, NULL, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
-        MICheckResult(miResult);
+        MICheckResult(miResult, compDetails);
 
         if (miInstance)
         {

@@ -26,4 +26,10 @@ namespace MI
     public:
         MIException(MI_Result result, const std::wstring& message = L"");
     };
+
+    class MITimeoutException : public MIException
+    {
+    public:
+        MITimeoutException(MI_Result result = MI_RESULT_FAILED, const std::wstring& message = L"A timeout occurred") : MIException(result, message) {}
+    };
 };

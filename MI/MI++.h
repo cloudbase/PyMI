@@ -13,6 +13,7 @@ namespace MI
     class Operation;
     class Class;
     class Serializer;
+    class OperationOptions;
 
     class Callbacks
     {
@@ -25,21 +26,21 @@ namespace MI
         {
         }
         virtual void WriteProgress(Operation& operation, const std::wstring& activity, const std::wstring& currentOperation,
-                                   const std::wstring& statusDescription, unsigned percentageComplete,
-                                   unsigned secondsRemaining)
+            const std::wstring& statusDescription, unsigned percentageComplete,
+            unsigned secondsRemaining)
         {
         }
         virtual void ClassResult(Operation& operation, const Class* miClass, bool moreResults, MI_Result resultCode,
-                                 const std::wstring& errorString, const Instance* errorDetails)
+            const std::wstring& errorString, const Instance* errorDetails)
         {
         }
         virtual void InstanceResult(Operation& operation, const Instance* instance, bool moreResults, MI_Result resultCode,
-                                    const std::wstring& errorString, const Instance* errorDetails)
+            const std::wstring& errorString, const Instance* errorDetails)
         {
         }
         virtual void IndicationResult(Operation& operation, const Instance* instance, const std::wstring& bookmark,
-                                      const std::wstring& machineID, bool moreResults, MI_Result resultCode,
-                                      const std::wstring& errorString, const Instance* errorDetails)
+            const std::wstring& machineID, bool moreResults, MI_Result resultCode,
+            const std::wstring& errorString, const Instance* errorDetails)
         {
         }
         virtual void StreamedParameterResult(Operation& operation, const std::wstring& parameterName, MI_Type resultType, const MI_Value& result)
@@ -66,7 +67,24 @@ namespace MI
         Instance* NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
         Instance* NewInstanceFromClass(const std::wstring& className, const Class& miClass);
         Session* NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
+        OperationOptions* NewOperationOptions();
         Serializer* NewSerializer();
+    };
+
+    class OperationOptions
+    {
+    private:
+        MI_OperationOptions m_operationOptions;
+        OperationOptions(MI_OperationOptions operationOptions) : m_operationOptions(operationOptions) {}
+
+        friend Application;
+        friend Session;
+
+    public:
+        OperationOptions* Clone();
+        void SetTimeout(const MI_Interval& timeout);
+        MI_Interval GetTimeout();
+        virtual ~OperationOptions();
     };
 
     class Session
@@ -87,9 +105,10 @@ namespace MI
         Operation* GetClass(const std::wstring& ns, const std::wstring& className);
         Operation* GetInstance(const std::wstring& ns, const Instance& keyInstance);
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
-                                  const std::wstring& resultClass = L"", const std::wstring& role = L"",
-                                  const std::wstring& resultRole = L"", bool keysOnly = false);
-        Operation* Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callback = NULL, const std::wstring& dialect = L"WQL");
+            const std::wstring& resultClass = L"", const std::wstring& role = L"",
+            const std::wstring& resultRole = L"", bool keysOnly = false);
+        Operation* Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callback=NULL,
+            OperationOptions* operationOptions=NULL, const std::wstring& dialect = L"WQL");
         void Close();
         bool IsClosed();
         virtual ~Session();
