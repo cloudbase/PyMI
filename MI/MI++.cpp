@@ -214,17 +214,20 @@ static void MI_CALL MIOperationCallbackStreamedParameter(MI_Operation* operation
     }
 }
 
-static MI_OperationCallbacks GetMIOperationCallbacks(Callbacks& callback)
+static MI_OperationCallbacks GetMIOperationCallbacks(Callbacks* callback)
 {
     MI_OperationCallbacks opCallbacks = MI_OPERATIONCALLBACKS_NULL;
-    opCallbacks.callbackContext = &callback;
-    opCallbacks.writeError = MIOperationCallbackWriteError;
-    opCallbacks.writeMessage = MIOperationCallbackWriteMessage;
-    opCallbacks.writeProgress = MIOperationCallbackWriteProgress;
-    opCallbacks.instanceResult = MIOperationCallbackInstance;
-    opCallbacks.indicationResult = MIOperationCallbackIndication;
-    opCallbacks.classResult = MIOperationCallbackClass;
-    opCallbacks.streamedParameterResult = MIOperationCallbackStreamedParameter;
+    if (callback)
+    {
+        opCallbacks.callbackContext = callback;
+        opCallbacks.writeError = MIOperationCallbackWriteError;
+        opCallbacks.writeMessage = MIOperationCallbackWriteMessage;
+        opCallbacks.writeProgress = MIOperationCallbackWriteProgress;
+        opCallbacks.instanceResult = MIOperationCallbackInstance;
+        opCallbacks.indicationResult = MIOperationCallbackIndication;
+        opCallbacks.classResult = MIOperationCallbackClass;
+        opCallbacks.streamedParameterResult = MIOperationCallbackStreamedParameter;
+    }
     return opCallbacks;
 }
 
@@ -605,13 +608,13 @@ Operation* Session::GetClass(const std::wstring& ns, const std::wstring& classNa
     return new Operation(op);
 }
 
-Operation* Session::Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks& callbacks, const std::wstring& dialect)
+Operation* Session::Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callbacks, const std::wstring& dialect)
 {
     MI_OperationCallbacks opCallbacks = GetMIOperationCallbacks(callbacks);
     MI_Operation op;
     // TODO: Add MI_SubscriptionDeliveryOptions for WinRM case
     ::MI_Session_Subscribe(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, NULL, ns.c_str(), dialect.c_str(), query.c_str(),
-        NULL, &opCallbacks, &op);
+        NULL, callbacks ? &opCallbacks : NULL, &op);
     return new Operation(op);
 }
 
@@ -826,7 +829,6 @@ Instance* Operation::GetNextInstance()
         MI_Result miResult = MI_RESULT_OK;
         const MI_Char* errMsg = NULL;
         const MI_Instance* compDetails = NULL;
-
         const MI_Instance* miInstance = NULL;
         MICheckResult(::MI_Operation_GetInstance(&this->m_operation, &miInstance, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
         MICheckResult(miResult);
@@ -840,6 +842,26 @@ Instance* Operation::GetNextInstance()
     return NULL;
 }
 
+Instance* Operation::GetNextIndication()
+{
+    if (this->m_hasMoreResults)
+    {
+        MI_Result miResult = MI_RESULT_OK;
+        const MI_Char* errMsg = NULL;
+        const MI_Instance* compDetails = NULL;
+        const MI_Instance* miInstance = NULL;
+        // TODO: Add bookmark and machineID support
+        MICheckResult(::MI_Operation_GetIndication(&this->m_operation, &miInstance, NULL, NULL, &this->m_hasMoreResults, &miResult, &errMsg, &compDetails));
+        MICheckResult(miResult);
+
+        if (miInstance)
+        {
+            return new Instance((MI_Instance*)miInstance, false);
+        }
+    }
+
+    return NULL;
+}
 
 std::wstring Serializer::SerializeInstance(const Instance& instance, bool includeClass)
 {

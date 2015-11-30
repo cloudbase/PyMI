@@ -89,7 +89,7 @@ namespace MI
         Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
                                   const std::wstring& resultClass = L"", const std::wstring& role = L"",
                                   const std::wstring& resultRole = L"", bool keysOnly = false);
-        Operation* Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks& callback, const std::wstring& dialect = L"WQL");
+        Operation* Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callback = NULL, const std::wstring& dialect = L"WQL");
         void Close();
         bool IsClosed();
         virtual ~Session();
@@ -221,6 +221,7 @@ namespace MI
         Operation(MI_Operation& operation, bool ownsInstance=true) : m_operation(operation), m_ownsInstance(ownsInstance) {}
         Instance* GetNextInstance();
         Class* GetNextClass();
+        Instance* GetNextIndication();
         operator bool() { return m_hasMoreResults != FALSE; }
         void Cancel();
         void Close();

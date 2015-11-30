@@ -66,6 +66,27 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
     }
 }
 
+static PyObject* Operation_GetNextIndication(Operation* self, PyObject*)
+{
+    try
+    {
+        MI::Instance* instance = NULL;
+        AllowThreads([&]() {
+            instance = self->operation->GetNextIndication();
+        });
+        if (instance)
+        {
+            return (PyObject*)Instance_New(instance);
+        }
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyObject* Operation_GetNextClass(Operation* self, PyObject*)
 {
     try
@@ -128,6 +149,7 @@ static PyMemberDef Operation_members[] = {
 static PyMethodDef Operation_methods[] = {
     { "get_next_instance", (PyCFunction)Operation_GetNextInstance, METH_NOARGS, "Returns the next instance." },
     { "get_next_class", (PyCFunction)Operation_GetNextClass, METH_NOARGS, "Returns the next class." },
+    { "get_next_indication", (PyCFunction)Operation_GetNextIndication, METH_NOARGS, "Returns the next result from a subscription." },
     { "cancel", (PyCFunction)Operation_Cancel, METH_NOARGS, "Cancels the operation." },
     { "close", (PyCFunction)Operation_Close, METH_NOARGS, "Closes the operation." },
     { "__enter__", (PyCFunction)Operation_self, METH_NOARGS, "" },

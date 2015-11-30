@@ -254,19 +254,27 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
     wchar_t* dialect = L"WQL";
 
     static char *kwlist[] = { "ns", "query", "indicationResult", "dialect", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uuO|u", kwlist, &ns, &query, &indicationResultCallback, &dialect))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|Ou", kwlist, &ns, &query, &indicationResultCallback, &dialect))
         return NULL;
-    if (!PyCallable_Check(indicationResultCallback)) {
+    if (indicationResultCallback && !PyCallable_Check(indicationResultCallback)) {
         PyErr_SetString(PyExc_TypeError, "parameter indicationResult must be callable");
         return NULL;
     }
 
-    PythonMICallbacks* callbacks = new PythonMICallbacks(indicationResultCallback);
+    PythonMICallbacks* callbacks = NULL;
+    if (indicationResultCallback)
+    {
+        callbacks = new PythonMICallbacks(indicationResultCallback);
+    }
+
     try
     {
-        MI::Operation* op = self->session->Subscribe(ns, query, *callbacks, dialect);
+        MI::Operation* op = self->session->Subscribe(ns, query, callbacks, dialect);
         PyObject* obj = (PyObject*)Operation_New(op);
-        self->operationCallbacks->push_back(callbacks);
+        if (callbacks)
+        {
+            self->operationCallbacks->push_back(callbacks);
+        }
         return obj;
     }
     catch (std::exception& ex)
