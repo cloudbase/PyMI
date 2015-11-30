@@ -253,11 +253,11 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
     PyObject* indicationResultCallback = NULL;
     wchar_t* dialect = L"WQL";
 
-    static char *kwlist[] = { "ns", "query", "indicationResult", "dialect", NULL };
+    static char *kwlist[] = { "ns", "query", "indication_result", "dialect", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|Ou", kwlist, &ns, &query, &indicationResultCallback, &dialect))
         return NULL;
     if (indicationResultCallback && !PyCallable_Check(indicationResultCallback)) {
-        PyErr_SetString(PyExc_TypeError, "parameter indicationResult must be callable");
+        PyErr_SetString(PyExc_TypeError, "parameter indication_result must be callable");
         return NULL;
     }
 
