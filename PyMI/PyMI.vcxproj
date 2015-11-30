@@ -522,6 +522,7 @@
     <ClInclude Include="Class.h" />
     <ClInclude Include="Instance.h" />
     <ClInclude Include="Operation.h" />
+    <ClInclude Include="OperationOptions.h" />
     <ClInclude Include="PyMI.h" />
     <ClInclude Include="Serializer.h" />
     <ClInclude Include="Session.h" />
@@ -535,6 +536,7 @@
     <ClCompile Include="Class.cpp" />
     <ClCompile Include="Instance.cpp" />
     <ClCompile Include="Operation.cpp" />
+    <ClCompile Include="OperationOptions.cpp" />
     <ClCompile Include="PyMI.cpp" />
     <ClCompile Include="Serializer.cpp" />
     <ClCompile Include="Session.cpp" />

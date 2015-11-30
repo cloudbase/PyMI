@@ -4,6 +4,7 @@
 #include "Operation.h"
 #include "Instance.h"
 #include "Callbacks.h"
+#include "OperationOptions.h"
 #include "Utils.h"
 #include "PyMI.h"
 
@@ -251,13 +252,20 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
     wchar_t* ns = NULL;
     wchar_t* query = NULL;
     PyObject* indicationResultCallback = NULL;
+    PyObject* operationOptions = NULL;
     wchar_t* dialect = L"WQL";
 
-    static char *kwlist[] = { "ns", "query", "indication_result", "dialect", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|Ou", kwlist, &ns, &query, &indicationResultCallback, &dialect))
+    static char *kwlist[] = { "ns", "query", "indication_result", "operation_options", "dialect", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|OOu", kwlist, &ns, &query, &indicationResultCallback, &operationOptions, &dialect))
         return NULL;
-    if (indicationResultCallback && !PyCallable_Check(indicationResultCallback)) {
+    if (indicationResultCallback && !PyCallable_Check(indicationResultCallback))
+    {
         PyErr_SetString(PyExc_TypeError, "parameter indication_result must be callable");
+        return NULL;
+    }
+    if (operationOptions && !PyObject_IsInstance(operationOptions, reinterpret_cast<PyObject*>(&OperationOptionsType)))
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter operation_options must be of type OperationOptions");
         return NULL;
     }
 
@@ -269,7 +277,9 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
 
     try
     {
-        MI::Operation* op = self->session->Subscribe(ns, query, callbacks, dialect);
+        MI::Operation* op = self->session->Subscribe(ns, query, callbacks,
+            operationOptions ? ((OperationOptions*)operationOptions)->operationOptions : NULL,
+            dialect);
         PyObject* obj = (PyObject*)Operation_New(op);
         if (callbacks)
         {

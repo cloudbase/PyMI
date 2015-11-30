@@ -9,10 +9,12 @@
 #include "Operation.h"
 #include "Instance.h"
 #include "Serializer.h"
+#include "OperationOptions.h"
 
 #include <datetime.h>
 
 PyObject *PyMIError;
+PyObject *PyMITimeoutError;
 
 static PyMethodDef mi_methods[] = {
     { NULL, NULL, 0, NULL }  /* Sentinel */
@@ -63,6 +65,10 @@ PyObject* _initmi(void)
     if (PyType_Ready(&SerializerType) < 0)
         return NULL;
 
+    OperationOptionsType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&OperationOptionsType) < 0)
+        return NULL;
+
 #ifdef IS_PY3K
     m = PyModule_Create(&mimodule);
     if (m == NULL)
@@ -91,9 +97,16 @@ PyObject* _initmi(void)
     Py_INCREF(&SerializerType);
     PyModule_AddObject(m, "Serializer", (PyObject*)&SerializerType);
 
+    Py_INCREF(&OperationOptionsType);
+    PyModule_AddObject(m, "OperationOptions", (PyObject*)&OperationOptionsType);
+
     PyMIError = PyErr_NewException("PyMI.error", NULL, NULL);
     Py_INCREF(PyMIError);
     PyModule_AddObject(m, "error", PyMIError);
+
+    PyMITimeoutError = PyErr_NewException("PyMI.timeouterror", PyMIError, NULL);
+    Py_INCREF(PyMITimeoutError);
+    PyModule_AddObject(m, "timeouterror", PyMITimeoutError);
 
     PyObject_SetAttrString(m, "PROTOCOL_WINRM", PyUnicode_FromString("WINRM"));
     PyObject_SetAttrString(m, "PROTOCOL_WMIDCOM", PyUnicode_FromString("WMIDCOM"));

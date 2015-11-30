@@ -108,6 +108,27 @@ static PyObject* Operation_GetNextClass(Operation* self, PyObject*)
     }
 }
 
+static PyObject* Operation_HasMoreResults(Operation* self, PyObject*)
+{
+    try
+    {
+        if (*self->operation)
+        {
+            Py_RETURN_TRUE;
+        }
+        else
+        {
+            Py_RETURN_FALSE;
+        }
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+
 static PyObject* Operation_Close(Operation *self, PyObject*)
 {
     try
@@ -150,6 +171,7 @@ static PyMethodDef Operation_methods[] = {
     { "get_next_instance", (PyCFunction)Operation_GetNextInstance, METH_NOARGS, "Returns the next instance." },
     { "get_next_class", (PyCFunction)Operation_GetNextClass, METH_NOARGS, "Returns the next class." },
     { "get_next_indication", (PyCFunction)Operation_GetNextIndication, METH_NOARGS, "Returns the next result from a subscription." },
+    { "has_more_results", (PyCFunction)Operation_HasMoreResults, METH_NOARGS, "Returns whether the current operation has more results." },
     { "cancel", (PyCFunction)Operation_Cancel, METH_NOARGS, "Cancels the operation." },
     { "close", (PyCFunction)Operation_Close, METH_NOARGS, "Closes the operation." },
     { "__enter__", (PyCFunction)Operation_self, METH_NOARGS, "" },

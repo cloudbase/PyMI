@@ -12,6 +12,8 @@ void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i);
 void SetPyException(const std::exception& ex);
 void AllowThreads(std::function<void()> action);
 void CallPythonCallback(PyObject* callable, const char* format, ...);
+void MIIntervalFromPyDelta(PyObject* pyDelta, MI_Interval& interval);
+PyObject* PyDeltaFromMIInterval(const MI_Interval& interval);
 
 class OutOfMemoryException : public MI::Exception
 {

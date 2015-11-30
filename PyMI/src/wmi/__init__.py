@@ -13,10 +13,34 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import re
 import six
 
 import mi
+
+
+class x_wmi (Exception):
+    def __init__(self, info="", com_error=None):
+        self.info = info
+        self.com_error = com_error
+
+    def __str__(self):
+        return "<x_wmi: %s %s>" % (
+            self.info or "Unexpected COM Error",
+            self.com_error or "(no underlying exception)"
+        )
+
+
+class x_wmi_timed_out (x_wmi):
+    pass
+
+
+def mi_to_wmi_exception(ex):
+    if(isinstance(ex, mi.timeouterror)):
+        return x_wmi_timed_out(str(ex), ex)
+    else:
+        return x_wmi(str(ex), ex)
 
 
 class _Method(object):
@@ -116,22 +140,43 @@ class _Class(object):
 
     def watch_for(self, raw_wql=None, notification_type="operation",
                   wmi_class=None, delay_secs=1, fields=[], **where_clause):
-        return _EventWatcher(self._conn, self._conn.subscribe(raw_wql))
+        return _EventWatcher(self._conn, six.text_type(raw_wql))
 
 
 class _EventWatcher(object):
-    def __init__(self, conn, operation):
+    def __init__(self, conn, wql):
         self._conn = conn
-        self._operation = operation
+        self._wql = wql
+        self._operation = None
+        self._timeout_ms = None
 
     def __call__(self, timeout_ms=-1):
-        instance = self._operation.get_next_indication()
-        if instance:
-            return _Instance(self._conn, instance[u"TargetInstance"].clone())
+        if self._timeout_ms is not None and timeout_ms != self._timeout_ms:
+            raise Exception("Changing timeout_ms is not supported")
+
+        if not self._operation:
+            self._operation = self._conn.subscribe(self._wql, timeout_ms)
+            self._timeout_ms = timeout_ms
+        try:
+            instance = self._operation.get_next_indication()
+            if instance:
+                return _Instance(
+                    self._conn, instance[u"TargetInstance"].clone())
+        except Exception as ex:
+            raise mi_to_wmi_exception(ex)
+        finally:
+            if not self._operation.has_more_results():
+                self.close()
+
+    def close(self):
+        if self._operation:
+            self._operation.cancel()
+            self._operation.close()
+            self._operation = None
+            self._timeout_ms = None
 
     def __del__(self):
-        self._operation.cancel()
-        self._operation.close()
+        self.close()
 
 
 class _Connection(object):
@@ -255,8 +300,19 @@ class _Connection(object):
     def modify_instance(self, instance):
         self._session.modify_instance(self._ns, instance._instance)
 
-    def subscribe(self, query):
-        return self._session.subscribe(self._ns, query)
+    def subscribe(self, query, timeout_ms):
+        # In the MI API, 0 is the infinite timeout, not -1
+        if timeout_ms == 0:
+            timeout_ms = 1
+        elif timeout_ms < 0:
+            timeout_ms = 0
+        operation_options = self._app.create_operation_options()
+        operation_options.set_timeout(
+            datetime.timedelta(milliseconds=timeout_ms))
+
+        return self._session.subscribe(
+            self._ns, six.text_type(query),
+            operation_options=operation_options)
 
 
 def _wrap_element(conn, name, el_type, value):

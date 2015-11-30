@@ -4,6 +4,7 @@
 #include "Class.h"
 #include "Instance.h"
 #include "Serializer.h"
+#include "OperationOptions.h"
 #include "Utils.h"
 
 
@@ -147,6 +148,20 @@ static PyObject* Application_NewSerializer(Application* self, PyObject*)
     }
 }
 
+static PyObject* Application_NewOperationOptions(Application* self, PyObject*)
+{
+    try
+    {
+        MI::OperationOptions* operationOptions = self->app->NewOperationOptions();
+        return (PyObject*)OperationOptions_New(operationOptions);
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyObject* Application_Close(Application *self, PyObject*)
 {
     try
@@ -188,6 +203,7 @@ static PyMethodDef Application_methods[] = {
     { "create_instance_from_class", (PyCFunction)Application_NewInstanceFromClass, METH_VARARGS | METH_KEYWORDS, "Creates a new instance from a class." },
     { "create_method_params", (PyCFunction)Application_NewMethodInboundParameters, METH_VARARGS | METH_KEYWORDS, "Creates a new __parameters instance with a method's inbound parameters." },
     { "create_serializer", (PyCFunction)Application_NewSerializer, METH_NOARGS, "Creates a serializer." },
+    { "create_operation_options", (PyCFunction)Application_NewOperationOptions, METH_NOARGS, "Creates a new OperationObjects instance." },
     { "close", (PyCFunction)Application_Close, METH_NOARGS, "Closes the application." },
     { "__enter__", (PyCFunction)Application_self, METH_NOARGS, "" },
     { "__exit__",  (PyCFunction)Application_exit, METH_VARARGS, "" },

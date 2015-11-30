@@ -54,6 +54,29 @@ void CallPythonCallback(PyObject* callable, const char* format, ...)
     PyGILState_Release(gstate);
 }
 
+PyObject* PyDeltaFromMIInterval(const MI_Interval& interval)
+{
+    return PyDelta_FromDSU(interval.days, interval.hours * 3600 + interval.minutes * 60 + interval.seconds, interval.microseconds);
+}
+
+void MIIntervalFromPyDelta(PyObject* pyDelta, MI_Interval& interval)
+{
+    ZeroMemory(&interval, sizeof(MI_Interval));
+
+    int days = PyDateTime_DELTA_GET_DAYS(pyDelta);
+    if (days < 0)
+    {
+        throw MI::Exception(L"Negative datetime.timedelta intervals are not supported");
+    }
+
+    interval.days = (MI_Uint32)days;
+    MI_Uint32 daySeconds = (MI_Uint32)PyDateTime_DELTA_GET_SECONDS(pyDelta);
+    interval.hours = daySeconds / 3600;
+    interval.minutes = (daySeconds - interval.hours * 3600) / 60;
+    interval.seconds = daySeconds - interval.hours * 3600 - interval.minutes * 60;
+    interval.microseconds = (MI_Uint32)PyDateTime_DELTA_GET_MICROSECONDS(pyDelta);
+}
+
 void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
 {
     name.clear();
@@ -453,8 +476,7 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
         }
         else
         {
-            const MI_Interval& ti = value.datetime.u.interval;
-            return PyDelta_FromDSU(ti.days, ti.hours * 3600 + ti.minutes * 60 + ti.seconds, ti.microseconds);
+            return PyDeltaFromMIInterval(value.datetime.u.interval);
         }
         break;
     case MI_STRING:
@@ -471,5 +493,12 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
 void SetPyException(const std::exception& ex)
 {
     const char* message = ex.what();
-    PyErr_SetString(PyMIError, message);
+    if (reinterpret_cast<const MI::MITimeoutException*>(&ex))
+    {
+        PyErr_SetString(PyMITimeoutError, message);
+    }
+    else
+    {
+        PyErr_SetString(PyMIError, message);
+    }
 }
