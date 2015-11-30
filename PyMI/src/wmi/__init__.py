@@ -114,10 +114,24 @@ class _Class(object):
     def new(self):
         return self._conn.new_instance_from_class(self)
 
-    def watch_for(self, notification_type="operation",
-                  delay_secs=1, fields=[], **where_clause):
-        # TODO: implement
-        pass
+    def watch_for(self, raw_wql=None, notification_type="operation",
+                  wmi_class=None, delay_secs=1, fields=[], **where_clause):
+        return _EventWatcher(self._conn, self._conn.subscribe(raw_wql))
+
+
+class _EventWatcher(object):
+    def __init__(self, conn, operation):
+        self._conn = conn
+        self._operation = operation
+
+    def __call__(self, timeout_ms=-1):
+        instance = self._operation.get_next_indication()
+        if instance:
+            return _Instance(self._conn, instance[u"TargetInstance"].clone())
+
+    def __del__(self):
+        self._operation.cancel()
+        self._operation.close()
 
 
 class _Connection(object):
@@ -240,6 +254,9 @@ class _Connection(object):
 
     def modify_instance(self, instance):
         self._session.modify_instance(self._ns, instance._instance)
+
+    def subscribe(self, query):
+        return self._session.subscribe(self._ns, query)
 
 
 def _wrap_element(conn, name, el_type, value):
