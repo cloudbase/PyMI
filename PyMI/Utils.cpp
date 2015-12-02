@@ -493,7 +493,7 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
 void SetPyException(const std::exception& ex)
 {
     const char* message = ex.what();
-    if (reinterpret_cast<const MI::MITimeoutException*>(&ex))
+    if (dynamic_cast<const MI::MITimeoutException*>(&ex))
     {
         PyErr_SetString(PyMITimeoutError, message);
     }
