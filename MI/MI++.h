@@ -55,6 +55,7 @@ namespace MI
     {
     private:
         MI_Application m_app;
+        Application(const Application &obj) {}
 
         friend class Session;
 
@@ -92,6 +93,7 @@ namespace MI
     private:
         MI_Session m_session;
         Session(MI_Session session) : m_session(session) {}
+        Session(const Session &obj) {}
 
         friend Application;
 
@@ -170,6 +172,8 @@ namespace MI
     private:
         MI_Class* m_class = NULL;
         bool m_ownsInstance = false;
+
+        Class(const Class &obj) {} // Use Clone
         void Delete();
 
         friend Application;
@@ -198,6 +202,8 @@ namespace MI
         std::wstring m_className;
         std::wstring m_serverName;
         bool m_ownsInstance = false;
+
+        Instance(const Instance &obj) {} // Use Clone
         void Delete();
 
         friend Application;
@@ -234,6 +240,8 @@ namespace MI
         MI_Boolean m_hasMoreResults = TRUE;
         bool m_ownsInstance = false;
 
+        Operation(const Operation &obj) {}
+
         friend Session;
 
     public:
@@ -253,6 +261,7 @@ namespace MI
     private:
         MI_Serializer m_serializer;
         Serializer(MI_Serializer& serializer) : m_serializer(serializer) {}
+        Serializer(const Serializer &obj) {} // Use Clone
 
         friend Application;
 
