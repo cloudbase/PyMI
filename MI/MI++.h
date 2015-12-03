@@ -181,7 +181,7 @@ namespace MI
         ScopeContextOwner* m_scopeOwner = NULL;
     public:
         ScopedItem(ScopeContextOwner* scopeOwner) : m_scopeOwner(scopeOwner) {};
-        virtual void SetOutOfScope() = 0;
+        virtual void SetOutOfScope() { m_scopeOwner = NULL; };
         virtual void RemoveFromScopeContext();
         virtual ~ScopedItem();
     };

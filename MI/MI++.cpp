@@ -856,6 +856,7 @@ void Instance::SetOutOfScope()
     {
         this->m_instance = NULL;
     }
+    ScopedItem::SetOutOfScope();
 }
 
 Instance::~Instance()
