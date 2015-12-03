@@ -24,11 +24,34 @@ void PythonMICallbacks::IndicationResult(MI::Operation& operation, const MI::Ins
 {
     if (m_indicationResult)
     {
-        PyObject* instanceObj = instance ? (PyObject*)Instance_New((MI::Instance *)instance, false) : Py_None;
-        PyObject* errorDetailsObj = errorDetails ? (PyObject*)Instance_New((MI::Instance *)errorDetails, false) : Py_None;
+        PyObject* instanceObj = NULL;
+        PyObject* errorDetailsObj = NULL;
+
+        if (instance)
+        {
+            instanceObj = (PyObject*)Instance_New((MI::Instance *)instance, false);
+        }
+        else
+        {
+            instanceObj = Py_None;
+            Py_INCREF(Py_None);
+        }
+
+        if (errorDetails)
+        {
+            errorDetailsObj = (PyObject*)Instance_New((MI::Instance *)errorDetails, false);
+        }
+        else
+        {
+            errorDetailsObj = Py_None;
+            Py_INCREF(Py_None);
+        }
 
         CallPythonCallback(m_indicationResult, "(OuuIIuO)", instanceObj, bookmark.c_str(), machineID.c_str(), moreResults ? 1 : 0,
             resultCode, errorString.c_str(), errorDetailsObj);
+
+        Py_DECREF(instanceObj);
+        Py_DECREF(errorDetailsObj);
     }
 }
 
