@@ -167,14 +167,34 @@ namespace MI
         std::map<std::wstring, Qualifier> m_qualifiers;
     };
 
-    class Class
+    class ScopedItem;
+
+    class ScopeContextOwner
+    {
+    public:
+        virtual void RemoveFromScopeContext(ScopedItem* item) = 0;
+    };
+
+    class ScopedItem
+    {
+    private:
+        ScopeContextOwner* m_scopeOwner = NULL;
+    public:
+        ScopedItem(ScopeContextOwner* scopeOwner) : m_scopeOwner(scopeOwner) {};
+        virtual void SetOutOfScope() = 0;
+        virtual void RemoveFromScopeContext();
+        virtual ~ScopedItem();
+    };
+
+    class Class : private ScopedItem
     {
     private:
         MI_Class* m_class = NULL;
         bool m_ownsInstance = false;
 
-        Class(const Class &obj) {} // Use Clone
+        Class(const Class &obj) : ScopedItem(NULL) {} // Use Clone
         void Delete();
+        void SetOutOfScope();
 
         friend Application;
         friend Instance;
@@ -182,7 +202,8 @@ namespace MI
         friend Serializer;
 
     public:
-        Class(MI_Class* miClass, bool ownsInstance) : m_class(miClass), m_ownsInstance(ownsInstance) {}
+        Class(MI_Class* miClass, bool ownsInstance, ScopeContextOwner* scopeOwner = NULL) :
+            m_class(miClass), m_ownsInstance(ownsInstance), ScopedItem(scopeOwner) {}
         unsigned GetElementsCount() const;
         std::vector<std::wstring> GetKey();
         ClassElement operator[] (const std::wstring& name) const;
@@ -194,7 +215,7 @@ namespace MI
         virtual ~Class();
     };
 
-    class Instance
+    class Instance : private ScopedItem
     {
     private:
         MI_Instance* m_instance = NULL;
@@ -203,8 +224,9 @@ namespace MI
         std::wstring m_serverName;
         bool m_ownsInstance = false;
 
-        Instance(const Instance &obj) {} // Use Clone
+        Instance(const Instance &obj) : ScopedItem(NULL) {} // Use Clone
         void Delete();
+        void SetOutOfScope();
 
         friend Application;
         friend Operation;
@@ -212,7 +234,8 @@ namespace MI
         friend Serializer;
 
     public:
-        Instance(MI_Instance* instance, bool ownsInstance) : m_instance(instance), m_ownsInstance(ownsInstance) {}
+        Instance(MI_Instance* instance, bool ownsInstance, ScopeContextOwner* scopeOwner = NULL) :
+            m_instance(instance), m_ownsInstance(ownsInstance), ScopedItem(scopeOwner) {}
         MI_Instance* GetMIObject() { return this->m_instance; }
         Instance* Instance::Clone() const;
         Class* GetClass() const;
@@ -233,14 +256,17 @@ namespace MI
         virtual ~Instance();
     };
 
-    class Operation
+    class Operation : private ScopeContextOwner
     {
     private:
         MI_Operation m_operation;
         MI_Boolean m_hasMoreResults = TRUE;
         bool m_ownsInstance = false;
+        ScopedItem* m_currentItem = NULL;
 
         Operation(const Operation &obj) {}
+        void RemoveFromScopeContext(ScopedItem* item);
+        void SetCurrentItem(ScopedItem* currentItem);
 
         friend Session;
 

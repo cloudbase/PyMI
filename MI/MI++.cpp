@@ -479,6 +479,7 @@ bool Operation::IsClosed()
 
 void Operation::Close()
 {
+    SetCurrentItem(NULL);
     MICheckResult(::MI_Operation_Close(&this->m_operation));
     this->m_operation = MI_OPERATION_NULL;
 }
@@ -502,6 +503,14 @@ void Class::Delete()
 {
     MICheckResult(::MI_Class_Delete(this->m_class));
     this->m_class = NULL;
+}
+
+void Class::SetOutOfScope()
+{
+    if (!this->m_ownsInstance)
+    {
+        this->m_class = NULL;
+    }
 }
 
 Class::~Class()
@@ -663,6 +672,20 @@ Operation* Session::Subscribe(const std::wstring& ns, const std::wstring& query,
         ns.c_str(), dialect.c_str(), query.c_str(), NULL, callbacks ? &opCallbacks : NULL, &op);
     return new Operation(op);
 }
+
+void ScopedItem::RemoveFromScopeContext()
+{
+    if (this->m_scopeOwner)
+    {
+        this->m_scopeOwner->RemoveFromScopeContext(this);
+    }
+}
+
+ScopedItem::~ScopedItem()
+{
+    RemoveFromScopeContext();
+}
+
 
 MI_Type Instance::GetElementType(const std::wstring& name) const
 {
@@ -827,6 +850,14 @@ void Instance::Delete()
     this->m_instance = NULL;
 }
 
+void Instance::SetOutOfScope()
+{
+    if (!this->m_ownsInstance)
+    {
+        this->m_instance = NULL;
+    }
+}
+
 Instance::~Instance()
 {
     try
@@ -847,6 +878,23 @@ void Operation::Cancel()
     MICheckResult(::MI_Operation_Cancel(&this->m_operation, MI_REASON_NONE));
 }
 
+void Operation::RemoveFromScopeContext(ScopedItem* item)
+{
+    if (item == this->m_currentItem)
+    {
+        this->m_currentItem = NULL;
+    }
+}
+
+void Operation::SetCurrentItem(ScopedItem* currentItem)
+{
+    if (this->m_currentItem)
+    {
+        this->m_currentItem->SetOutOfScope();
+    }
+    this->m_currentItem = currentItem;
+}
+
 Class* Operation::GetNextClass()
 {
     if (this->m_hasMoreResults)
@@ -861,7 +909,9 @@ Class* Operation::GetNextClass()
 
         if (miClass)
         {
-            return new Class((MI_Class*)miClass, false);
+            Class* cls = new Class((MI_Class*)miClass, false, this);
+            SetCurrentItem(cls);
+            return cls;
         }
     }
 
@@ -881,7 +931,9 @@ Instance* Operation::GetNextInstance()
 
         if (miInstance)
         {
-            return new Instance((MI_Instance*)miInstance, false);
+            Instance* instance = new Instance((MI_Instance*)miInstance, false, this);
+            SetCurrentItem(instance);
+            return instance;
         }
     }
 
@@ -902,7 +954,9 @@ Instance* Operation::GetNextIndication()
 
         if (miInstance)
         {
-            return new Instance((MI_Instance*)miInstance, false);
+            Instance* instance = new Instance((MI_Instance*)miInstance, false, this);
+            SetCurrentItem(instance);
+            return instance;
         }
     }
 
