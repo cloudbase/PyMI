@@ -806,7 +806,7 @@ std::wstring Instance::GetPath()
 
 ValueElement Instance::operator[] (const std::wstring& name) const
 {
-    ClassElement element;
+    ValueElement element;
     MICheckResult(::MI_Instance_GetElement(this->m_instance, name.c_str(), &element.m_value, &element.m_type,
         &element.m_flags, &element.m_index));
     element.m_name = name;
@@ -815,7 +815,7 @@ ValueElement Instance::operator[] (const std::wstring& name) const
 
 ValueElement Instance::operator[] (unsigned index) const
 {
-    ClassElement element;
+    ValueElement element;
     const MI_Char* name;
     MICheckResult(::MI_Instance_GetElementAt(this->m_instance, index, &name, &element.m_value,
         &element.m_type, &element.m_flags));
