@@ -13,14 +13,14 @@ PythonMICallbacks::PythonMICallbacks(PyObject* indicationResult) : m_indicationR
     }
 }
 
-bool PythonMICallbacks::WriteError(MI::Operation& operation, const MI::Instance& instance)
+bool PythonMICallbacks::WriteError(std::shared_ptr<MI::Operation> operation, std::shared_ptr<const MI::Instance> instance)
 {
     return true;
 }
 
-void PythonMICallbacks::IndicationResult(MI::Operation& operation, const MI::Instance* instance, const std::wstring& bookmark,
-    const std::wstring& machineID, bool moreResults, MI_Result resultCode,
-    const std::wstring& errorString, const MI::Instance* errorDetails)
+void PythonMICallbacks::IndicationResult(std::shared_ptr<MI::Operation> operation, std::shared_ptr<const MI::Instance> instance,
+    const std::wstring& bookmark, const std::wstring& machineID, bool moreResults, MI_Result resultCode,
+    const std::wstring& errorString, std::shared_ptr<const MI::Instance> errorDetails)
 {
     if (m_indicationResult)
     {
@@ -29,7 +29,7 @@ void PythonMICallbacks::IndicationResult(MI::Operation& operation, const MI::Ins
 
         if (instance)
         {
-            instanceObj = (PyObject*)Instance_New((MI::Instance *)instance, false);
+            instanceObj = (PyObject*)Instance_New(std::const_pointer_cast<MI::Instance>(instance));
         }
         else
         {
@@ -39,7 +39,7 @@ void PythonMICallbacks::IndicationResult(MI::Operation& operation, const MI::Ins
 
         if (errorDetails)
         {
-            errorDetailsObj = (PyObject*)Instance_New((MI::Instance *)errorDetails, false);
+            errorDetailsObj = (PyObject*)Instance_New(std::const_pointer_cast<MI::Instance>(errorDetails));
         }
         else
         {

@@ -21,12 +21,7 @@ static int Instance_init(Instance* self, PyObject* args, PyObject* kwds)
 
 static void Instance_dealloc(Instance* self)
 {
-    if (self->instance && self->ownsInstance)
-    {
-        delete self->instance;
-    }
     self->instance = NULL;
-
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -159,7 +154,7 @@ static PyObject* Instance_GetClass(Instance *self, PyObject*)
 {
     try
     {
-        MI::Class* c = self->instance->GetClass();
+        auto c = self->instance->GetClass();
         return (PyObject*)Class_New(c);
     }
     catch (std::exception& ex)
@@ -173,7 +168,7 @@ static PyObject* Instance_Clone(Instance *self, PyObject*)
 {
     try
     {
-        MI::Instance* instance = self->instance->Clone();
+        auto instance = self->instance->Clone();
         return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
@@ -211,11 +206,10 @@ static PyObject* Instance_GetClassName(Instance *self, PyObject*)
     }
 }
 
-Instance* Instance_New(MI::Instance* instance, bool ownsInstance)
+Instance* Instance_New(std::shared_ptr<MI::Instance> instance)
 {
     Instance* obj = (Instance*)Instance_new(&InstanceType, NULL, NULL);
     obj->instance = instance;
-    obj->ownsInstance = ownsInstance;
     return obj;
 }
 

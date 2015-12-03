@@ -22,12 +22,7 @@ static int Operation_init(Operation* self, PyObject* args, PyObject* kwds)
 
 static void Operation_dealloc(Operation* self)
 {
-    if (self->operation)
-    {
-        delete self->operation;
-        self->operation = NULL;
-    }
-
+    self->operation = NULL;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -49,7 +44,7 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
 {
     try
     {
-        MI::Instance* instance = NULL;
+        std::shared_ptr<MI::Instance> instance = NULL;
         AllowThreads([&]() {
             instance = self->operation->GetNextInstance();
         });
@@ -70,7 +65,7 @@ static PyObject* Operation_GetNextIndication(Operation* self, PyObject*)
 {
     try
     {
-        MI::Instance* instance = NULL;
+        std::shared_ptr<MI::Instance> instance = NULL;
         AllowThreads([&]() {
             instance = self->operation->GetNextIndication();
         });
@@ -91,7 +86,7 @@ static PyObject* Operation_GetNextClass(Operation* self, PyObject*)
 {
     try
     {
-        MI::Class* miClass = NULL;
+        std::shared_ptr<MI::Class> miClass = NULL;
         AllowThreads([&]() {
             miClass = self->operation->GetNextClass();
         });
@@ -156,7 +151,7 @@ static PyObject* Operation_exit(Operation* self, PyObject*)
     Py_RETURN_NONE;
 }
 
-Operation* Operation_New(MI::Operation* operation)
+Operation* Operation_New(std::shared_ptr<MI::Operation> operation)
 {
     Operation* obj = (Operation*)Operation_new(&OperationType, NULL, NULL);
     obj->operation = operation;

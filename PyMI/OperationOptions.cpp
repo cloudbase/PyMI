@@ -22,16 +22,11 @@ static int OperationOptions_init(OperationOptions* self, PyObject* args, PyObjec
 
 static void OperationOptions_dealloc(OperationOptions* self)
 {
-	if (self->operationOptions)
-	{
-		delete self->operationOptions;
-		self->operationOptions = NULL;
-	}
-
+	self->operationOptions = NULL;
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-OperationOptions* OperationOptions_New(MI::OperationOptions* operationOptions)
+OperationOptions* OperationOptions_New(std::shared_ptr<MI::OperationOptions> operationOptions)
 {
 	OperationOptions* obj = (OperationOptions*)OperationOptions_new(&OperationOptionsType, NULL, NULL);
 	obj->operationOptions = operationOptions;
@@ -42,7 +37,7 @@ static PyObject* OperationOptions_Clone(OperationOptions *self, PyObject*)
 {
 	try
 	{
-		MI::OperationOptions* operationOptions = self->operationOptions->Clone();
+		auto operationOptions = self->operationOptions->Clone();
 		return (PyObject*)OperationOptions_New(operationOptions);
 	}
 	catch (std::exception& ex)

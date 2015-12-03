@@ -2,14 +2,14 @@
 
 #include <Python.h>
 #include <MI++.h>
+#include <memory>
 
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    MI::Instance* instance;
-    bool ownsInstance;
+    std::shared_ptr<MI::Instance> instance;
 } Instance;
 
 extern PyTypeObject InstanceType;
 
-Instance* Instance_New(MI::Instance* instance, bool ownsInstance=true);
+Instance* Instance_New(std::shared_ptr<MI::Instance> instance);

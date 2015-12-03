@@ -20,12 +20,7 @@ static int Class_init(Class* self, PyObject* args, PyObject* kwds)
 
 static void Class_dealloc(Class* self)
 {
-    if (self->miClass)
-    {
-        delete self->miClass;
-        self->miClass = NULL;
-    }
-
+    self->miClass = NULL;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -79,7 +74,7 @@ static PyObject* Class_getattro(Class *self, PyObject* name)
     return Class_subscript(self, name);
 }
 
-Class* Class_New(MI::Class* miClass)
+Class* Class_New(std::shared_ptr<MI::Class> miClass)
 {
     Class* obj = (Class*)Class_new(&ClassType, NULL, NULL);
     obj->miClass = miClass;
@@ -90,7 +85,7 @@ static PyObject* Class_Clone(Class* self, PyObject*)
 {
     try
     {
-        MI::Class* miClass = self->miClass->Clone();
+        auto miClass = self->miClass->Clone();
         return (PyObject*)Class_New(miClass);
     }
     catch (std::exception& ex)

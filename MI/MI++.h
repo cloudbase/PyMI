@@ -5,6 +5,7 @@
 #include <tuple>
 #include <map>
 #include <vector>
+#include <memory>
 
 namespace MI
 {
@@ -18,32 +19,33 @@ namespace MI
     class Callbacks
     {
     public:
-        virtual bool WriteError(Operation& operation, const Instance& instance)
+        virtual bool WriteError(std::shared_ptr<Operation> operation, std::shared_ptr<const Instance> instance)
         {
             return true;
         }
-        virtual void WriteMessage(Operation& operation, unsigned channel, const std::wstring& message)
+        virtual void WriteMessage(std::shared_ptr<Operation> operation, unsigned channel, const std::wstring& message)
         {
         }
-        virtual void WriteProgress(Operation& operation, const std::wstring& activity, const std::wstring& currentOperation,
-            const std::wstring& statusDescription, unsigned percentageComplete,
+        virtual void WriteProgress(std::shared_ptr<Operation> operation, const std::wstring& activity,
+            const std::wstring& currentOperation, const std::wstring& statusDescription, unsigned percentageComplete,
             unsigned secondsRemaining)
         {
         }
-        virtual void ClassResult(Operation& operation, const Class* miClass, bool moreResults, MI_Result resultCode,
-            const std::wstring& errorString, const Instance* errorDetails)
+        virtual void ClassResult(std::shared_ptr<Operation> operation, std::shared_ptr<const Class> miClass, bool moreResults,
+            MI_Result resultCode, const std::wstring& errorString, std::shared_ptr<const Instance> errorDetails)
         {
         }
-        virtual void InstanceResult(Operation& operation, const Instance* instance, bool moreResults, MI_Result resultCode,
-            const std::wstring& errorString, const Instance* errorDetails)
+        virtual void InstanceResult(std::shared_ptr<Operation> operation, std::shared_ptr<const Instance> instance, bool moreResults,
+            MI_Result resultCode, const std::wstring& errorString, std::shared_ptr<const Instance> errorDetails)
         {
         }
-        virtual void IndicationResult(Operation& operation, const Instance* instance, const std::wstring& bookmark,
-            const std::wstring& machineID, bool moreResults, MI_Result resultCode,
-            const std::wstring& errorString, const Instance* errorDetails)
+        virtual void IndicationResult(std::shared_ptr<Operation> operation, std::shared_ptr<const Instance> instance,
+            const std::wstring& bookmark, const std::wstring& machineID, bool moreResults, MI_Result resultCode,
+            const std::wstring& errorString, std::shared_ptr<const Instance> errorDetails)
         {
         }
-        virtual void StreamedParameterResult(Operation& operation, const std::wstring& parameterName, MI_Type resultType, const MI_Value& result)
+        virtual void StreamedParameterResult(std::shared_ptr<Operation> operation, const std::wstring& parameterName,
+            MI_Type resultType, const MI_Value& result)
         {
         }
         virtual ~Callbacks()
@@ -64,12 +66,12 @@ namespace MI
         void Close();
         bool IsClosed();
         virtual ~Application();
-        Instance* NewInstance(const std::wstring& className);
-        Instance* NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
-        Instance* NewInstanceFromClass(const std::wstring& className, const Class& miClass);
-        Session* NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
-        OperationOptions* NewOperationOptions();
-        Serializer* NewSerializer();
+        std::shared_ptr<Instance> NewInstance(const std::wstring& className);
+        std::shared_ptr<Instance> NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
+        std::shared_ptr<Instance> NewInstanceFromClass(const std::wstring& className, const Class& miClass);
+        std::shared_ptr<Session> NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
+        std::shared_ptr<OperationOptions> NewOperationOptions();
+        std::shared_ptr<Serializer> NewSerializer();
     };
 
     class OperationOptions
@@ -77,14 +79,16 @@ namespace MI
     private:
         MI_OperationOptions m_operationOptions;
         OperationOptions(MI_OperationOptions operationOptions) : m_operationOptions(operationOptions) {}
+        OperationOptions(const OperationOptions &obj) {}
 
         friend Application;
         friend Session;
 
     public:
-        OperationOptions* Clone();
+        std::shared_ptr<OperationOptions> Clone();
         void SetTimeout(const MI_Interval& timeout);
         MI_Interval GetTimeout();
+        void Delete();
         virtual ~OperationOptions();
     };
 
@@ -98,19 +102,21 @@ namespace MI
         friend Application;
 
     public:
-        Operation* ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
-        Operation* InvokeMethod(Instance& instance, const std::wstring& methodName, const Instance* inboundParams);
-        Operation* InvokeMethod(const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
+        std::shared_ptr<Operation> ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
+        std::shared_ptr<Operation> InvokeMethod(
+            Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams);
+        std::shared_ptr<Operation> InvokeMethod(
+            const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
         void CreateInstance(const std::wstring& ns, const Instance& instance);
         void ModifyInstance(const std::wstring& ns, const Instance& instance);
         void DeleteInstance(const std::wstring& ns, const Instance& instance);
-        Operation* GetClass(const std::wstring& ns, const std::wstring& className);
-        Operation* GetInstance(const std::wstring& ns, const Instance& keyInstance);
-        Operation* GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
+        std::shared_ptr<Operation> GetClass(const std::wstring& ns, const std::wstring& className);
+        std::shared_ptr<Operation> GetInstance(const std::wstring& ns, const Instance& keyInstance);
+        std::shared_ptr<Operation> GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
             const std::wstring& resultClass = L"", const std::wstring& role = L"",
             const std::wstring& resultRole = L"", bool keysOnly = false);
-        Operation* Subscribe(const std::wstring& ns, const std::wstring& query, Callbacks* callback=NULL,
-            OperationOptions* operationOptions=NULL, const std::wstring& dialect = L"WQL");
+        std::shared_ptr<Operation> Subscribe(const std::wstring& ns, const std::wstring& query, std::shared_ptr<Callbacks> callback = nullptr,
+            std::shared_ptr<OperationOptions> operationOptions = nullptr, const std::wstring& dialect = L"WQL");
         void Close();
         bool IsClosed();
         virtual ~Session();
@@ -178,10 +184,10 @@ namespace MI
     class ScopedItem
     {
     private:
-        ScopeContextOwner* m_scopeOwner = NULL;
+        ScopeContextOwner* m_scopeOwner = nullptr;
     public:
         ScopedItem(ScopeContextOwner* scopeOwner) : m_scopeOwner(scopeOwner) {};
-        virtual void SetOutOfScope() { m_scopeOwner = NULL; };
+        virtual void SetOutOfScope() { m_scopeOwner = nullptr; };
         virtual void RemoveFromScopeContext();
         virtual ~ScopedItem();
     };
@@ -189,12 +195,11 @@ namespace MI
     class Class : private ScopedItem
     {
     private:
-        MI_Class* m_class = NULL;
+        MI_Class* m_class = nullptr;
         bool m_ownsInstance = false;
+        std::shared_ptr<std::vector<std::wstring>> m_key = nullptr;
 
-        Class(const Class &obj) : ScopedItem(NULL) {} // Use Clone
-        void Delete();
-        void SetOutOfScope();
+        Class(const Class &obj) : ScopedItem(nullptr) {} // Use Clone
 
         friend Application;
         friend Instance;
@@ -202,31 +207,33 @@ namespace MI
         friend Serializer;
 
     public:
-        Class(MI_Class* miClass, bool ownsInstance, ScopeContextOwner* scopeOwner = NULL) :
+        Class(MI_Class* miClass, bool ownsInstance, ScopeContextOwner* scopeOwner = nullptr) :
             m_class(miClass), m_ownsInstance(ownsInstance), ScopedItem(scopeOwner) {}
         unsigned GetElementsCount() const;
-        std::vector<std::wstring> GetKey();
+        std::shared_ptr<const std::vector<std::wstring>> GetKey();
         ClassElement operator[] (const std::wstring& name) const;
         ClassElement operator[] (unsigned index) const;
         unsigned GetMethodCount() const;
         MethodInfo GetMethodInfo(const std::wstring& name) const;
         MethodInfo GetMethodInfo(unsigned index) const;
-        Class* Clone() const;
+        std::shared_ptr<Class> Clone() const;
+        void SetOutOfScope();
+        void Delete();
         virtual ~Class();
     };
 
     class Instance : private ScopedItem
     {
     private:
-        MI_Instance* m_instance = NULL;
+        MI_Instance* m_instance = nullptr;
         std::wstring m_namespace;
         std::wstring m_className;
         std::wstring m_serverName;
         bool m_ownsInstance = false;
+        std::shared_ptr<const std::vector<std::wstring>> m_keyElementNames = nullptr;
 
-        Instance(const Instance &obj) : ScopedItem(NULL) {} // Use Clone
-        void Delete();
-        void SetOutOfScope();
+        Instance(const Instance &obj) : ScopedItem(nullptr) {} // Use Clone
+        const std::vector<std::wstring>& GetKeyElementNames();
 
         friend Application;
         friend Operation;
@@ -234,11 +241,11 @@ namespace MI
         friend Serializer;
 
     public:
-        Instance(MI_Instance* instance, bool ownsInstance, ScopeContextOwner* scopeOwner = NULL) :
+        Instance(MI_Instance* instance, bool ownsInstance, ScopeContextOwner* scopeOwner = nullptr) :
             m_instance(instance), m_ownsInstance(ownsInstance), ScopedItem(scopeOwner) {}
         MI_Instance* GetMIObject() { return this->m_instance; }
-        Instance* Instance::Clone() const;
-        Class* GetClass() const;
+        std::shared_ptr<Instance> Instance::Clone() const;
+        std::shared_ptr<Class> GetClass() const;
         std::wstring GetClassName();
         std::wstring GetNamespace();
         std::wstring GetServerName();
@@ -253,6 +260,8 @@ namespace MI
         MI_Type GetElementType(unsigned index) const;
         void ClearElement(const std::wstring& name);
         void ClearElement(unsigned index);
+        void SetOutOfScope();
+        void Delete();
         virtual ~Instance();
     };
 
@@ -262,7 +271,7 @@ namespace MI
         MI_Operation m_operation;
         MI_Boolean m_hasMoreResults = TRUE;
         bool m_ownsInstance = false;
-        ScopedItem* m_currentItem = NULL;
+        ScopedItem* m_currentItem = nullptr;
 
         Operation(const Operation &obj) {}
         void RemoveFromScopeContext(ScopedItem* item);
@@ -272,9 +281,9 @@ namespace MI
 
     public:
         Operation(MI_Operation& operation, bool ownsInstance=true) : m_operation(operation), m_ownsInstance(ownsInstance) {}
-        Instance* GetNextInstance();
-        Class* GetNextClass();
-        Instance* GetNextIndication();
+        std::shared_ptr<Instance> GetNextInstance();
+        std::shared_ptr<Class> GetNextClass();
+        std::shared_ptr<Instance> GetNextIndication();
         operator bool() { return m_hasMoreResults != FALSE; }
         void Cancel();
         void Close();
@@ -286,8 +295,8 @@ namespace MI
     {
     private:
         MI_Serializer m_serializer;
-        Serializer(MI_Serializer& serializer) : m_serializer(serializer) {}
         Serializer(const Serializer &obj) {} // Use Clone
+        Serializer(MI_Serializer& serializer) : m_serializer(serializer) {}
 
         friend Application;
 

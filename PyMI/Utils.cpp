@@ -482,9 +482,9 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
     case MI_STRING:
         return PyUnicode_FromWideChar(value.string, wcslen(value.string));
     case MI_INSTANCE:
-        return (PyObject*)Instance_New(new MI::Instance(value.instance, false));
+        return (PyObject*)Instance_New(std::make_shared<MI::Instance>(value.instance, false));
     case MI_REFERENCE:
-        return (PyObject*)Instance_New(new MI::Instance(value.reference, false));
+        return (PyObject*)Instance_New(std::make_shared<MI::Instance>(value.reference, false));
     default:
         throw TypeConversionException();
     }

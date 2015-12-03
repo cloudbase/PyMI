@@ -14,6 +14,7 @@ static PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     Session* self = NULL;
     self = (Session*)type->tp_alloc(type, 0);
     self->session = NULL;
+    self->operationCallbacks = std::make_shared<std::vector<std::shared_ptr<MI::Callbacks>>>();
     return (PyObject *)self;
 }
 
@@ -25,21 +26,10 @@ static int Session_init(Session* self, PyObject* args, PyObject* kwds)
 
 static void Session_dealloc(Session* self)
 {
-    if (self->session)
-    {
-        AllowThreads([&]() {
-            delete self->session;
-        });
+    AllowThreads([&]() {
         self->session = NULL;
-    }
-
-    for (MI::Callbacks* callbacks : *self->operationCallbacks)
-    {
-        delete callbacks;
-    }
-    delete self->operationCallbacks;
+    });
     self->operationCallbacks = NULL;
-
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -55,7 +45,7 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
 
     try
     {
-        MI::Operation* op = self->session->ExecQuery(ns, query, dialect);
+        auto op = self->session->ExecQuery(ns, query, dialect);
         return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
@@ -86,7 +76,7 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
 
     try
     {
-        MI::Operation* op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
+        auto op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
         return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
@@ -213,7 +203,7 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
 
     try
     {
-        MI::Operation* op = self->session->GetClass(ns, className);
+        auto op = self->session->GetClass(ns, className);
         return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
@@ -237,7 +227,7 @@ static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kw
 
     try
     {
-        MI::Operation* op = self->session->GetInstance(ns, *((Instance*)keyInstance)->instance);
+        auto op = self->session->GetInstance(ns, *((Instance*)keyInstance)->instance);
         return (PyObject*)Operation_New(op);
     }
     catch (std::exception& ex)
@@ -269,15 +259,11 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
         return NULL;
     }
 
-    PythonMICallbacks* callbacks = NULL;
-    if (indicationResultCallback)
-    {
-        callbacks = new PythonMICallbacks(indicationResultCallback);
-    }
+    auto callbacks = indicationResultCallback ? std::make_shared<PythonMICallbacks>(indicationResultCallback) : nullptr;
 
     try
     {
-        MI::Operation* op = self->session->Subscribe(ns, query, callbacks,
+        auto op = self->session->Subscribe(ns, query, callbacks,
             operationOptions ? ((OperationOptions*)operationOptions)->operationOptions : NULL,
             dialect);
         PyObject* obj = (PyObject*)Operation_New(op);
@@ -289,7 +275,6 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
     }
     catch (std::exception& ex)
     {
-        delete callbacks;
         SetPyException(ex);
         return NULL;
     }
@@ -313,7 +298,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
 
     try
     {
-        MI::Operation* op = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+        auto op = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
         if (op)
         {
             return (PyObject*)Operation_New(op);
@@ -327,11 +312,10 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
     }
 }
 
-Session* Session_New(MI::Session* session)
+Session* Session_New(std::shared_ptr<MI::Session> session)
 {
     Session* obj = (Session*)Session_new(&SessionType, NULL, NULL);
     obj->session = session;
-    obj->operationCallbacks = new std::vector<MI::Callbacks*>();
     return obj;
 }
 

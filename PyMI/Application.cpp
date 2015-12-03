@@ -24,7 +24,7 @@ static int Application_init(Application *self, PyObject *args, PyObject *kwds)
 
     try
     {
-        self->app = new MI::Application(appId);
+        self->app = std::make_shared<MI::Application>(appId);
         return 0;
     }
     catch (std::exception& ex)
@@ -45,7 +45,7 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
 
     try
     {
-        MI::Session* session = self->app->NewSession(protocol, computerName);
+        auto session = self->app->NewSession(protocol, computerName);
         return (PyObject*)Session_New(session);
     }
     catch (std::exception& ex)
@@ -60,9 +60,8 @@ static void Application_dealloc(Application* self)
     if (self->app)
     {
         AllowThreads([&]() {
-            delete self->app;
+            self->app = NULL;
         });
-        self->app = NULL;
     }
 
     Py_TYPE(self)->tp_free((PyObject*)self);
@@ -82,7 +81,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
 
     try
     {
-        MI::Instance* instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
+        auto instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
         return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
@@ -101,7 +100,7 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
 
     try
     {
-        MI::Instance* instance = self->app->NewInstance(className);
+        auto instance = self->app->NewInstance(className);
         return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
@@ -124,7 +123,7 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
 
     try
     {
-        MI::Instance* instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
+        auto instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
         return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)
@@ -138,7 +137,7 @@ static PyObject* Application_NewSerializer(Application* self, PyObject*)
 {
     try
     {
-        MI::Serializer* serializer = self->app->NewSerializer();
+        auto serializer = self->app->NewSerializer();
         return (PyObject*)Serializer_New(serializer);
     }
     catch (std::exception& ex)
@@ -152,7 +151,7 @@ static PyObject* Application_NewOperationOptions(Application* self, PyObject*)
 {
     try
     {
-        MI::OperationOptions* operationOptions = self->app->NewOperationOptions();
+        auto operationOptions = self->app->NewOperationOptions();
         return (PyObject*)OperationOptions_New(operationOptions);
     }
     catch (std::exception& ex)

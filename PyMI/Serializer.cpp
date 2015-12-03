@@ -15,12 +15,7 @@ static PyObject* Serializer_new(PyTypeObject* type, PyObject* args, PyObject* kw
 
 static void Serializer_dealloc(Serializer* self)
 {
-    if (self->serializer)
-    {
-        delete self->serializer;
-        self->serializer = NULL;
-    }
-
+    self->serializer = NULL;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -30,7 +25,7 @@ static int Serializer_init(Serializer* self, PyObject* args, PyObject* kwds)
     return -1;
 }
 
-Serializer* Serializer_New(MI::Serializer* serializer)
+Serializer* Serializer_New(std::shared_ptr<MI::Serializer> serializer)
 {
     Serializer* obj = (Serializer*)Serializer_new(&SerializerType, NULL, NULL);
     obj->serializer = serializer;
