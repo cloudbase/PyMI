@@ -1016,7 +1016,9 @@ std::wstring Serializer::SerializeInstance(const Instance& instance, bool includ
     {
         MICheckResult(::MI_Serializer_SerializeInstance(&m_serializer, flags, instance.m_instance, buffer,
             bufferSizeNeeded, &bufferSizeNeeded));
-        return std::wstring((wchar_t*)buffer, bufferSizeNeeded / sizeof(wchar_t));
+        auto data = std::wstring((wchar_t*)buffer, bufferSizeNeeded / sizeof(wchar_t));
+        delete[] buffer;
+        return data;
     }
     catch (std::exception&)
     {
@@ -1035,7 +1037,9 @@ std::wstring Serializer::SerializeClass(const Class& miClass, bool deep)
     try
     {
         MICheckResult(::MI_Serializer_SerializeClass(&m_serializer, flags, miClass.m_class, buffer, bufferSizeNeeded, &bufferSizeNeeded));
-        return std::wstring((wchar_t*)buffer, bufferSizeNeeded / sizeof(wchar_t));
+        auto data = std::wstring((wchar_t*)buffer, bufferSizeNeeded / sizeof(wchar_t));
+        delete[] buffer;
+        return data;
     }
     catch (std::exception&)
     {
