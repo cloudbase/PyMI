@@ -32,7 +32,7 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
         Py_ssize_t i;
         GetIndexOrName(item, name, i);
 
-        MI::ClassElement element;
+        std::shared_ptr<MI::ClassElement> element;
         if (i >= 0)
         {
             element = (*self->miClass)[(unsigned)i];
@@ -41,7 +41,7 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
         {
             element = (*self->miClass)[name];
         }
-        return MI2Py(element.m_value, element.m_type, element.m_flags);
+        return MI2Py(element->m_value, element->m_type, element->m_flags);
     }
     catch (std::exception& ex)
     {

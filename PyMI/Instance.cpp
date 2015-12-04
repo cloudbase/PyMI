@@ -26,13 +26,13 @@ static void Instance_dealloc(Instance* self)
 }
 
 
-MI::ValueElement GetElement(Instance *self, PyObject *item)
+std::shared_ptr<MI::ValueElement> GetElement(Instance *self, PyObject *item)
 {
     std::wstring name;
     Py_ssize_t i;
     GetIndexOrName(item, name, i);
 
-    MI::ValueElement element;
+    std::shared_ptr<MI::ValueElement> element;
     if (i >= 0)
     {
         return (*self->instance)[(unsigned)i];
@@ -47,8 +47,8 @@ static PyObject* Instance_subscript(Instance *self, PyObject *item)
 {
     try
     {
-        MI::ValueElement element = GetElement(self, item);
-        return MI2Py(element.m_value, element.m_type, element.m_flags);
+        auto element = GetElement(self, item);
+        return MI2Py(element->m_value, element->m_type, element->m_flags);
     }
     catch (std::exception& ex)
     {
@@ -61,15 +61,15 @@ static PyObject* Instance_GetElement(Instance *self, PyObject *item)
 {
     try
     {
-        MI::ValueElement element = GetElement(self, item);
+        auto element = GetElement(self, item);
         PyObject* tuple = PyTuple_New(3);
-        PyTuple_SetItem(tuple, 0, PyUnicode_FromWideChar(element.m_name.c_str(), element.m_name.length()));
+        PyTuple_SetItem(tuple, 0, PyUnicode_FromWideChar(element->m_name.c_str(), element->m_name.length()));
 #ifdef IS_PY3K
-        PyTuple_SetItem(tuple, 1, PyLong_FromLong(element.m_type));
+        PyTuple_SetItem(tuple, 1, PyLong_FromLong(element->m_type));
 #else
-        PyTuple_SetItem(tuple, 1, PyInt_FromLong(element.m_type));
+        PyTuple_SetItem(tuple, 1, PyInt_FromLong(element->m_type));
 #endif
-        PyTuple_SetItem(tuple, 2, MI2Py(element.m_value, element.m_type, element.m_flags));
+        PyTuple_SetItem(tuple, 2, MI2Py(element->m_value, element->m_type, element->m_flags));
         return tuple;
     }
     catch (std::exception& ex)

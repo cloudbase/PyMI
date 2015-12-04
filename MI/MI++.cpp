@@ -17,9 +17,9 @@ static void MICheckResult(MI_Result result, const MI_Instance* extError = nullpt
             Instance instance((MI_Instance*)extError, false);
             if (instance.GetClassName() == L"MSFT_WmiError")
             {
-                MI_Char* message = instance[L"Message"].m_value.string;
-                ValueElement errorCode = instance[L"error_code"];
-                switch(errorCode.m_value.uint32)
+                MI_Char* message = instance[L"Message"]->m_value.string;
+                auto errorCode = instance[L"error_code"];
+                switch(errorCode->m_value.uint32)
                 {
                 case WMI_ERR_TIMEOUT:
                     throw MITimeoutException(result, message);
@@ -304,19 +304,19 @@ std::shared_ptr<Instance> Application::NewInstance(const std::wstring& className
 
 std::shared_ptr<Instance> Application::NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName)
 {
-    MI::MethodInfo methodInfo = miClass.GetMethodInfo(methodName);
+    auto methodInfo = miClass.GetMethodInfo(methodName);
     auto instance = this->NewInstance(L"__parameters");
 
-    for (auto const &it : methodInfo.m_parameters)
+    for (auto const &it : methodInfo->m_parameters)
     {
         auto& param = it.second;
-        for (auto const &it2 : param.m_qualifiers)
+        for (auto const &it2 : param->m_qualifiers)
         {
-            std::wstring name = it2.second.m_name;
+            std::wstring name = it2.second->m_name;
             std::transform(name.begin(), name.end(), name.begin(), ::tolower);
             if (name == L"in")
             {
-                instance->AddElement(param.m_name, nullptr, param.m_type);
+                instance->AddElement(param->m_name, nullptr, param->m_type);
             }
         }
     }
@@ -345,70 +345,70 @@ unsigned Class::GetMethodCount() const
     return count;
 }
 
-std::map<std::wstring, Qualifier> GetQualifiers(MI_QualifierSet* qualifierSet)
+std::map<std::wstring, std::shared_ptr<Qualifier>> GetQualifiers(MI_QualifierSet* qualifierSet)
 {
-    std::map<std::wstring, Qualifier> qualifiers;
+    std::map<std::wstring, std::shared_ptr<Qualifier>> qualifiers;
 
     MI_Uint32 count = 0;
     MICheckResult(::MI_QualifierSet_GetQualifierCount(qualifierSet, &count));
     for (MI_Uint32 i = 0; i < count; i++)
     {
         const MI_Char* qualifierName = nullptr;
-        Qualifier q;
-        MICheckResult(::MI_QualifierSet_GetQualifierAt(qualifierSet, i, &qualifierName, &q.m_type, &q.m_flags, &q.m_value));
-        q.m_name = qualifierName;
+        auto q = std::make_shared<Qualifier>();
+        MICheckResult(::MI_QualifierSet_GetQualifierAt(qualifierSet, i, &qualifierName, &q->m_type, &q->m_flags, &q->m_value));
+        q->m_name = qualifierName;
         qualifiers[qualifierName] = q;
     }
 
     return qualifiers;
 }
 
-std::map<std::wstring, ParameterInfo> GetParametersInfo(MI_ParameterSet* paramSet)
+std::map<std::wstring, std::shared_ptr<ParameterInfo>> GetParametersInfo(MI_ParameterSet* paramSet)
 {
-    std::map<std::wstring, ParameterInfo> parametersInfo;
+    std::map<std::wstring, std::shared_ptr<ParameterInfo>> parametersInfo;
 
     MI_Uint32 count = 0;
     MICheckResult(::MI_ParameterSet_GetParameterCount(paramSet, &count));
     for (MI_Uint32 i = 0; i < count; i++)
     {
         const MI_Char* paramName = nullptr;
-        ParameterInfo paramInfo;
+        auto paramInfo = std::make_shared<ParameterInfo>();
         MI_QualifierSet qualifierSet;
-        MICheckResult(::MI_ParameterSet_GetParameterAt(paramSet, i, &paramName, &paramInfo.m_type, nullptr, &qualifierSet));
-        paramInfo.m_name = paramName;
-        paramInfo.m_index = i;
-        paramInfo.m_qualifiers = GetQualifiers(&qualifierSet);
+        MICheckResult(::MI_ParameterSet_GetParameterAt(paramSet, i, &paramName, &paramInfo->m_type, nullptr, &qualifierSet));
+        paramInfo->m_name = paramName;
+        paramInfo->m_index = i;
+        paramInfo->m_qualifiers = GetQualifiers(&qualifierSet);
         parametersInfo[paramName] = paramInfo;
     }
 
     return parametersInfo;
 }
 
-MethodInfo Class::GetMethodInfo(const std::wstring& name) const
+std::shared_ptr<MethodInfo> Class::GetMethodInfo(const std::wstring& name) const
 {
-    MethodInfo info;
+    auto info = std::make_shared<MethodInfo>();
     MI_ParameterSet paramSet;
     MI_QualifierSet qualifierSet;
     MI_Uint32 index;
     MICheckResult(::MI_Class_GetMethod(this->m_class, name.c_str(), &qualifierSet, &paramSet, &index));
-    info.m_name = name;
-    info.m_index = index;
-    info.m_qualifiers = GetQualifiers(&qualifierSet);
-    info.m_parameters = GetParametersInfo(&paramSet);
+    info->m_name = name;
+    info->m_index = index;
+    info->m_qualifiers = GetQualifiers(&qualifierSet);
+    info->m_parameters = GetParametersInfo(&paramSet);
     return info;
 }
 
-MethodInfo Class::GetMethodInfo(unsigned index) const
+std::shared_ptr<MethodInfo> Class::GetMethodInfo(unsigned index) const
 {
-    MethodInfo info;
+    auto info = std::make_shared<MethodInfo>();
     MI_ParameterSet paramSet;
     MI_QualifierSet qualifierSet;
     const MI_Char* name = nullptr;
     MICheckResult(::MI_Class_GetMethodAt(this->m_class, index, &name, &qualifierSet, &paramSet));
-    info.m_name = name;
-    info.m_index = index;
-    info.m_qualifiers = GetQualifiers(&qualifierSet);
-    info.m_parameters = GetParametersInfo(&paramSet);
+    info->m_name = name;
+    info->m_index = index;
+    info->m_qualifiers = GetQualifiers(&qualifierSet);
+    info->m_parameters = GetParametersInfo(&paramSet);
     return info;
 }
 
@@ -420,14 +420,14 @@ std::shared_ptr<const std::vector<std::wstring>> Class::GetKey()
         unsigned count = this->GetElementsCount();
         for (unsigned i = 0; i < count; i++)
         {
-            ClassElement element = (*this)[i];
-            for (auto const &it : element.m_qualifiers)
+            auto element = (*this)[i];
+            for (auto const &it : element->m_qualifiers)
             {
-                std::wstring name = it.second.m_name;
+                std::wstring name = it.second->m_name;
                 std::transform(name.begin(), name.end(), name.begin(), ::tolower);
                 if (name == L"key")
                 {
-                    key->push_back(element.m_name);
+                    key->push_back(element->m_name);
                 }
             }
         }
@@ -438,27 +438,27 @@ std::shared_ptr<const std::vector<std::wstring>> Class::GetKey()
     return this->m_key;
 }
 
-ClassElement Class::operator[] (const std::wstring& name) const
+std::shared_ptr<ClassElement> Class::operator[] (const std::wstring& name) const
 {
-    ClassElement element;
+    auto element = std::make_shared<ClassElement>();
     MI_QualifierSet qualifierSet;
-    MICheckResult(::MI_Class_GetElement(this->m_class, name.c_str(), &element.m_value, &element.m_valueExists, &element.m_type,
-        nullptr, &qualifierSet, &element.m_flags, &element.m_index));
-    element.m_name = name;
-    element.m_qualifiers = GetQualifiers(&qualifierSet);
+    MICheckResult(::MI_Class_GetElement(this->m_class, name.c_str(), &element->m_value, &element->m_valueExists, &element->m_type,
+        nullptr, &qualifierSet, &element->m_flags, &element->m_index));
+    element->m_name = name;
+    element->m_qualifiers = GetQualifiers(&qualifierSet);
     return element;
 }
 
-ClassElement Class::operator[] (unsigned index) const
+std::shared_ptr<ClassElement> Class::operator[] (unsigned index) const
 {
-    ClassElement element;
+    auto element = std::make_shared<ClassElement>();
     MI_QualifierSet qualifierSet;
     const MI_Char* name;
-    MICheckResult(::MI_Class_GetElementAt(this->m_class, index, &name, &element.m_value, &element.m_valueExists, &element.m_type,
-        nullptr, &qualifierSet, &element.m_flags));
-    element.m_name = name;
-    element.m_index = index;
-    element.m_qualifiers = GetQualifiers(&qualifierSet);
+    MICheckResult(::MI_Class_GetElementAt(this->m_class, index, &name, &element->m_value, &element->m_valueExists, &element->m_type,
+        nullptr, &qualifierSet, &element->m_flags));
+    element->m_name = name;
+    element->m_index = index;
+    element->m_qualifiers = GetQualifiers(&qualifierSet);
     return element;
 }
 
@@ -712,7 +712,6 @@ ScopedItem::~ScopedItem()
     RemoveFromScopeContext();
 }
 
-
 MI_Type Instance::GetElementType(const std::wstring& name) const
 {
     MI_Type itemType;
@@ -789,12 +788,12 @@ std::wstring Instance::GetPath()
             o << L",";
         }
         // TODO: handle non strings
-        if (element.m_type != MI_STRING)
+        if (element->m_type != MI_STRING)
         {
             throw Exception(L"Unsupported key type in path generation");
         }
 
-        std::wstring value = element.m_value.string;
+        std::wstring value = element->m_value.string;
         ReplaceAll(value, L"\\", L"\\\\");
         ReplaceAll(value, L"\"", L"\\\"");
 
@@ -804,23 +803,23 @@ std::wstring Instance::GetPath()
     return o.str();
 }
 
-ValueElement Instance::operator[] (const std::wstring& name) const
+std::shared_ptr<ValueElement> Instance::operator[] (const std::wstring& name) const
 {
-    ValueElement element;
-    MICheckResult(::MI_Instance_GetElement(this->m_instance, name.c_str(), &element.m_value, &element.m_type,
-        &element.m_flags, &element.m_index));
-    element.m_name = name;
+    auto element = std::make_shared<ValueElement>();
+    MICheckResult(::MI_Instance_GetElement(this->m_instance, name.c_str(), &element->m_value, &element->m_type,
+        &element->m_flags, &element->m_index));
+    element->m_name = name;
     return element;
 }
 
-ValueElement Instance::operator[] (unsigned index) const
+std::shared_ptr<ValueElement> Instance::operator[] (unsigned index) const
 {
-    ValueElement element;
+    auto element = std::make_shared<ValueElement>();
     const MI_Char* name;
-    MICheckResult(::MI_Instance_GetElementAt(this->m_instance, index, &name, &element.m_value,
-        &element.m_type, &element.m_flags));
-    element.m_name = name;
-    element.m_index = index;
+    MICheckResult(::MI_Instance_GetElementAt(this->m_instance, index, &name, &element->m_value,
+        &element->m_type, &element->m_flags));
+    element->m_name = name;
+    element->m_index = index;
     return element;
 }
 

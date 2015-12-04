@@ -142,7 +142,7 @@ namespace MI
     struct ParameterInfo : public BaseElementInfo
     {
     public:
-        std::map<std::wstring, Qualifier> m_qualifiers;
+        std::map<std::wstring, std::shared_ptr<Qualifier>> m_qualifiers;
     };
 
     struct MethodInfo
@@ -150,8 +150,8 @@ namespace MI
     public:
         std::wstring m_name;
         unsigned m_index;
-        std::map<std::wstring, Qualifier> m_qualifiers;
-        std::map<std::wstring, ParameterInfo> m_parameters;
+        std::map<std::wstring, std::shared_ptr<Qualifier>> m_qualifiers;
+        std::map<std::wstring, std::shared_ptr<ParameterInfo>> m_parameters;
     };
 
     struct BaseElementInfoWithFlags : public BaseElementInfo
@@ -170,7 +170,7 @@ namespace MI
     {
     public:
         MI_Boolean m_valueExists;
-        std::map<std::wstring, Qualifier> m_qualifiers;
+        std::map<std::wstring, std::shared_ptr<Qualifier>> m_qualifiers;
     };
 
     class ScopedItem;
@@ -211,11 +211,11 @@ namespace MI
             m_class(miClass), m_ownsInstance(ownsInstance), ScopedItem(scopeOwner) {}
         unsigned GetElementsCount() const;
         std::shared_ptr<const std::vector<std::wstring>> GetKey();
-        ClassElement operator[] (const std::wstring& name) const;
-        ClassElement operator[] (unsigned index) const;
+        std::shared_ptr<ClassElement> operator[] (const std::wstring& name) const;
+        std::shared_ptr<ClassElement> operator[] (unsigned index) const;
         unsigned GetMethodCount() const;
-        MethodInfo GetMethodInfo(const std::wstring& name) const;
-        MethodInfo GetMethodInfo(unsigned index) const;
+        std::shared_ptr<MethodInfo> GetMethodInfo(const std::wstring& name) const;
+        std::shared_ptr<MethodInfo> GetMethodInfo(unsigned index) const;
         std::shared_ptr<Class> Clone() const;
         void SetOutOfScope();
         void Delete();
@@ -251,8 +251,8 @@ namespace MI
         std::wstring GetServerName();
         unsigned GetElementsCount() const;
         std::wstring GetPath();
-        ValueElement operator[] (const std::wstring& name) const;
-        ValueElement operator[] (unsigned index) const;
+        std::shared_ptr<ValueElement> operator[] (const std::wstring& name) const;
+        std::shared_ptr<ValueElement> operator[] (unsigned index) const;
         void AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
         void SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
         void SetElement(unsigned index, const MI_Value* value, MI_Type valueType);
