@@ -389,12 +389,14 @@
   <ItemGroup>
     <ClInclude Include="MI++.h" />
     <ClInclude Include="MIExceptions.h" />
+    <ClInclude Include="MIValue.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MI++.cpp" />
     <ClCompile Include="MIExceptions.cpp" />
+    <ClCompile Include="MIValue.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug (Python 3.x)|Win32'">Create</PrecompiledHeader>

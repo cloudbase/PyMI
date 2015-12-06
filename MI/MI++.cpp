@@ -316,7 +316,7 @@ std::shared_ptr<Instance> Application::NewMethodParamsInstance(const Class& miCl
             std::transform(name.begin(), name.end(), name.begin(), ::tolower);
             if (name == L"in")
             {
-                instance->AddElement(param->m_name, nullptr, param->m_type);
+                instance->AddElement(param->m_name, MIValue(param->m_type));
             }
         }
     }
@@ -726,19 +726,19 @@ MI_Type Instance::GetElementType(unsigned index) const
     return itemType;
 }
 
-void Instance::SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType)
+void Instance::SetElement(const std::wstring& name, const MIValue& value)
 {
-    MICheckResult(::MI_Instance_SetElement(this->m_instance, name.c_str(), value, valueType, value ? 0 : MI_FLAG_NULL));
+    MICheckResult(::MI_Instance_SetElement(this->m_instance, name.c_str(), &value.m_value, value.m_type, value.m_flags));
 }
 
-void Instance::SetElement(unsigned index, const MI_Value* value, MI_Type valueType)
+void Instance::SetElement(unsigned index, const MIValue& value)
 {
-    MICheckResult(::MI_Instance_SetElementAt(this->m_instance, index, value, valueType, value ? 0 : MI_FLAG_NULL));
+    MICheckResult(::MI_Instance_SetElementAt(this->m_instance, index, &value.m_value, value.m_type, value.m_flags));
 }
 
-void Instance::AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType)
+void Instance::AddElement(const std::wstring& name, const MIValue& value)
 {
-    MICheckResult(::MI_Instance_AddElement(this->m_instance, name.c_str(), value, valueType, value ? 0 : MI_FLAG_NULL));
+    MICheckResult(::MI_Instance_AddElement(this->m_instance, name.c_str(), &value.m_value, value.m_type, value.m_flags));
 }
 
 void Instance::ClearElement(const std::wstring& name)

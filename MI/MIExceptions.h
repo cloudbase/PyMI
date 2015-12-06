@@ -32,4 +32,16 @@ namespace MI
     public:
         MITimeoutException(MI_Result result = MI_RESULT_FAILED, const std::wstring& message = L"A timeout occurred") : MIException(result, message) {}
     };
+
+    class OutOfMemoryException : public Exception
+    {
+    public:
+        OutOfMemoryException() : Exception(L"Out of memory") {}
+    };
+
+    class TypeConversionException : public Exception
+    {
+    public:
+        TypeConversionException() : Exception(L"Unsupported type conversion") {}
+    };
 };

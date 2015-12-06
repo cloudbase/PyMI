@@ -102,8 +102,6 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
 
         bool addElement = false;
 
-        MI_Value miValue;
-        MI_UNREFERENCED_PARAMETER(&miValue);
         MI_Type miType;
         if (i >= 0)
         {
@@ -114,15 +112,15 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
             miType = self->instance->GetElementType(name);
         }
 
-        Py2MI(value, miValue, miType);
+        auto miValue = Py2MI(value, miType);
 
         if (i >= 0)
         {
-            self->instance->SetElement((unsigned)i, value == Py_None? NULL : &miValue, miType);
+            self->instance->SetElement((unsigned)i, *miValue);
         }
         else
         {
-            self->instance->SetElement(name, value == Py_None ? NULL : &miValue, miType);
+            self->instance->SetElement(name, *miValue);
         }
 
         return 0;

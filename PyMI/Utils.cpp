@@ -122,7 +122,23 @@ void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
         throw MI::Exception(L"Invalid name or index");
 }
 
-void Py2MIString(PyObject* pyValue, MI_Value& value)
+std::wstring Py2WString(PyObject* pyValue)
+{
+    auto len = PyUnicode_GetSize(pyValue) + 1;
+    wchar_t* w = new wchar_t[len];
+
+    if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)pyValue, w, len) < 0)
+    {
+        delete[] w;
+        throw MI::Exception(L"PyUnicode_AsWideChar failed");
+    }
+
+    auto& value = std::wstring(w, len);
+    delete[] w;
+    return value;
+}
+
+std::shared_ptr<MI::MIValue> Py2StrMIValue(PyObject* pyValue)
 {
     PyObject* pyStrValue = PyObject_CallMethod(pyValue, "__str__", NULL);
     if (!pyStrValue)
@@ -132,8 +148,13 @@ void Py2MIString(PyObject* pyValue, MI_Value& value)
 
     try
     {
-        Py2MI(pyStrValue, value, MI_STRING);
+#ifdef IS_PY3K
+        auto& value = Py2WString(pyStrValue);
+#else
+        auto& value = std::string(PyString_AsString(pyStrValue));
+#endif
         Py_DECREF(pyStrValue);
+        return MI::MIValue::FromString(value);
     }
     catch (std::exception&)
     {
@@ -142,103 +163,48 @@ void Py2MIString(PyObject* pyValue, MI_Value& value)
     }
 }
 
-unsigned GetItemSize(MI_Type valueType)
+std::shared_ptr<MI::MIValue> Py2MI(PyObject* pyValue, MI_Type valueType)
 {
-    switch (valueType)
-    {
-    case MI_BOOLEAN:
-        return sizeof(MI_Boolean);
-    case MI_SINT8:
-        return sizeof(MI_Sint8);
-    case MI_UINT8:
-        return sizeof(MI_Uint8);
-    case MI_SINT16:
-        return sizeof(MI_Sint16);
-    case MI_UINT16:
-        return sizeof(MI_Uint16);
-    case MI_SINT32:
-        return sizeof(MI_Sint32);
-    case MI_UINT32:
-        return sizeof(MI_Uint32);
-    case MI_SINT64:
-        return sizeof(MI_Sint64);
-    case MI_UINT64:
-        return sizeof(MI_Uint64);
-    case MI_REAL32:
-        return sizeof(MI_Real32);
-    case MI_REAL64:
-        return sizeof(MI_Real64);
-    case MI_CHAR16:
-        return sizeof(MI_Char16);
-    case MI_DATETIME:
-        return sizeof(MI_Datetime);
-    case MI_STRING:
-        return sizeof(MI_Char*);
-    case MI_INSTANCE:
-    case MI_REFERENCE:
-        return sizeof(MI_Instance*);
-    default:
-        throw TypeConversionException();
-    }
-}
-
-void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
-{
-    ZeroMemory(&value, sizeof(value));
-
     if (pyValue == Py_None)
     {
-        return;
+        return std::make_shared<MI::MIValue>(valueType);
     }
     if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyBool_Type)))
     {
-        value.boolean = PyObject_IsTrue(pyValue) ? MI_TRUE : MI_FALSE;
+        return MI::MIValue::FromBoolean(PyObject_IsTrue(pyValue) ? MI_TRUE : MI_FALSE);
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyLong_Type)))
     {
         switch (valueType)
         {
         case MI_BOOLEAN:
-            value.boolean = (MI_Boolean)(PyLong_AsLong(pyValue) != 0);
-            break;
+            return MI::MIValue::FromBoolean(PyLong_AsLong(pyValue) != 0);
         case MI_UINT8:
-            value.uint8 = (MI_Uint8)PyLong_AsUnsignedLong(pyValue);
-            break;
+            return MI::MIValue::FromUint8((MI_Uint8)PyLong_AsUnsignedLong(pyValue));
         case MI_SINT8:
-            value.sint8 = (MI_Sint8)PyLong_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint8((MI_Sint8)PyLong_AsLong(pyValue));
         case MI_UINT16:
-            value.uint16 = (MI_Uint16)PyLong_AsUnsignedLong(pyValue);
-            break;
+            return MI::MIValue::FromUint16((MI_Uint16)PyLong_AsUnsignedLong(pyValue));
         case MI_SINT16:
-            value.sint16 = (MI_Sint16)PyLong_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint16((MI_Sint16)PyLong_AsLong(pyValue));
         case MI_CHAR16:
-            value.char16 = (MI_Char16)PyLong_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromChar16((MI_Char16)PyLong_AsLong(pyValue));
         case MI_UINT32:
-            value.uint32 = PyLong_AsUnsignedLong(pyValue);
-            break;
+            return MI::MIValue::FromUint32(PyLong_AsUnsignedLong(pyValue));
         case MI_SINT32:
-            value.sint32 = PyLong_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint32(PyLong_AsLong(pyValue));
         case MI_UINT64:
-            value.uint64 = PyLong_AsUnsignedLongLong(pyValue);
-            break;
+            return MI::MIValue::FromUint64(PyLong_AsUnsignedLongLong(pyValue));
         case MI_SINT64:
-            value.sint64 = PyLong_AsLongLong(pyValue);
-            break;
+            return MI::MIValue::FromSint64(PyLong_AsLongLong(pyValue));
         case MI_REAL32:
-            value.real32 = (float)PyLong_AsDouble(pyValue);
-            break;
+            return MI::MIValue::FromReal32((MI_Real32)PyLong_AsDouble(pyValue));
         case MI_REAL64:
-            value.real64 = PyLong_AsDouble(pyValue);
-            break;
+            return MI::MIValue::FromReal64(PyLong_AsDouble(pyValue));
         case MI_STRING:
-            Py2MIString(pyValue, value);
-            break;
+            return Py2StrMIValue(pyValue);
         default:
-            throw TypeConversionException();
+            throw MI::TypeConversionException();
         }
     }
 #ifndef IS_PY3K
@@ -247,110 +213,66 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
         switch (valueType)
         {
         case MI_BOOLEAN:
-            value.boolean = (MI_Boolean)(PyInt_AsLong(pyValue) != 0);
-            break;
+            return MI::MIValue::FromBoolean(PyInt_AsLong(pyValue) != 0);
         case MI_UINT8:
-            value.uint8 = (MI_Uint8)PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromUint8((MI_Uint8)PyInt_AsLong(pyValue));
         case MI_SINT8:
-            value.sint8 = (MI_Sint8)PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint8((MI_Sint8)PyInt_AsLong(pyValue));
         case MI_UINT16:
-            value.uint16 = (MI_Uint16)PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromUint16((MI_Uint16)PyInt_AsLong(pyValue));
         case MI_SINT16:
-            value.sint16 = (MI_Sint16)PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint16((MI_Sint16)PyInt_AsLong(pyValue));
         case MI_CHAR16:
-            value.char16 = (MI_Char16)PyLong_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromChar16((MI_Char16)PyLong_AsLong(pyValue));
         case MI_UINT32:
-            value.uint32 = PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromUint32((MI_Uint32)PyInt_AsLong(pyValue));
         case MI_SINT32:
-            value.sint32 = PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint32((MI_Sint32)PyInt_AsLong(pyValue));
         case MI_UINT64:
-            value.uint64 = PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromUint64((MI_Uint64)PyInt_AsLong(pyValue));
         case MI_SINT64:
-            value.sint64 = PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromSint64((MI_Sint64)PyInt_AsLong(pyValue));
         case MI_REAL32:
-            value.real32 = (float)PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromReal32((MI_Real32)PyInt_AsLong(pyValue));
         case MI_REAL64:
-            value.real64 = PyInt_AsLong(pyValue);
-            break;
+            return MI::MIValue::FromReal64((MI_Real64)PyInt_AsLong(pyValue));
         case MI_STRING:
-            Py2MIString(pyValue, value);
-            break;
+            return Py2StrMIValue(pyValue);
         default:
-            throw TypeConversionException();
+            throw MI::TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyString_Type)))
     {
-        unsigned len = 0;
-        char* s = NULL;
-
         switch (valueType)
         {
         case MI_STRING:
-            s = PyString_AsString(pyValue);
-            len = lstrlenA(s) + 1;
-            // Note: caller owns the memory
-            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, len * sizeof(MI_Char));
-            if (!value.string)
-            {
-                throw OutOfMemoryException();
-            }
-            if (::MultiByteToWideChar(CP_ACP, 0, s, len, value.string, len) != len)
-            {
-                HeapFree(GetProcessHeap(), 0, value.string);
-                value.string = NULL;
-                throw MI::Exception(L"MultiByteToWideChar failed");
-            }
-            break;
+            return MI::MIValue::FromString(std::string(PyString_AsString(pyValue)));
         default:
-            throw TypeConversionException();
+            throw MI::TypeConversionException();
         }
     }
 #endif
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyUnicode_Type)))
     {
-        Py_ssize_t len = 0;
-
         switch (valueType)
         {
         case MI_STRING:
-            // TODO: use PyUnicode_GetLength on 3.x
-            len = PyUnicode_GetSize(pyValue) + 1;
-            // Note: caller owns the memory
-            value.string = (MI_Char*)HeapAlloc(GetProcessHeap(), 0, len * sizeof(MI_Char));
-            if (!value.string)
-            {
-                throw OutOfMemoryException();
-            }
-
-            if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)pyValue, value.string, len) < 0)
-            {
-                throw MI::Exception(L"PyUnicode_AsWideChar failed");
-            }
-            break;
+            return MI::MIValue::FromString(Py2WString(pyValue));
         default:
-            throw TypeConversionException();
+            throw MI::TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&InstanceType)))
     {
         switch (valueType)
         {
+        case MI_INSTANCE:
+            return MI::MIValue::FromInstance(*((Instance*)pyValue)->instance);
         case MI_REFERENCE:
-            value.reference = ((Instance*)pyValue)->instance->GetMIObject();
-            break;
+            return MI::MIValue::FromReference(*((Instance*)pyValue)->instance);
         default:
-            throw TypeConversionException();
+            throw MI::TypeConversionException();
         }
     }
     else if (PyObject_IsInstance(pyValue, reinterpret_cast<PyObject*>(&PyTuple_Type)) ||
@@ -367,22 +289,12 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
             size = PyList_Size(pyValue);
         }
 
-        if (size == 0)
-            return;
-
         MI_Type itemType = (MI_Type)(valueType ^ MI_ARRAY);
-        unsigned itemSize = GetItemSize(itemType);
-
-        // All array members of the MI_Value union have "pointer", "size" members.
-        // It is safe to rely on one instead of referencing value.stringa, value.booleana, etc
-        value.uint8a.size = (unsigned)size;
-        value.uint8a.data = (MI_Uint8*)HeapAlloc(GetProcessHeap(), 0, itemSize * size);
+        auto value = MI::MIValue::CreateArray((unsigned)size, valueType);
 
         for (Py_ssize_t i = 0; i < size; i++)
         {
-            MI_Value tmpVal;
             PyObject* pyObj = NULL;
-
             if (isTuple)
             {
                 pyObj = PyTuple_GetItem(pyValue, i);
@@ -392,19 +304,19 @@ void Py2MI(PyObject* pyValue, MI_Value& value, MI_Type valueType)
                 pyObj = PyList_GetItem(pyValue, i);
             }
 
-            Py2MI(pyObj, tmpVal, itemType);
-            memcpy(&value.uint8a.data[i * itemSize], &tmpVal, itemSize);
+            auto& tmpValue = Py2MI(pyObj, itemType);
+            value->SetArrayItem(*tmpValue, (unsigned)i);
         }
+        return value;
     }
     else
     {
         switch (valueType)
         {
         case MI_STRING:
-            Py2MIString(pyValue, value);
-            break;
+            return Py2StrMIValue(pyValue);
         default:
-            throw TypeConversionException();
+            throw MI::TypeConversionException();
         }
     }
 }
@@ -415,7 +327,7 @@ PyObject* MIArray2PyTuple(const MI_Value& value, MI_Type itemType)
     // It is safe to rely on one instead of referencing value.stringa, value.booleana, etc
     MI_Uint32 size = value.uint8a.size;
     PyObject* pyObj = PyTuple_New(size);
-    unsigned itemSize = GetItemSize(itemType);
+    unsigned itemSize = MI::MIValue::GetItemSize(itemType);
     for (MI_Uint32 i = 0; i < size; i++)
     {
         MI_Value tmpVal;
@@ -486,7 +398,7 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
     case MI_REFERENCE:
         return (PyObject*)Instance_New(std::make_shared<MI::Instance>(value.reference, false));
     default:
-        throw TypeConversionException();
+        throw MI::TypeConversionException();
     }
 }
 

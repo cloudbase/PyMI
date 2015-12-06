@@ -6,6 +6,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include "MIValue.h"
 
 namespace MI
 {
@@ -253,9 +254,9 @@ namespace MI
         std::wstring GetPath();
         std::shared_ptr<ValueElement> operator[] (const std::wstring& name) const;
         std::shared_ptr<ValueElement> operator[] (unsigned index) const;
-        void AddElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
-        void SetElement(const std::wstring& name, const MI_Value* value, MI_Type valueType);
-        void SetElement(unsigned index, const MI_Value* value, MI_Type valueType);
+        void AddElement(const std::wstring& name, const MIValue& value);
+        void SetElement(const std::wstring& name, const MIValue& value);
+        void SetElement(unsigned index, const MIValue& value);
         MI_Type GetElementType(const std::wstring& name) const;
         MI_Type GetElementType(unsigned index) const;
         void ClearElement(const std::wstring& name);
