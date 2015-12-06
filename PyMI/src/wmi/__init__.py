@@ -101,9 +101,9 @@ class _Instance(object):
 
 
 class _Class(object):
-    def __init__(self, conn, className, cls):
+    def __init__(self, conn, class_name, cls):
         self._conn = conn
-        self.class_name = six.text_type(className)
+        self.class_name = six.text_type(class_name)
         self._cls = cls
 
     def __call__(self, *argc, **argv):
@@ -129,9 +129,9 @@ class _Class(object):
                 where += ", "
             where += k + " = '%s'" % v
 
-        wql = (u"select %(fields)s from %(className)s%(where)s" %
+        wql = (u"select %(fields)s from %(class_name)s%(where)s" %
                {"fields": fields,
-                "className": self.class_name,
+                "class_name": self.class_name,
                 "where": where})
 
         return self._conn.query(wql)
@@ -248,17 +248,18 @@ class _Connection(object):
             return self._get_instances(q)
 
     def invoke_method(self, instance, method_name, *args, **kwargs):
-        cls = instance._instance.get_class()
+        class_name = instance._instance.get_class_name()
 
         params = None
         if self._cache_classes:
-            params = self._method_params_cache.get((cls, method_name))
+            params = self._method_params_cache.get((class_name, method_name))
 
         if params is None:
+            cls = self.get_class(class_name)
             params = self._app.create_method_params(
-                cls, six.text_type(method_name))
+                cls._cls, six.text_type(method_name))
             if self._cache_classes:
-                self._method_params_cache[(cls, method_name)] = params
+                self._method_params_cache[(class_name, method_name)] = params
                 params = params.clone()
 
         for i, v in enumerate(args):
@@ -288,16 +289,16 @@ class _Connection(object):
     def get_class(self, class_name):
         cls = None
         if self._cache_classes:
-            cls = self._class_cache.get((self._ns, class_name))
+            cls = self._class_cache.get(class_name)
 
         if cls is None:
             with self._session.get_class(
-                    ns=self._ns, className=class_name) as op:
+                    ns=self._ns, class_name=class_name) as op:
                 cls = op.get_next_class()
                 if cls is not None:
                     cls = cls.clone()
                     if self._cache_classes:
-                        self._class_cache[(self._ns, class_name)] = cls
+                        self._class_cache[class_name] = cls
 
         if cls:
             return _Class(self, class_name, cls)
