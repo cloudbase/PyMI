@@ -197,7 +197,7 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
     wchar_t* ns = NULL;
     wchar_t* className = NULL;
 
-    static char *kwlist[] = { "ns", "className", NULL };
+    static char *kwlist[] = { "ns", "class_name", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu", kwlist, &ns, &className))
         return NULL;
 
