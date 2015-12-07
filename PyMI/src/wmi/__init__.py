@@ -163,18 +163,17 @@ class _EventWatcher(object):
 
     def __call__(self, timeout_ms=-1):
         try:
-            event = self._process_events()
-            if event:
-                return event
+            while True:
+                event = self._process_events()
+                if event:
+                    return event
 
-            timeout = None
-            if timeout_ms >= 0:
-                timeout = timeout_ms / 1000.0
-            if not self._event.wait(timeout):
-                raise x_wmi_timed_out()
-            self._event.clear()
-
-            return self._process_events()
+                timeout = None
+                if timeout_ms >= 0:
+                    timeout = timeout_ms / 1000.0
+                if not self._event.wait(timeout):
+                    raise x_wmi_timed_out()
+                self._event.clear()
         finally:
             if not self._operation.has_more_results():
                 self.close()
