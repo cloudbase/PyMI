@@ -421,13 +421,20 @@ std::shared_ptr<const std::vector<std::wstring>> Class::GetKey()
         for (unsigned i = 0; i < count; i++)
         {
             auto element = (*this)[i];
-            for (auto const &it : element->m_qualifiers)
+            if (element->m_flags & MI_FLAG_KEY)
             {
-                std::wstring name = it.second->m_name;
-                std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-                if (name == L"key")
+                key->push_back(element->m_name);
+            }
+            else
+            {
+                for (auto const &it : element->m_qualifiers)
                 {
-                    key->push_back(element->m_name);
+                    std::wstring name = it.second->m_name;
+                    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+                    if (name == L"key")
+                    {
+                        key->push_back(element->m_name);
+                    }
                 }
             }
         }
@@ -779,6 +786,11 @@ std::wstring Instance::GetPath()
     o << L"\\\\" << serverName << L"\\" << ns << L":" << className << L".";
 
     auto key = this->GetKeyElementNames();
+    if (key.empty())
+    {
+        throw Exception(L"Cannot get path of an instance without key elements");
+    }
+
     bool isFirst = true;
     for (auto const &it : key)
     {
