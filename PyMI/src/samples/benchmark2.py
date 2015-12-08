@@ -1,52 +1,77 @@
-﻿def test_mi():
+﻿import imp
+import os
+
+from distutils import sysconfig
+
+path = os.path.dirname(os.path.abspath(__file__))
+mi_wmi_path = os.path.join(
+    os.path.join(os.path.dirname(path), "wmi"), "__init__.py")
+
+path = sysconfig.get_python_lib()
+old_wmi_path = os.path.join(path, "wmi.py")
+
+VM_NAME = 'vm1'
+
+
+def test_mi():
     import mi
 
-    try:
-        with mi.Application() as a:
-            with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
-                with s.exec_query(u"root/virtualization/v2", u"select * from Msvm_VirtualSystemManagementService") as q:
-                    svc = q.get_next_instance()
+    with mi.Application() as a:
+        with a.create_session(protocol=mi.PROTOCOL_WMIDCOM) as s:
+            with s.exec_query(
+                    u"root/virtualization/v2",
+                    u"select * from Msvm_VirtualSystemManagementService") as q:
+                svc = q.get_next_instance()
 
-                    c = svc.get_class()
-                    p = a.create_method_params(c, u"GetSummaryInformation")
+                c = svc.get_class()
+                p = a.create_method_params(c, u"GetSummaryInformation")
 
-                    with s.exec_query(u"root/virtualization/v2", u"select * from Msvm_ComputerSystem where ElementName = 'nano1'") as q1:
-                        vm = q1.get_next_instance()
+                with s.exec_query(
+                        u"root/virtualization/v2",
+                        u"select * from Msvm_ComputerSystem where "
+                        "ElementName = '%s'" % VM_NAME) as q1:
+                    vm = q1.get_next_instance()
 
-                        with s.get_associators(u"root/virtualization/v2", vm, assoc_class=u"Msvm_SettingsDefineState", result_class=u"Msvm_VirtualSystemSettingData") as q2:
-                            vssd = q2.get_next_instance()
+                    with s.get_associators(
+                            u"root/virtualization/v2",
+                            vm, assoc_class=u"Msvm_SettingsDefineState",
+                            result_class=u"Msvm_VirtualSystem"
+                            "SettingData") as q2:
+                        vssd = q2.get_next_instance()
 
-                            p[u'SettingData'] = (vssd,) 
-                            p[u'requestedInformation'] = (4, 100, 103, 105)
+                        p[u'SettingData'] = (vssd,)
+                        p[u'requestedInformation'] = (4, 100, 103, 105)
 
-                            with s.invoke_method(svc, u"GetSummaryInformation", p) as q3:
-                                r = q3.get_next_instance()
-                                print("Result: %s" % r["ReturnValue"])
-                                summary_info = r["SummaryInformation"][0]
+                        with s.invoke_method(
+                                svc, u"GetSummaryInformation", p) as q3:
+                            r = q3.get_next_instance()
+                            print("Result: %s" % r[u"ReturnValue"])
+                            summary_info = r[u"SummaryInformation"][0]
 
-                                print("vCPUs: %s" % summary_info["NumberOfProcessors"])
-                                print("EnabledState: %s" % summary_info["EnabledState"])
-                                print("Memory: %s" % summary_info["MemoryUsage"])
-                                print("UpTime: %s" % summary_info["UpTime"])
-    except mi.error as ex:
-        print("An exception occurred: %s" % ex)
-        import traceback
-        traceback.print_exc()
+                            print("vCPUs: %s" %
+                                  summary_info[u"NumberOfProcessors"])
+                            print("EnabledState: %s" %
+                                  summary_info[u"EnabledState"])
+                            print("Memory: %s" % summary_info[u"MemoryUsage"])
+                            print("UpTime: %s" % summary_info[u"UpTime"])
+
 
 def test_wmi():
-    import wmi
+    wmi = imp.load_source('wmi', mi_wmi_path)
 
     conn = wmi.WMI(moniker="root\\virtualization\\v2")
     svc = conn.Msvm_VirtualSystemManagementService()[0]
-    vm = conn.query("select * from Msvm_ComputerSystem where ElementName = 'nano1'")[0]
+    vm = conn.query(
+        "select * from Msvm_ComputerSystem where ElementName = '%s'" %
+        VM_NAME)[0]
 
     vssd = vm.associators(
-            wmi_association_class="Msvm_SettingsDefineState",
-            wmi_result_class="Msvm_VirtualSystemSettingData")[0]
+        wmi_association_class="Msvm_SettingsDefineState",
+        wmi_result_class="Msvm_VirtualSystemSettingData")[0]
 
     (ret_val, summary_info) = svc.GetSummaryInformation(
-            [4, 100, 103, 105],
-            [vssd.path_()])
+        [4, 100, 103, 105],
+        [vssd.path_()])
 
     print("Result: %s" % ret_val)
     summary_info = summary_info[0]
@@ -56,10 +81,18 @@ def test_wmi():
     print("Memory: %s" % summary_info.MemoryUsage)
     print("UpTime: %s" % summary_info.UpTime)
 
+
 if __name__ == '__main__':
     import timeit
-    t2 = timeit.timeit("test_wmi()", setup="from __main__ import test_wmi", number=100)
-    t1 = timeit.timeit("test_mi()", setup="from __main__ import test_mi", number=100)
+    print("Running with MI module...")
+    t_new = timeit.timeit(
+        "test_mi()", setup="from __main__ import test_mi", number=10)
+    print("Running with old WMI module...")
+    t_old = timeit.timeit(
+        "test_wmi()", setup="from __main__ import test_wmi", number=10)
 
-    print "MI: %s" % t1
-    print "WMI %s" % t2
+    print("Old WMI module: %s seconds" % t_old)
+    print("New WMI module: %s seconds" % t_new)
+
+    print("Performance improvement: {percent:.2%}".format(
+        percent=(1 - t_new / t_old)))

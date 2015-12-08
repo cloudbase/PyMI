@@ -15,12 +15,6 @@ with mi.Application() as a:
                 print(i.get_class_name())
 
                 if i[u'name'].lower() == proc_name.lower():
-                    with s.invoke_method(i, u"GetOwner") as q1:
-                        owner = q1.get_next_instance()
-                        print(owner.get_class_name())
-                        for j in six.moves.range(0, len(owner)):
-                            print(owner[j])
-
                     params = a.create_instance(u"__parameters")
                     c = i.get_class()
                     params = a.create_method_params(c, u"Terminate")
@@ -39,28 +33,3 @@ with mi.Application() as a:
                     print(i[j])
 
                 i = q.get_next_instance()
-
-
-import wmi
-# Simple way to check we're loading the right module
-wmi._Connection
-
-conn = wmi.WMI(moniker="root\\virtualization\\v2")
-svc = conn.Msvm_VirtualSystemManagementService()[0]
-vm = conn.query("select * from Msvm_ComputerSystem where ElementName = 'nano1'")[0]
-
-vssd = vm.associators(
-        wmi_association_class="Msvm_SettingsDefineState",
-        wmi_result_class="Msvm_VirtualSystemSettingData")[0]
-
-(ret_val, summary_info) = svc.GetSummaryInformation(
-        [4, 100, 103, 105],
-        [vssd.path_()])
-
-print("Result: %s" % ret_val)
-summary_info = summary_info[0]
-
-print("vCPUs: %s" % summary_info.NumberOfProcessors)
-print("EnabledState: %s" % summary_info.EnabledState)
-print("Memory: %s" % summary_info.MemoryUsage)
-print("UpTime: %s" % summary_info.UpTime)
