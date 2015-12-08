@@ -50,8 +50,8 @@ void PythonMICallbacks::IndicationResult(std::shared_ptr<MI::Operation> operatio
         CallPythonCallback(m_indicationResult, "(OuuIIuO)", instanceObj, bookmark.c_str(), machineID.c_str(), moreResults ? 1 : 0,
             resultCode, errorString.c_str(), errorDetailsObj);
 
-        Py_DECREF(instanceObj);
-        Py_DECREF(errorDetailsObj);
+        Py_XDECREF(instanceObj);
+        Py_XDECREF(errorDetailsObj);
     }
 }
 
