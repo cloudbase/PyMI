@@ -44,14 +44,14 @@ def mi_to_wmi_exception(ex):
 
 
 class _Method(object):
-    def __init__(self, conn, instance, method_name):
+    def __init__(self, conn, target, method_name):
         self._conn = conn
-        self._instance = instance
+        self._target = target
         self._method_name = method_name
 
     def __call__(self, *args, **kwargs):
         return self._conn.invoke_method(
-            self._instance, self._method_name, *args, **kwargs)
+            self._target, self._method_name, *args, **kwargs)
 
 
 class _Path(object):
@@ -134,6 +134,12 @@ class _Class(object):
                 "where": where})
 
         return self._conn.query(wql)
+
+    def __getattr__(self, name):
+        try:
+            return _wrap_element(self._conn, *self._cls.get_element(name))
+        except mi.error:
+            return _Method(self._conn, self, name)
 
     def new(self):
         return self._conn.new_instance_from_class(self)
@@ -245,21 +251,30 @@ class _Connection(object):
                 result_class=six.text_type(wmi_result_class)) as q:
             return self._get_instances(q)
 
-    def invoke_method(self, instance, method_name, *args, **kwargs):
-        class_name = instance._instance.get_class_name()
-
+    def _get_method_params(self, mi_class, method_name):
         params = None
+        class_name = None
         if self._cache_classes:
+            class_name = mi_class.get_class_name()
             params = self._method_params_cache.get((class_name, method_name))
 
         if params is None:
-            cls = self.get_class(class_name)
             params = self._app.create_method_params(
-                cls._cls, six.text_type(method_name))
+                mi_class, six.text_type(method_name))
             if self._cache_classes:
                 self._method_params_cache[(class_name, method_name)] = params
                 params = params.clone()
+        return params
 
+    def invoke_method(self, target, method_name, *args, **kwargs):
+        if isinstance(target, _Instance):
+            mi_target = target._instance
+            mi_class = self.get_class(mi_target.get_class_name())._cls
+        else:
+            mi_target = target._cls
+            mi_class = mi_target
+
+        params = self._get_method_params(mi_class, method_name)
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
             params[i] = _unwrap_element(el_type, v)
@@ -268,7 +283,7 @@ class _Connection(object):
             params[k] = _unwrap_element(el_type, v)
 
         with self._session.invoke_method(
-                instance._instance, six.text_type(method_name), params) as op:
+                mi_target, six.text_type(method_name), params) as op:
             l = []
             r = op.get_next_instance()
             elements = []

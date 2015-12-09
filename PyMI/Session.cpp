@@ -3,6 +3,7 @@
 #include "Application.h"
 #include "Operation.h"
 #include "Instance.h"
+#include "Class.h"
 #include "Callbacks.h"
 #include "OperationOptions.h"
 #include "Utils.h"
@@ -282,23 +283,35 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
 
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
 {
-    PyObject* instance = NULL;
+    PyObject* target = NULL;
     wchar_t* methodName = NULL;
     PyObject* inboundParams = NULL;
 
-    static char *kwlist[] = { "instance", "method_name", "inbound_params", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|O", kwlist, &instance, &methodName, &inboundParams))
-        return NULL;
-
-    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
-    if (inboundParams && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
+    static char *kwlist[] = { "target", "method_name", "inbound_params", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|O", kwlist, &target, &methodName, &inboundParams))
         return NULL;
 
     try
     {
-        auto op = self->session->InvokeMethod(*((Instance*)instance)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+        if (inboundParams && inboundParams != Py_None && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"inbound_params\" must have type Instance");
+
+        std::shared_ptr<MI::Operation> op = nullptr;
+        if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&InstanceType)))
+        {
+            op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+        }
+        else if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&ClassType)))
+        {
+            auto miClass = ((Class*)target)->miClass;
+            op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), methodName,
+                inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+        }
+        else
+        {
+            throw MI::TypeConversionException(L"\"target\" must have type Instance or Class");
+        }
+
         if (op)
         {
             return (PyObject*)Operation_New(op);

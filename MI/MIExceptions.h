@@ -42,6 +42,6 @@ namespace MI
     class TypeConversionException : public Exception
     {
     public:
-        TypeConversionException() : Exception(L"Unsupported type conversion") {}
+        TypeConversionException(const std::wstring& message = L"Unsupported type conversion") : Exception(message) {}
     };
 };

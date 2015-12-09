@@ -412,6 +412,20 @@ std::shared_ptr<MethodInfo> Class::GetMethodInfo(unsigned index) const
     return info;
 }
 
+std::wstring Class::GetClassName() const
+{
+    const MI_Char* className = nullptr;
+    MICheckResult(::MI_Class_GetClassName(this->m_class, &className));
+    return className;
+}
+
+std::wstring Class::GetNameSpace() const
+{
+    const MI_Char* nameSpace = nullptr;
+    MICheckResult(::MI_Class_GetNameSpace(this->m_class, &nameSpace));
+    return nameSpace;
+}
+
 std::shared_ptr<const std::vector<std::wstring>> Class::GetKey()
 {
     if (!this->m_key)
@@ -648,11 +662,11 @@ std::shared_ptr<Operation> Session::InvokeMethod(
 }
 
 std::shared_ptr<Operation> Session::InvokeMethod(
-    const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams)
+    const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), className.c_str(), methodName.c_str(),
-        nullptr, inboundParams.m_instance, nullptr, &op);
+        nullptr, inboundParams->m_instance, nullptr, &op);
     return std::make_shared<Operation>(op);
 }
 

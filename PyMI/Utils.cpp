@@ -409,6 +409,10 @@ void SetPyException(const std::exception& ex)
     {
         PyErr_SetString(PyMITimeoutError, message);
     }
+    else if (dynamic_cast<const MI::TypeConversionException*>(&ex))
+    {
+        PyErr_SetString(PyExc_TypeError, message);
+    }
     else
     {
         PyErr_SetString(PyMIError, message);

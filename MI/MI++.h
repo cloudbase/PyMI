@@ -107,7 +107,7 @@ namespace MI
         std::shared_ptr<Operation> InvokeMethod(
             Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams);
         std::shared_ptr<Operation> InvokeMethod(
-            const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, const Instance& inboundParams);
+            const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance>);
         void CreateInstance(const std::wstring& ns, const Instance& instance);
         void ModifyInstance(const std::wstring& ns, const Instance& instance);
         void DeleteInstance(const std::wstring& ns, const Instance& instance);
@@ -217,6 +217,8 @@ namespace MI
         unsigned GetMethodCount() const;
         std::shared_ptr<MethodInfo> GetMethodInfo(const std::wstring& name) const;
         std::shared_ptr<MethodInfo> GetMethodInfo(unsigned index) const;
+        std::wstring GetClassName() const;
+        std::wstring GetNameSpace() const;
         std::shared_ptr<Class> Clone() const;
         void SetOutOfScope();
         void Delete();
