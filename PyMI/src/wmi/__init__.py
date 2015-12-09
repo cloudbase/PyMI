@@ -272,8 +272,16 @@ class _Connection(object):
                 instance._instance, six.text_type(method_name), params) as op:
             l = []
             r = op.get_next_instance()
+            elements = []
             for i in six.moves.range(0, len(r)):
-                l.append(_wrap_element(self, *r.get_element(i)))
+                elements.append(r.get_element(i))
+
+            # Sort the output params by name before returning their values.
+            # The WINRM and WMIDCOM protocols behave differently in how
+            # returned elements are ordered. This hack aligns with the WMIDCOM
+            # behaviour to retain compatibility with the wmi.py module.
+            for element in sorted(elements, key=lambda element: element[0]):
+                l.append(_wrap_element(self, *element))
             return tuple(l)
 
     def new_instance_from_class(self, cls):
