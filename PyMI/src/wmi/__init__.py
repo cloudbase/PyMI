@@ -13,12 +13,73 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
+import ctypes
+from ctypes import wintypes
 import re
 import six
 import threading
 
 import mi
+
+
+VER_MAJORVERSION = 1
+VER_MINORVERSION = 2
+VER_BUILDNUMBER = 4
+VER_GREATER_EQUAL = 3
+STATUS_REVISION_MISMATCH = 0xC0000059
+
+
+class Win32_OSVERSIONINFOEX_W(ctypes.Structure):
+    _fields_ = [
+        ('dwOSVersionInfoSize', wintypes.DWORD),
+        ('dwMajorVersion', wintypes.DWORD),
+        ('dwMinorVersion', wintypes.DWORD),
+        ('dwBuildNumber', wintypes.DWORD),
+        ('dwPlatformId', wintypes.DWORD),
+        ('szCSDVersion', wintypes.WCHAR * 128),
+        ('wServicePackMajor', wintypes.WORD),
+        ('wServicePackMinor', wintypes.WORD),
+        ('wSuiteMask', wintypes.WORD),
+        ('wProductType', wintypes.BYTE),
+        ('wReserved', wintypes.BYTE)
+    ]
+
+kernel32 = ctypes.windll.kernel32
+ntdll = ctypes.windll.ntdll
+
+ntdll.RtlVerifyVersionInfo.argtypes = [
+    ctypes.POINTER(Win32_OSVERSIONINFOEX_W),
+    wintypes.DWORD, wintypes.ULARGE_INTEGER]
+ntdll.RtlVerifyVersionInfo.restype = wintypes.DWORD
+
+kernel32.VerSetConditionMask.argtypes = [wintypes.ULARGE_INTEGER,
+                                         wintypes.DWORD,
+                                         wintypes.BYTE]
+kernel32.VerSetConditionMask.restype = wintypes.ULARGE_INTEGER
+
+
+def _check_win_version(major, minor, build=0):
+    vi = Win32_OSVERSIONINFOEX_W()
+    vi.dwOSVersionInfoSize = ctypes.sizeof(Win32_OSVERSIONINFOEX_W)
+
+    vi.dwMajorVersion = major
+    vi.dwMinorVersion = minor
+    vi.dwBuildNumber = build
+
+    mask = 0
+    for type_mask in [VER_MAJORVERSION, VER_MINORVERSION, VER_BUILDNUMBER]:
+        mask = kernel32.VerSetConditionMask(mask, type_mask,
+                                            VER_GREATER_EQUAL)
+
+    type_mask = VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER
+    ret_val = ntdll.RtlVerifyVersionInfo(ctypes.byref(vi), type_mask, mask)
+    if not ret_val:
+        return True
+    elif ret_val == STATUS_REVISION_MISMATCH:
+        return False
+    else:
+        raise Exception(
+            "RtlVerifyVersionInfo failed with error: %s" % ret_val)
 
 
 class x_wmi (Exception):
@@ -202,7 +263,9 @@ class _EventWatcher(object):
 
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2",
-                 protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
+                 protocol=None, cache_classes=True):
+        if not protocol:
+            protocol = self._get_protocol(computer_name)
         self._ns = six.text_type(ns)
         self._app = mi.Application()
         self._session = self._app.create_session(
@@ -211,6 +274,19 @@ class _Connection(object):
         self._cache_classes = cache_classes
         self._class_cache = {}
         self._method_params_cache = {}
+
+    @staticmethod
+    def _get_protocol(computer_name):
+        # TODO: improve localhost detection
+        if computer_name not in ['localhost', '.']:
+            return mi.PROTOCOL_WINRM
+        # Prefer WMIDCOM for localhost as it's faster
+        if _check_win_version(10, 0):
+            return mi.PROTOCOL_WMIDCOM
+        else:
+            # TODO: verify why WMIDCOM does not work properly on 2012 R2
+            # for method calls
+            return mi.PROTOCOL_WINRM
 
     def __del__(self):
         self._session = None
