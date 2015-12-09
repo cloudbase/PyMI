@@ -642,7 +642,8 @@ std::shared_ptr<Operation> Session::InvokeMethod(
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, instance.GetNamespace().c_str(),
-        nullptr, methodName.c_str(), instance.m_instance, inboundParams ? inboundParams->m_instance : nullptr, nullptr, &op);
+        instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance, inboundParams ? inboundParams->m_instance : nullptr,
+        nullptr, &op);
     return std::make_shared<Operation>(op);
 }
 
