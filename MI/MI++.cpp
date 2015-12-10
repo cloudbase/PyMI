@@ -655,8 +655,9 @@ std::shared_ptr<Operation> Session::InvokeMethod(
     Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
-    ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, instance.GetNamespace().c_str(),
-        instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance, inboundParams ? inboundParams->m_instance : nullptr,
+    ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+        nullptr, instance.GetNamespace().c_str(), instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance,
+        inboundParams && inboundParams->GetElementsCount() > 0 ? inboundParams->m_instance : nullptr,
         nullptr, &op);
     return std::make_shared<Operation>(op);
 }
@@ -665,8 +666,10 @@ std::shared_ptr<Operation> Session::InvokeMethod(
     const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams)
 {
     MI_Operation op = MI_OPERATION_NULL;
-    ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), className.c_str(), methodName.c_str(),
-        nullptr, inboundParams->m_instance, nullptr, &op);
+    ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+        nullptr, ns.c_str(), className.c_str(), methodName.c_str(), nullptr,
+        inboundParams && inboundParams->GetElementsCount() > 0 ? inboundParams->m_instance : nullptr,
+        nullptr, &op);
     return std::make_shared<Operation>(op);
 }
 
