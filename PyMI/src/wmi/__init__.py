@@ -355,7 +355,7 @@ class _Connection(object):
 def _wrap_element(conn, name, el_type, value):
     if isinstance(value, mi.Instance):
         if el_type == mi.MI_INSTANCE:
-            return _Instance(conn, value)
+            return _Instance(conn, value.clone())
         elif el_type == mi.MI_REFERENCE:
             return value.get_path()
         else:
@@ -365,7 +365,7 @@ def _wrap_element(conn, name, el_type, value):
         if el_type == mi.MI_REFERENCEA:
             return tuple([i.get_path() for i in value])
         elif el_type == mi.MI_INSTANCEA:
-            return tuple([_Instance(conn, i) for i in value])
+            return tuple([_Instance(conn, i.clone()) for i in value])
         else:
             return tuple(value)
     else:
