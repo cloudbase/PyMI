@@ -2,6 +2,7 @@
 #include "PyMI.h"
 #include "Utils.h"
 #include "instance.h"
+#include <codecvt>
 
 #include <datetime.h>
 
@@ -163,6 +164,26 @@ std::shared_ptr<MI::MIValue> Py2StrMIValue(PyObject* pyValue)
     }
 }
 
+std::shared_ptr<MI::MIValue> Str2PyLong2MI(char* strValue, MI_Type valueType)
+{
+    auto obj = PyLong_FromString(strValue, NULL, 10);
+    if (!obj)
+    {
+        throw MI::TypeConversionException();
+    }
+    try
+    {
+        auto retVal = Py2MI(obj, valueType);
+        Py_DECREF(obj);
+        return retVal;
+    }
+    catch (std::exception&)
+    {
+        Py_DECREF(obj);
+        throw;
+    }
+}
+
 std::shared_ptr<MI::MIValue> Py2MI(PyObject* pyValue, MI_Type valueType)
 {
     if (pyValue == Py_None)
@@ -248,6 +269,18 @@ std::shared_ptr<MI::MIValue> Py2MI(PyObject* pyValue, MI_Type valueType)
         {
         case MI_STRING:
             return MI::MIValue::FromString(std::string(PyString_AsString(pyValue)));
+        case MI_SINT8:
+        case MI_UINT8:
+        case MI_SINT16:
+        case MI_UINT16:
+        case MI_CHAR16:
+        case MI_SINT32:
+        case MI_UINT32:
+        case MI_SINT64:
+        case MI_UINT64:
+        case MI_REAL32:
+        case MI_REAL64:
+            return Str2PyLong2MI(PyString_AsString(pyValue), valueType);
         default:
             throw MI::TypeConversionException();
         }
@@ -259,6 +292,22 @@ std::shared_ptr<MI::MIValue> Py2MI(PyObject* pyValue, MI_Type valueType)
         {
         case MI_STRING:
             return MI::MIValue::FromString(Py2WString(pyValue));
+        case MI_SINT8:
+        case MI_UINT8:
+        case MI_SINT16:
+        case MI_UINT16:
+        case MI_CHAR16:
+        case MI_SINT32:
+        case MI_UINT32:
+        case MI_SINT64:
+        case MI_UINT64:
+        case MI_REAL32:
+        case MI_REAL64:
+        {
+            auto str = Py2WString(pyValue);
+            std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> cv;
+            return Str2PyLong2MI((char*)cv.to_bytes(str).c_str(), valueType);
+        }
         default:
             throw MI::TypeConversionException();
         }
