@@ -8,12 +8,14 @@
 
 void AllowThreads(std::function<void()> action)
 {
+    // Py_BEGIN_ALLOW_THREADS
     PyThreadState *_save;
     _save = PyEval_SaveThread();
 
     try
     {
         action();
+        // Py_END_ALLOW_THREADS
         PyEval_RestoreThread(_save);
     }
     catch(std::exception&)
@@ -26,10 +28,6 @@ void AllowThreads(std::function<void()> action)
 void CallPythonCallback(PyObject* callable, const char* format, ...)
 {
     va_list vargs;
-
-    PyGILState_STATE gstate;
-    gstate = PyGILState_Ensure();
-
     va_start(vargs, format);
     PyObject* arglist = Py_VaBuildValue(format, vargs);
     va_end(vargs);
@@ -51,8 +49,6 @@ void CallPythonCallback(PyObject* callable, const char* format, ...)
     {
         PyErr_Print();
     }
-
-    PyGILState_Release(gstate);
 }
 
 PyObject* PyDeltaFromMIInterval(const MI_Interval& interval)

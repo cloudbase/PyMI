@@ -21,10 +21,11 @@ static int Instance_init(Instance* self, PyObject* args, PyObject* kwds)
 
 static void Instance_dealloc(Instance* self)
 {
-    self->instance = NULL;
+    AllowThreads([&]() {
+        self->instance = NULL;
+    });
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
-
 
 std::shared_ptr<MI::ValueElement> GetElement(Instance *self, PyObject *item)
 {
@@ -33,14 +34,17 @@ std::shared_ptr<MI::ValueElement> GetElement(Instance *self, PyObject *item)
     GetIndexOrName(item, name, i);
 
     std::shared_ptr<MI::ValueElement> element;
-    if (i >= 0)
-    {
-        return (*self->instance)[(unsigned)i];
-    }
-    else
-    {
-        return (*self->instance)[name];
-    }
+    AllowThreads([&]() {
+        if (i >= 0)
+        {
+            element = (*self->instance)[(unsigned)i];
+        }
+        else
+        {
+            element = (*self->instance)[name];
+        }
+    });
+    return element;
 }
 
 static PyObject* Instance_subscript(Instance *self, PyObject *item)
@@ -83,7 +87,11 @@ static Py_ssize_t Instance_length(Instance *self)
 {
     try
     {
-        return self->instance->GetElementsCount();
+        Py_ssize_t l = 0;
+        AllowThreads([&]() {
+            l = self->instance->GetElementsCount();
+        });
+        return l;
     }
     catch (std::exception& ex)
     {
@@ -100,28 +108,30 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
         Py_ssize_t i = 0;
         GetIndexOrName(item, name, i);
 
-        bool addElement = false;
-
         MI_Type miType;
-        if (i >= 0)
-        {
-            miType = self->instance->GetElementType((unsigned)i);
-        }
-        else
-        {
-            miType = self->instance->GetElementType(name);
-        }
+        AllowThreads([&]() {
+            if (i >= 0)
+            {
+                miType = self->instance->GetElementType((unsigned)i);
+            }
+            else
+            {
+                miType = self->instance->GetElementType(name);
+            }
+        });
 
         auto miValue = Py2MI(value, miType);
 
-        if (i >= 0)
-        {
-            self->instance->SetElement((unsigned)i, *miValue);
-        }
-        else
-        {
-            self->instance->SetElement(name, *miValue);
-        }
+        AllowThreads([&]() {
+            if (i >= 0)
+            {
+                self->instance->SetElement((unsigned)i, *miValue);
+            }
+            else
+            {
+                self->instance->SetElement(name, *miValue);
+            }
+        });
 
         return 0;
     }
@@ -152,7 +162,10 @@ static PyObject* Instance_GetClass(Instance *self, PyObject*)
 {
     try
     {
-        auto c = self->instance->GetClass();
+        std::shared_ptr<MI::Class> c;
+        AllowThreads([&]() {
+            c = self->instance->GetClass();
+        });
         return (PyObject*)Class_New(c);
     }
     catch (std::exception& ex)
@@ -166,7 +179,10 @@ static PyObject* Instance_Clone(Instance *self, PyObject*)
 {
     try
     {
-        auto instance = self->instance->Clone();
+        std::shared_ptr<MI::Instance> instance;
+        AllowThreads([&]() {
+            instance = self->instance->Clone();
+        });
         return (PyObject*)Instance_New(instance);
     }
     catch (std::exception& ex)

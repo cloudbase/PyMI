@@ -7,10 +7,7 @@
 
 PythonMICallbacks::PythonMICallbacks(PyObject* indicationResult) : m_indicationResult(indicationResult)
 {
-    if (m_indicationResult)
-    {
-        Py_XINCREF(m_indicationResult);
-    }
+    Py_XINCREF(m_indicationResult);
 }
 
 bool PythonMICallbacks::WriteError(std::shared_ptr<MI::Operation> operation, std::shared_ptr<const MI::Instance> instance)
@@ -24,42 +21,51 @@ void PythonMICallbacks::IndicationResult(std::shared_ptr<MI::Operation> operatio
 {
     if (m_indicationResult)
     {
+        PyGILState_STATE gstate = PyGILState_Ensure();
         PyObject* instanceObj = NULL;
         PyObject* errorDetailsObj = NULL;
 
-        if (instance)
+        try
         {
-            instanceObj = (PyObject*)Instance_New(std::const_pointer_cast<MI::Instance>(instance));
-        }
-        else
-        {
-            instanceObj = Py_None;
-            Py_INCREF(Py_None);
-        }
+            if (instance)
+            {
+                instanceObj = (PyObject*)Instance_New(std::const_pointer_cast<MI::Instance>(instance));
+            }
+            else
+            {
+                instanceObj = Py_None;
+                Py_INCREF(Py_None);
+            }
 
-        if (errorDetails)
-        {
-            errorDetailsObj = (PyObject*)Instance_New(std::const_pointer_cast<MI::Instance>(errorDetails));
-        }
-        else
-        {
-            errorDetailsObj = Py_None;
-            Py_INCREF(Py_None);
-        }
+            if (errorDetails)
+            {
+                errorDetailsObj = (PyObject*)Instance_New(std::const_pointer_cast<MI::Instance>(errorDetails));
+            }
+            else
+            {
+                errorDetailsObj = Py_None;
+                Py_INCREF(Py_None);
+            }
 
-        CallPythonCallback(m_indicationResult, "(OuuIIuO)", instanceObj, bookmark.c_str(), machineID.c_str(), moreResults ? 1 : 0,
-            resultCode, errorString.c_str(), errorDetailsObj);
+            CallPythonCallback(m_indicationResult, "(OuuIIuO)", instanceObj, bookmark.c_str(), machineID.c_str(), moreResults ? 1 : 0,
+                resultCode, errorString.c_str(), errorDetailsObj);
 
-        Py_XDECREF(instanceObj);
-        Py_XDECREF(errorDetailsObj);
+            Py_DECREF(instanceObj);
+            Py_DECREF(errorDetailsObj);
+            PyGILState_Release(gstate);
+        }
+        catch (std::exception&)
+        {
+            Py_DECREF(instanceObj);
+            Py_DECREF(errorDetailsObj);
+            PyGILState_Release(gstate);
+            throw;
+        }
     }
 }
 
 PythonMICallbacks::~PythonMICallbacks()
 {
-    if (m_indicationResult)
-    {
-        Py_XDECREF(m_indicationResult);
-        m_indicationResult = NULL;
-    }
+    Py_XDECREF(m_indicationResult);
+    m_indicationResult = NULL;
 }

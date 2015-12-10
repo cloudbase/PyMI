@@ -20,7 +20,9 @@ static int Class_init(Class* self, PyObject* args, PyObject* kwds)
 
 static void Class_dealloc(Class* self)
 {
-    self->miClass = NULL;
+    AllowThreads([&]() {
+        self->miClass = NULL;
+    });
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -33,14 +35,16 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
         GetIndexOrName(item, name, i);
 
         std::shared_ptr<MI::ClassElement> element;
-        if (i >= 0)
-        {
-            element = (*self->miClass)[(unsigned)i];
-        }
-        else
-        {
-            element = (*self->miClass)[name];
-        }
+        AllowThreads([&]() {
+            if (i >= 0)
+            {
+                element = (*self->miClass)[(unsigned)i];
+            }
+            else
+            {
+                element = (*self->miClass)[name];
+            }
+        });
         return MI2Py(element->m_value, element->m_type, element->m_flags);
     }
     catch (std::exception& ex)
@@ -54,7 +58,11 @@ static Py_ssize_t Class_length(Class *self)
 {
     try
     {
-        return self->miClass->GetElementsCount();
+        Py_ssize_t l = 0;
+        AllowThreads([&]() {
+            l = self->miClass->GetElementsCount();
+        });
+        return l;
     }
     catch (std::exception& ex)
     {
@@ -85,7 +93,10 @@ static PyObject* Class_Clone(Class* self, PyObject*)
 {
     try
     {
-        auto miClass = self->miClass->Clone();
+        std::shared_ptr<MI::Class> miClass;
+        AllowThreads([&]() {
+            miClass = self->miClass->Clone();
+        });
         return (PyObject*)Class_New(miClass);
     }
     catch (std::exception& ex)

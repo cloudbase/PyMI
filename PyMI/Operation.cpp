@@ -22,7 +22,9 @@ static int Operation_init(Operation* self, PyObject* args, PyObject* kwds)
 
 static void Operation_dealloc(Operation* self)
 {
-    self->operation = NULL;
+    AllowThreads([&]() {
+        self->operation = NULL;
+    });
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -30,7 +32,9 @@ static PyObject* Operation_Cancel(Operation* self, PyObject*)
 {
     try
     {
-        self->operation->Cancel();
+        AllowThreads([&]() {
+            self->operation->Cancel();
+        });
         Py_RETURN_NONE;
     }
     catch (std::exception& ex)
@@ -44,7 +48,7 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
 {
     try
     {
-        std::shared_ptr<MI::Instance> instance = NULL;
+        std::shared_ptr<MI::Instance> instance;
         AllowThreads([&]() {
             instance = self->operation->GetNextInstance();
         });
@@ -65,7 +69,7 @@ static PyObject* Operation_GetNextIndication(Operation* self, PyObject*)
 {
     try
     {
-        std::shared_ptr<MI::Instance> instance = NULL;
+        std::shared_ptr<MI::Instance> instance;
         AllowThreads([&]() {
             instance = self->operation->GetNextIndication();
         });
@@ -86,7 +90,7 @@ static PyObject* Operation_GetNextClass(Operation* self, PyObject*)
 {
     try
     {
-        std::shared_ptr<MI::Class> miClass = NULL;
+        std::shared_ptr<MI::Class> miClass;
         AllowThreads([&]() {
             miClass = self->operation->GetNextClass();
         });
@@ -146,8 +150,10 @@ static PyObject* Operation_self(Operation *self, PyObject*)
 
 static PyObject* Operation_exit(Operation* self, PyObject*)
 {
-    if(!self->operation->IsClosed())
-        self->operation->Close();
+    AllowThreads([&]() {
+        if (!self->operation->IsClosed())
+            self->operation->Close();
+    });
     Py_RETURN_NONE;
 }
 

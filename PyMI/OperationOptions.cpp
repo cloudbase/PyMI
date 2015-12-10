@@ -22,7 +22,9 @@ static int OperationOptions_init(OperationOptions* self, PyObject* args, PyObjec
 
 static void OperationOptions_dealloc(OperationOptions* self)
 {
-	self->operationOptions = NULL;
+    AllowThreads([&]() {
+        self->operationOptions = NULL;
+    });
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -37,7 +39,10 @@ static PyObject* OperationOptions_Clone(OperationOptions *self, PyObject*)
 {
 	try
 	{
-		auto operationOptions = self->operationOptions->Clone();
+        std::shared_ptr<MI::OperationOptions> operationOptions;
+        AllowThreads([&]() {
+            operationOptions = self->operationOptions->Clone();
+        });
 		return (PyObject*)OperationOptions_New(operationOptions);
 	}
 	catch (std::exception& ex)
@@ -51,7 +56,11 @@ static PyObject* OperationOptions_GetTimeout(OperationOptions* self, PyObject* t
 {
 	try
 	{
-		return PyDeltaFromMIInterval(self->operationOptions->GetTimeout());
+        MI_Interval interval;
+        AllowThreads([&]() {
+            interval = self->operationOptions->GetTimeout();
+        });
+		return PyDeltaFromMIInterval(interval);
 	}
 	catch (std::exception& ex)
 	{
@@ -75,7 +84,9 @@ static PyObject* OperationOptions_SetTimeout(OperationOptions* self, PyObject* t
 	{
 		MI_Interval miTimeout;
 		MIIntervalFromPyDelta(timeout, miTimeout);
-		self->operationOptions->SetTimeout(miTimeout);
+        AllowThreads([&]() {
+            self->operationOptions->SetTimeout(miTimeout);
+        });
 		Py_RETURN_NONE;
 	}
 	catch (std::exception& ex)

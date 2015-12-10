@@ -15,7 +15,9 @@ static PyObject* Serializer_new(PyTypeObject* type, PyObject* args, PyObject* kw
 
 static void Serializer_dealloc(Serializer* self)
 {
-    self->serializer = NULL;
+    AllowThreads([&]() {
+        self->serializer = NULL;
+    });
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -40,8 +42,10 @@ static PyObject* Serializer_self(Serializer *self, PyObject*)
 
 static PyObject* Serializer_exit(Serializer* self, PyObject*)
 {
-    if (!self->serializer->IsClosed())
-        self->serializer->Close();
+    AllowThreads([&]() {
+        if (!self->serializer->IsClosed())
+            self->serializer->Close();
+    });
     Py_RETURN_NONE;
 }
 
@@ -60,7 +64,10 @@ static PyObject* Serializer_SerializeInstance(Serializer* self, PyObject* args, 
 
     try
     {
-        std::wstring data = self->serializer->SerializeInstance(*((Instance*)instance)->instance, includeClass);
+        std::wstring data;
+        AllowThreads([&]() {
+            data = self->serializer->SerializeInstance(*((Instance*)instance)->instance, includeClass);
+        });
         return PyUnicode_FromWideChar(data.c_str(), data.length());
     }
     catch (std::exception& ex)
@@ -85,7 +92,10 @@ static PyObject* Serializer_SerializeClass(Serializer* self, PyObject* args, PyO
 
     try
     {
-        std::wstring data = self->serializer->SerializeClass(*((Class*)miClass)->miClass, deep);
+        std::wstring data;
+        AllowThreads([&]() {
+            data = self->serializer->SerializeClass(*((Class*)miClass)->miClass, deep);
+        });
         return PyUnicode_FromWideChar(data.c_str(), data.length());
     }
     catch (std::exception& ex)
