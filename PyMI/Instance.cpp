@@ -210,8 +210,22 @@ static PyObject* Instance_GetClassName(Instance *self, PyObject*)
 {
     try
     {
-        std::wstring className = self->instance->GetClassName();
+        std::wstring& className = self->instance->GetClassName();
         return PyUnicode_FromWideChar(className.c_str(), className.length());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* Instance_GetNameSpace(Instance* self, PyObject*)
+{
+    try
+    {
+        std::wstring& nameSpace = self->instance->GetNameSpace();
+        return PyUnicode_FromWideChar(nameSpace.c_str(), nameSpace.length());
     }
     catch (std::exception& ex)
     {
@@ -236,6 +250,7 @@ static PyMethodDef Instance_methods[] = {
     { "get_element", (PyCFunction)Instance_GetElement, METH_O, "Returns an element by either index or name" },
     { "get_path", (PyCFunction)Instance_GetPath, METH_NOARGS, "" },
     { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
+    { "get_namespace", (PyCFunction)Instance_GetNameSpace, METH_NOARGS, "" },
     { "get_class", (PyCFunction)Instance_GetClass, METH_NOARGS, "" },
     { "clone", (PyCFunction)Instance_Clone, METH_NOARGS, "Clones this instance." },
     { NULL }  /* Sentinel */

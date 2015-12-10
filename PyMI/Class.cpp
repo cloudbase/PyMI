@@ -110,8 +110,22 @@ static PyObject* Class_GetClassName(Class* self, PyObject*)
 {
     try
     {
-        std::wstring className = self->miClass->GetClassName();
+        std::wstring& className = self->miClass->GetClassName();
         return PyUnicode_FromWideChar(className.c_str(), className.length());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* Class_GetNameSpace(Class* self, PyObject*)
+{
+    try
+    {
+        std::wstring& nameSpace = self->miClass->GetNameSpace();
+        return PyUnicode_FromWideChar(nameSpace.c_str(), nameSpace.length());
     }
     catch (std::exception& ex)
     {
@@ -126,6 +140,7 @@ static PyMemberDef Class_members[] = {
 
 static PyMethodDef Class_methods[] = {
     { "get_class_name", (PyCFunction)Class_GetClassName, METH_NOARGS, "" },
+    { "get_namespace", (PyCFunction)Class_GetNameSpace, METH_NOARGS, "" },
     { "__getitem__", (PyCFunction)Class_subscript, METH_O | METH_COEXIST, "" },
     { "clone", (PyCFunction)Class_Clone, METH_NOARGS, "Clones this class." },
     { NULL }  /* Sentinel */

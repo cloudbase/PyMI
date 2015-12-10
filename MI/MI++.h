@@ -250,7 +250,7 @@ namespace MI
         std::shared_ptr<Instance> Instance::Clone() const;
         std::shared_ptr<Class> GetClass() const;
         std::wstring GetClassName();
-        std::wstring GetNamespace();
+        std::wstring GetNameSpace();
         std::wstring GetServerName();
         unsigned GetElementsCount() const;
         std::wstring GetPath();

@@ -656,7 +656,7 @@ std::shared_ptr<Operation> Session::InvokeMethod(
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
-        nullptr, instance.GetNamespace().c_str(), instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance,
+        nullptr, instance.GetNameSpace().c_str(), instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance,
         inboundParams && inboundParams->GetElementsCount() > 0 ? inboundParams->m_instance : nullptr,
         nullptr, &op);
     return std::make_shared<Operation>(op);
@@ -789,7 +789,7 @@ const std::vector<std::wstring>& Instance::GetKeyElementNames()
 
 std::wstring Instance::GetPath()
 {
-    std::wstring ns = this->GetNamespace();
+    std::wstring ns = this->GetNameSpace();
     std::wstring className = this->GetClassName();
     std::wstring serverName = this->GetServerName();
 
@@ -890,7 +890,7 @@ std::wstring Instance::GetClassName()
     return std::wstring(this->m_className);
 }
 
-std::wstring Instance::GetNamespace()
+std::wstring Instance::GetNameSpace()
 {
     if (!this->m_namespace.length())
     {
