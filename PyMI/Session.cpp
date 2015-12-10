@@ -299,13 +299,14 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         std::shared_ptr<MI::Operation> op = nullptr;
         if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&InstanceType)))
         {
-            op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName, inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+            op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName,
+                inboundParams && inboundParams != Py_None ? ((Instance*)inboundParams)->instance : NULL);
         }
         else if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&ClassType)))
         {
             auto miClass = ((Class*)target)->miClass;
             op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), methodName,
-                inboundParams ? ((Instance*)inboundParams)->instance : NULL);
+                inboundParams && inboundParams != Py_None ? ((Instance*)inboundParams)->instance : NULL);
         }
         else
         {
