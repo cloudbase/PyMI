@@ -56,9 +56,17 @@ def test_mi():
                             print("UpTime: %s" % summary_info[u"UpTime"])
 
 
-def test_wmi():
-    wmi = imp.load_source('wmi', mi_wmi_path)
+def test_wmi_new():
+    wmi = imp.load_source('wmi', old_wmi_path)
+    test_wmi(wmi)
 
+
+def test_wmi_old():
+    wmi = imp.load_source('wmi', mi_wmi_path)
+    test_wmi(wmi)
+
+
+def test_wmi(wmi):
     conn = wmi.WMI(moniker="root\\virtualization\\v2")
     svc = conn.Msvm_VirtualSystemManagementService()[0]
     vm = conn.query(
@@ -87,12 +95,16 @@ if __name__ == '__main__':
     print("Running with MI module...")
     t_new = timeit.timeit(
         "test_mi()", setup="from __main__ import test_mi", number=10)
+    print("Running with new WMI module...")
+    t_wrap = timeit.timeit(
+        "test_wmi_new()", setup="from __main__ import test_wmi_new", number=10)
     print("Running with old WMI module...")
     t_old = timeit.timeit(
-        "test_wmi()", setup="from __main__ import test_wmi", number=10)
+        "test_wmi_old()", setup="from __main__ import test_wmi_old", number=10)
 
     print("Old WMI module: %s seconds" % t_old)
-    print("New WMI module: %s seconds" % t_new)
+    print("New WMI module: %s seconds" % t_wrap)
+    print("MI module: %s seconds" % t_new)
 
-    print("Performance improvement: {percent:.2%}".format(
+    print("Performance improvement (MI over old WMI): {percent:.2%}".format(
         percent=(1 - t_new / t_old)))
