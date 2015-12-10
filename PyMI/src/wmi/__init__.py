@@ -282,6 +282,9 @@ class _Connection(object):
             _, el_type, _ = params.get_element(k)
             params[k] = _unwrap_element(el_type, v)
 
+        if not params:
+            params = None
+
         with self._session.invoke_method(
                 mi_target, six.text_type(method_name), params) as op:
             l = []
