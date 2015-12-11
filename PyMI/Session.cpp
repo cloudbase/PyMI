@@ -73,13 +73,13 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|uuuuO", kwlist, &ns, &instance, &assocClass, &resultClass, &role, &resultRole, &keysOnlyObj))
         return NULL;
 
-    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
-    bool keysOnly = keysOnlyObj && PyObject_IsTrue(keysOnlyObj);
-
     try
     {
+        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+
+        bool keysOnly = keysOnlyObj && PyObject_IsTrue(keysOnlyObj);
+
         std::shared_ptr<MI::Operation> op;
         AllowThreads([&]() {
             op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
@@ -136,11 +136,11 @@ static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
         return NULL;
 
-    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
     try
     {
+        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+
         AllowThreads([&]() {
             self->session->CreateInstance(ns, *((Instance*)instance)->instance);
         });
@@ -162,11 +162,11 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
         return NULL;
 
-    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
     try
     {
+        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+
         AllowThreads([&]() {
             self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
         });
@@ -188,11 +188,11 @@ static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
         return NULL;
 
-    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
     try
     {
+        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+
         AllowThreads([&]() {
             self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
         });
@@ -238,11 +238,11 @@ static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kw
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &keyInstance))
         return NULL;
 
-    if (!PyObject_IsInstance(keyInstance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
     try
     {
+        if (!PyObject_IsInstance(keyInstance, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+
         std::shared_ptr<MI::Operation> op;
         AllowThreads([&]() {
             op = self->session->GetInstance(ns, *((Instance*)keyInstance)->instance);
@@ -267,21 +267,20 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
     static char *kwlist[] = { "ns", "query", "indication_result", "operation_options", "dialect", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|OOu", kwlist, &ns, &query, &indicationResultCallback, &operationOptions, &dialect))
         return NULL;
-    if (!CheckPyNone(indicationResultCallback) && !PyCallable_Check(indicationResultCallback))
-    {
-        PyErr_SetString(PyExc_TypeError, "parameter indication_result must be callable");
-        return NULL;
-    }
-    if (!CheckPyNone(operationOptions) && !PyObject_IsInstance(operationOptions, reinterpret_cast<PyObject*>(&OperationOptionsType)))
-    {
-        PyErr_SetString(PyExc_TypeError, "parameter operation_options must be of type OperationOptions");
-        return NULL;
-    }
-
-    auto callbacks = !CheckPyNone(indicationResultCallback) ? std::make_shared<PythonMICallbacks>(indicationResultCallback) : NULL;
 
     try
     {
+        if (!CheckPyNone(indicationResultCallback) && !PyCallable_Check(indicationResultCallback))
+        {
+            throw MI::TypeConversionException(L"\"indication_result\" must be callable");
+        }
+        if (!CheckPyNone(operationOptions) && !PyObject_IsInstance(operationOptions, reinterpret_cast<PyObject*>(&OperationOptionsType)))
+        {
+            throw MI::TypeConversionException(L"\"operation_options\" must have type OperationOptions");
+        }
+
+        auto callbacks = !CheckPyNone(indicationResultCallback) ? std::make_shared<PythonMICallbacks>(indicationResultCallback) : NULL;
+
         std::shared_ptr<MI::Operation> op;
         AllowThreads([&]() {
             op = self->session->Subscribe(ns, query, callbacks,

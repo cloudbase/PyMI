@@ -57,13 +57,13 @@ static PyObject* Serializer_SerializeInstance(Serializer* self, PyObject* args, 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &instance, &includeClassObj))
         return NULL;
 
-    if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-        return NULL;
-
-    bool includeClass = includeClassObj && PyObject_IsTrue(includeClassObj);
-
     try
     {
+        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
+            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+
+        bool includeClass = includeClassObj && PyObject_IsTrue(includeClassObj);
+
         std::wstring data;
         AllowThreads([&]() {
             data = self->serializer->SerializeInstance(*((Instance*)instance)->instance, includeClass);
@@ -85,13 +85,13 @@ static PyObject* Serializer_SerializeClass(Serializer* self, PyObject* args, PyO
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O", kwlist, &miClass, &deepObj))
         return NULL;
 
-    if (!PyObject_IsInstance(miClass, reinterpret_cast<PyObject*>(&ClassType)))
-        return NULL;
-
-    bool deep = deepObj && PyObject_IsTrue(deepObj);
-
     try
     {
+        if (!PyObject_IsInstance(miClass, reinterpret_cast<PyObject*>(&ClassType)))
+            throw MI::TypeConversionException(L"\"mi_class\" must have type Class");
+
+        bool deep = deepObj && PyObject_IsTrue(deepObj);
+
         std::wstring data;
         AllowThreads([&]() {
             data = self->serializer->SerializeClass(*((Class*)miClass)->miClass, deep);

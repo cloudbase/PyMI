@@ -81,11 +81,11 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou", kwlist, &pyClass, &methodName))
         return NULL;
 
-    if (!PyObject_IsInstance(pyClass, reinterpret_cast<PyObject*>(&ClassType)))
-        return NULL;
-
     try
     {
+        if (!PyObject_IsInstance(pyClass, reinterpret_cast<PyObject*>(&ClassType)))
+            throw MI::TypeConversionException(L"\"mi_class\" must have type Class");
+
         std::shared_ptr<MI::Instance> instance;
         AllowThreads([&]() {
             instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
@@ -129,11 +129,11 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &className, &miClass))
         return NULL;
 
-    if (!PyObject_IsInstance(miClass, reinterpret_cast<PyObject*>(&ClassType)))
-        return NULL;
-
     try
     {
+        if (!PyObject_IsInstance(miClass, reinterpret_cast<PyObject*>(&ClassType)))
+            throw MI::TypeConversionException(L"\"mi_class\" must have type Class");
+
         std::shared_ptr<MI::Instance> instance;
         AllowThreads([&]() {
             instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
