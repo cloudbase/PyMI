@@ -579,7 +579,7 @@ MI_Interval OperationOptions::GetTimeout()
     return timeout;
 }
 
-std::shared_ptr<OperationOptions> OperationOptions::Clone()
+std::shared_ptr<OperationOptions> OperationOptions::Clone() const
 {
     MI_OperationOptions clonedOperationOptions;
     MICheckResult(::MI_OperationOptions_Clone(&this->m_operationOptions, &clonedOperationOptions));

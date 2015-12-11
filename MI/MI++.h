@@ -86,7 +86,7 @@ namespace MI
         friend Session;
 
     public:
-        std::shared_ptr<OperationOptions> Clone();
+        std::shared_ptr<OperationOptions> Clone() const;
         void SetTimeout(const MI_Interval& timeout);
         MI_Interval GetTimeout();
         void Delete();
