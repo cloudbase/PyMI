@@ -6,6 +6,11 @@
 
 #include <datetime.h>
 
+bool CheckPyNone(PyObject* obj)
+{
+    return !obj || obj == Py_None;
+}
+
 void AllowThreads(std::function<void()> action)
 {
     // Py_BEGIN_ALLOW_THREADS

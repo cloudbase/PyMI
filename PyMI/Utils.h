@@ -16,3 +16,4 @@ void AllowThreads(std::function<void()> action);
 void CallPythonCallback(PyObject* callable, const char* format, ...);
 void MIIntervalFromPyDelta(PyObject* pyDelta, MI_Interval& interval);
 PyObject* PyDeltaFromMIInterval(const MI_Interval& interval);
+bool CheckPyNone(PyObject* obj);

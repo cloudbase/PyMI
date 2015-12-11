@@ -267,25 +267,25 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
     static char *kwlist[] = { "ns", "query", "indication_result", "operation_options", "dialect", NULL };
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|OOu", kwlist, &ns, &query, &indicationResultCallback, &operationOptions, &dialect))
         return NULL;
-    if (indicationResultCallback && !PyCallable_Check(indicationResultCallback))
+    if (!CheckPyNone(indicationResultCallback) && !PyCallable_Check(indicationResultCallback))
     {
         PyErr_SetString(PyExc_TypeError, "parameter indication_result must be callable");
         return NULL;
     }
-    if (operationOptions && !PyObject_IsInstance(operationOptions, reinterpret_cast<PyObject*>(&OperationOptionsType)))
+    if (!CheckPyNone(operationOptions) && !PyObject_IsInstance(operationOptions, reinterpret_cast<PyObject*>(&OperationOptionsType)))
     {
         PyErr_SetString(PyExc_TypeError, "parameter operation_options must be of type OperationOptions");
         return NULL;
     }
 
-    auto callbacks = indicationResultCallback ? std::make_shared<PythonMICallbacks>(indicationResultCallback) : nullptr;
+    auto callbacks = !CheckPyNone(indicationResultCallback) ? std::make_shared<PythonMICallbacks>(indicationResultCallback) : NULL;
 
     try
     {
         std::shared_ptr<MI::Operation> op;
         AllowThreads([&]() {
             op = self->session->Subscribe(ns, query, callbacks,
-                operationOptions ? ((OperationOptions*)operationOptions)->operationOptions : NULL,
+                !CheckPyNone(operationOptions) ? ((OperationOptions*)operationOptions)->operationOptions : NULL,
                 dialect);
         });
         PyObject* obj = (PyObject*)Operation_New(op);
@@ -314,7 +314,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
 
     try
     {
-        if (inboundParams && inboundParams != Py_None && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
+        if (!CheckPyNone(inboundParams) && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
             throw MI::TypeConversionException(L"\"inbound_params\" must have type Instance");
 
         std::shared_ptr<MI::Operation> op;
@@ -322,7 +322,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         {
             AllowThreads([&]() {
                 op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName,
-                    inboundParams && inboundParams != Py_None ? ((Instance*)inboundParams)->instance : NULL);
+                    !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL);
             });
         }
         else if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&ClassType)))
@@ -330,7 +330,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
             AllowThreads([&]() {
                 auto miClass = ((Class*)target)->miClass;
                 op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), methodName,
-                    inboundParams && inboundParams != Py_None ? ((Instance*)inboundParams)->instance : NULL);
+                    !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL);
             });
         }
         else
