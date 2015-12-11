@@ -318,8 +318,10 @@ std::shared_ptr<MI::MIValue> Py2MI(PyObject* pyValue, MI_Type valueType)
         switch (valueType)
         {
         case MI_INSTANCE:
+            // TODO: Set the same ScopeContextOwner as the container instance / class
             return MI::MIValue::FromInstance(*((Instance*)pyValue)->instance);
         case MI_REFERENCE:
+            // TODO: Set the same ScopeContextOwner as the container instance / class
             return MI::MIValue::FromReference(*((Instance*)pyValue)->instance);
         default:
             throw MI::TypeConversionException();
