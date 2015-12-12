@@ -36,11 +36,16 @@ class x_wmi_timed_out (x_wmi):
     pass
 
 
-def mi_to_wmi_exception(ex):
-    if(isinstance(ex, mi.timeouterror)):
-        return x_wmi_timed_out(str(ex), ex)
-    else:
-        return x_wmi(str(ex), ex)
+def mi_to_wmi_exception(func):
+    def func_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except mi.error as ex:
+            if(isinstance(ex, mi.timeouterror)):
+                raise x_wmi_timed_out(str(ex), ex)
+            else:
+                raise x_wmi(str(ex), ex)
+    return func_wrapper
 
 
 class _Method(object):
@@ -49,6 +54,7 @@ class _Method(object):
         self._target = target
         self._method_name = method_name
 
+    @mi_to_wmi_exception
     def __call__(self, *args, **kwargs):
         return self._conn.invoke_method(
             self._target, self._method_name, *args, **kwargs)
@@ -65,38 +71,47 @@ class _Instance(object):
         object.__setattr__(self, "_conn", conn)
         object.__setattr__(self, "_instance", instance)
 
+    @mi_to_wmi_exception
     def __getattr__(self, name):
         try:
             return _wrap_element(self._conn, *self._instance.get_element(name))
         except mi.error:
             return _Method(self._conn, self, name)
 
+    @mi_to_wmi_exception
     def __setattr__(self, name, value):
         _, el_type, _ = self._instance.get_element(name)
         self._instance[six.text_type(name)] = _unwrap_element(el_type, value)
 
+    @mi_to_wmi_exception
     def associators(self, wmi_association_class=None, wmi_result_class=None):
         return self._conn.get_associators(
             self, wmi_association_class, wmi_result_class)
 
+    @mi_to_wmi_exception
     def path(self):
         return _Path(self._instance.get_class_name())
 
+    @mi_to_wmi_exception
     def path_(self):
         return self._instance.get_path()
 
+    @mi_to_wmi_exception
     def GetText_(self, text_format):
         return self._conn.serialize_instance(self)
 
+    @mi_to_wmi_exception
     def put(self):
         if not self._instance.get_path():
             self._conn.create_instance(self)
         else:
             self._conn.modify_instance(self)
 
+    @mi_to_wmi_exception
     def Delete_(self):
         self._conn.delete_instance(self)
 
+    @mi_to_wmi_exception
     def set(self, **kwargs):
         for k, v in kwargs.items():
             self.__setattr__(k, v)
@@ -108,6 +123,7 @@ class _Class(object):
         self.class_name = six.text_type(class_name)
         self._cls = cls
 
+    @mi_to_wmi_exception
     def __call__(self, *argc, **argv):
         fields = ""
         for i, v in enumerate(argc):
@@ -138,15 +154,18 @@ class _Class(object):
 
         return self._conn.query(wql)
 
+    @mi_to_wmi_exception
     def __getattr__(self, name):
         try:
             return _wrap_element(self._conn, *self._cls.get_element(name))
         except mi.error:
             return _Method(self._conn, self, name)
 
+    @mi_to_wmi_exception
     def new(self):
         return self._conn.new_instance_from_class(self)
 
+    @mi_to_wmi_exception
     def watch_for(self, raw_wql=None, notification_type="operation",
                   wmi_class=None, delay_secs=1, fields=[], **where_clause):
         return _EventWatcher(self._conn, six.text_type(raw_wql))
@@ -220,10 +239,12 @@ class _Connection(object):
         self._class_cache = {}
         self._method_params_cache = {}
 
+    @mi_to_wmi_exception
     def __del__(self):
         self._session = None
         self._app = None
 
+    @mi_to_wmi_exception
     def __getattr__(self, name):
         return self.get_class(six.text_type(name))
 
@@ -235,12 +256,14 @@ class _Connection(object):
             i = op.get_next_instance()
         return l
 
+    @mi_to_wmi_exception
     def query(self, wql):
         wql = wql.replace("\\", "\\\\")
         with self._session.exec_query(
                 ns=self._ns, query=six.text_type(wql)) as q:
             return self._get_instances(q)
 
+    @mi_to_wmi_exception
     def get_associators(self, instance, wmi_association_class=None,
                         wmi_result_class=None):
         if wmi_association_class is None:
@@ -269,6 +292,7 @@ class _Connection(object):
                 params = params.clone()
         return params
 
+    @mi_to_wmi_exception
     def invoke_method(self, target, method_name, *args, **kwargs):
         if isinstance(target, _Instance):
             mi_target = target._instance
@@ -304,15 +328,18 @@ class _Connection(object):
                 l.append(_wrap_element(self, *element))
             return tuple(l)
 
+    @mi_to_wmi_exception
     def new_instance_from_class(self, cls):
         return _Instance(
             self, self._app.create_instance_from_class(
                 cls.class_name, cls._cls))
 
+    @mi_to_wmi_exception
     def serialize_instance(self, instance):
         with self._app.create_serializer() as s:
             return s.serialize_instance(instance._instance)
 
+    @mi_to_wmi_exception
     def get_class(self, class_name):
         cls = None
         if self._cache_classes:
@@ -330,6 +357,7 @@ class _Connection(object):
         if cls:
             return _Class(self, class_name, cls)
 
+    @mi_to_wmi_exception
     def get_instance(self, class_name, key):
         c = self.get_class(class_name)
         key_instance = self.new_instance_from_class(c)
@@ -344,15 +372,19 @@ class _Connection(object):
         except mi.error:
             return None
 
+    @mi_to_wmi_exception
     def create_instance(self, instance):
         self._session.create_instance(self._ns, instance._instance)
 
+    @mi_to_wmi_exception
     def modify_instance(self, instance):
         self._session.modify_instance(self._ns, instance._instance)
 
+    @mi_to_wmi_exception
     def delete_instance(self, instance):
         self._session.delete_instance(self._ns, instance._instance)
 
+    @mi_to_wmi_exception
     def subscribe(self, query, indication_result):
         return self._session.subscribe(
             self._ns, six.text_type(query), indication_result)
@@ -428,6 +460,7 @@ def _parse_moniker(moniker):
     return (computer_name, namespace, class_name, key)
 
 
+@mi_to_wmi_exception
 def WMI(moniker="root/cimv2", privileges=None):
     computer_name, ns, class_name, key = _parse_moniker(
         moniker.replace("\\", "/"))
