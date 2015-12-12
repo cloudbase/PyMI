@@ -94,6 +94,9 @@ class _Instance(object):
         else:
             self._conn.modify_instance(self)
 
+    def Delete_(self):
+        self._conn.delete_instance(self)
+
     def set(self, **kwargs):
         for k, v in kwargs.items():
             self.__setattr__(k, v)
@@ -346,6 +349,9 @@ class _Connection(object):
 
     def modify_instance(self, instance):
         self._session.modify_instance(self._ns, instance._instance)
+
+    def delete_instance(self, instance):
+        self._session.delete_instance(self._ns, instance._instance)
 
     def subscribe(self, query, indication_result):
         return self._session.subscribe(
