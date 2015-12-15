@@ -11,6 +11,7 @@ static PyObject* OperationOptions_new(PyTypeObject* type, PyObject* args, PyObje
 	OperationOptions* self = NULL;
 	self = (OperationOptions*)type->tp_alloc(type, 0);
 	self->operationOptions = NULL;
+    ::InitializeCriticalSection(&self->cs);
 	return (PyObject *)self;
 }
 
@@ -22,9 +23,10 @@ static int OperationOptions_init(OperationOptions* self, PyObject* args, PyObjec
 
 static void OperationOptions_dealloc(OperationOptions* self)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         self->operationOptions = NULL;
     });
+    ::DeleteCriticalSection(&self->cs);
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -40,7 +42,7 @@ static PyObject* OperationOptions_Clone(OperationOptions *self, PyObject*)
 	try
 	{
         std::shared_ptr<MI::OperationOptions> operationOptions;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             operationOptions = self->operationOptions->Clone();
         });
 		return (PyObject*)OperationOptions_New(operationOptions);
@@ -57,7 +59,7 @@ static PyObject* OperationOptions_GetTimeout(OperationOptions* self, PyObject* t
 	try
 	{
         MI_Interval interval;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             interval = self->operationOptions->GetTimeout();
         });
 		return PyDeltaFromMIInterval(interval);
@@ -84,7 +86,7 @@ static PyObject* OperationOptions_SetTimeout(OperationOptions* self, PyObject* t
 	{
 		MI_Interval miTimeout;
 		MIIntervalFromPyDelta(timeout, miTimeout);
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->operationOptions->SetTimeout(miTimeout);
         });
 		Py_RETURN_NONE;

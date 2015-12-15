@@ -11,6 +11,7 @@ static PyObject* Operation_new(PyTypeObject* type, PyObject* args, PyObject* kwd
     Operation* self = NULL;
     self = (Operation*)type->tp_alloc(type, 0);
     self->operation = NULL;
+    ::InitializeCriticalSection(&self->cs);
     return (PyObject *)self;
 }
 
@@ -22,9 +23,10 @@ static int Operation_init(Operation* self, PyObject* args, PyObject* kwds)
 
 static void Operation_dealloc(Operation* self)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         self->operation = NULL;
     });
+    ::DeleteCriticalSection(&self->cs);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -32,7 +34,7 @@ static PyObject* Operation_Cancel(Operation* self, PyObject*)
 {
     try
     {
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->operation->Cancel();
         });
         Py_RETURN_NONE;
@@ -49,7 +51,7 @@ static PyObject* Operation_GetNextInstance(Operation* self, PyObject*)
     try
     {
         std::shared_ptr<MI::Instance> instance;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             instance = self->operation->GetNextInstance();
         });
         if (instance)
@@ -70,7 +72,7 @@ static PyObject* Operation_GetNextIndication(Operation* self, PyObject*)
     try
     {
         std::shared_ptr<MI::Instance> instance;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             instance = self->operation->GetNextIndication();
         });
         if (instance)
@@ -91,7 +93,7 @@ static PyObject* Operation_GetNextClass(Operation* self, PyObject*)
     try
     {
         std::shared_ptr<MI::Class> miClass;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             miClass = self->operation->GetNextClass();
         });
         if (miClass)
@@ -150,7 +152,7 @@ static PyObject* Operation_self(Operation *self, PyObject*)
 
 static PyObject* Operation_exit(Operation* self, PyObject*)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         if (!self->operation->IsClosed())
             self->operation->Close();
     });

@@ -14,6 +14,7 @@ static PyObject* Session_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     Session* self = NULL;
     self = (Session*)type->tp_alloc(type, 0);
+    ::InitializeCriticalSection(&self->cs);
     self->session = NULL;
     self->operationCallbacks = std::make_shared<std::vector<std::shared_ptr<MI::Callbacks>>>();
     return (PyObject *)self;
@@ -27,10 +28,11 @@ static int Session_init(Session* self, PyObject* args, PyObject* kwds)
 
 static void Session_dealloc(Session* self)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         self->session = NULL;
     });
     self->operationCallbacks = NULL;
+    ::DeleteCriticalSection(&self->cs);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -47,7 +49,7 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
     try
     {
         std::shared_ptr<MI::Operation> op;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             op = self->session->ExecQuery(ns, query, dialect);
         });
         return (PyObject*)Operation_New(op);
@@ -81,7 +83,7 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
         bool keysOnly = keysOnlyObj && PyObject_IsTrue(keysOnlyObj);
 
         std::shared_ptr<MI::Operation> op;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
         });
         return (PyObject*)Operation_New(op);
@@ -97,7 +99,7 @@ static PyObject* Session_Close(Session *self, PyObject*)
 {
     try
     {
-        AllowThreads([&]()
+        AllowThreads(&self->cs, [&]()
         {
             self->session->Close();
         });
@@ -118,7 +120,7 @@ static PyObject* Session_self(Operation *self, PyObject*)
 
 static PyObject* Session_exit(Session* self, PyObject*)
 {
-    AllowThreads([&]()
+    AllowThreads(&self->cs, [&]()
     {
         if (!self->session->IsClosed())
             self->session->Close();
@@ -141,7 +143,7 @@ static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject 
         if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
             throw MI::TypeConversionException(L"\"instance\" must have type Instance");
 
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->session->CreateInstance(ns, *((Instance*)instance)->instance);
         });
         Py_RETURN_NONE;
@@ -167,7 +169,7 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
         if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
             throw MI::TypeConversionException(L"\"instance\" must have type Instance");
 
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
         });
         Py_RETURN_NONE;
@@ -193,7 +195,7 @@ static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject 
         if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
             throw MI::TypeConversionException(L"\"instance\" must have type Instance");
 
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
         });
         Py_RETURN_NONE;
@@ -217,7 +219,7 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
     try
     {
         std::shared_ptr<MI::Operation> op;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             op = self->session->GetClass(ns, className);
         });
         return (PyObject*)Operation_New(op);
@@ -244,7 +246,7 @@ static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kw
             throw MI::TypeConversionException(L"\"instance\" must have type Instance");
 
         std::shared_ptr<MI::Operation> op;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             op = self->session->GetInstance(ns, *((Instance*)keyInstance)->instance);
         });
         return (PyObject*)Operation_New(op);
@@ -282,7 +284,7 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
         auto callbacks = !CheckPyNone(indicationResultCallback) ? std::make_shared<PythonMICallbacks>(indicationResultCallback) : NULL;
 
         std::shared_ptr<MI::Operation> op;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             op = self->session->Subscribe(ns, query, callbacks,
                 !CheckPyNone(operationOptions) ? ((OperationOptions*)operationOptions)->operationOptions : NULL,
                 dialect);
@@ -319,14 +321,14 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         std::shared_ptr<MI::Operation> op;
         if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&InstanceType)))
         {
-            AllowThreads([&]() {
+            AllowThreads(&self->cs, [&]() {
                 op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName,
                     !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL);
             });
         }
         else if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&ClassType)))
         {
-            AllowThreads([&]() {
+            AllowThreads(&self->cs, [&]() {
                 auto miClass = ((Class*)target)->miClass;
                 op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), methodName,
                     !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL);

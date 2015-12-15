@@ -9,6 +9,7 @@ static PyObject* Class_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     Class* self = NULL;
     self = (Class*)type->tp_alloc(type, 0);
     self->miClass = NULL;
+    ::InitializeCriticalSection(&self->cs);
     return (PyObject *)self;
 }
 
@@ -20,9 +21,10 @@ static int Class_init(Class* self, PyObject* args, PyObject* kwds)
 
 static void Class_dealloc(Class* self)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         self->miClass = NULL;
     });
+    ::DeleteCriticalSection(&self->cs);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -35,7 +37,7 @@ static PyObject* Class_subscript(Class *self, PyObject *item)
         GetIndexOrName(item, name, i);
 
         std::shared_ptr<MI::ClassElement> element;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             if (i >= 0)
             {
                 element = (*self->miClass)[(unsigned)i];
@@ -59,7 +61,7 @@ static Py_ssize_t Class_length(Class *self)
     try
     {
         Py_ssize_t l = 0;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             l = self->miClass->GetElementsCount();
         });
         return l;
@@ -94,7 +96,7 @@ static PyObject* Class_Clone(Class* self, PyObject*)
     try
     {
         std::shared_ptr<MI::Class> miClass;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             miClass = self->miClass->Clone();
         });
         return (PyObject*)Class_New(miClass);

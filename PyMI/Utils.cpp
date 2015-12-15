@@ -11,21 +11,36 @@ bool CheckPyNone(PyObject* obj)
     return !obj || obj == Py_None;
 }
 
-void AllowThreads(std::function<void()> action)
+void AllowThreads(PCRITICAL_SECTION cs, std::function<void()> action)
 {
-    // Py_BEGIN_ALLOW_THREADS
-    PyThreadState *_save;
-    _save = PyEval_SaveThread();
 
+    if (cs)
+    {
+        ::EnterCriticalSection(cs);
+    }
+    PyThreadState* _save = nullptr;
     try
     {
+        // Py_BEGIN_ALLOW_THREADS
+        _save = PyEval_SaveThread();
         action();
         // Py_END_ALLOW_THREADS
         PyEval_RestoreThread(_save);
+        if (cs)
+        {
+            ::LeaveCriticalSection(cs);
+        }
     }
-    catch(std::exception&)
+    catch (std::exception&)
     {
-        PyEval_RestoreThread(_save);
+        if (_save)
+        {
+            PyEval_RestoreThread(_save);
+        }
+        if (cs)
+        {
+            ::LeaveCriticalSection(cs);
+        }
         throw;
     }
 }

@@ -12,6 +12,7 @@ static PyObject* Application_new(PyTypeObject *type, PyObject *args, PyObject *k
 {
     Application* self = NULL;
     self = (Application*)type->tp_alloc(type, 0);
+    ::InitializeCriticalSection(&self->cs);
     return (PyObject *)self;
 }
 
@@ -24,7 +25,7 @@ static int Application_init(Application *self, PyObject *args, PyObject *kwds)
 
     try
     {
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->app = std::make_shared<MI::Application>(appId);
         });
         return 0;
@@ -48,7 +49,7 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
     try
     {
         std::shared_ptr<MI::Session> session;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             session = self->app->NewSession(protocol, computerName);
         });
         return (PyObject*)Session_New(session);
@@ -64,11 +65,11 @@ static void Application_dealloc(Application* self)
 {
     if (self->app)
     {
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->app = NULL;
         });
     }
-
+    ::DeleteCriticalSection(&self->cs);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -87,7 +88,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
             throw MI::TypeConversionException(L"\"mi_class\" must have type Class");
 
         std::shared_ptr<MI::Instance> instance;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
         });
         return (PyObject*)Instance_New(instance);
@@ -109,7 +110,7 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
     try
     {
         std::shared_ptr<MI::Instance> instance;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             instance = self->app->NewInstance(className);
         });
         return (PyObject*)Instance_New(instance);
@@ -135,7 +136,7 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
             throw MI::TypeConversionException(L"\"mi_class\" must have type Class");
 
         std::shared_ptr<MI::Instance> instance;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
         });
         return (PyObject*)Instance_New(instance);
@@ -152,7 +153,7 @@ static PyObject* Application_NewSerializer(Application* self, PyObject*)
     try
     {
         std::shared_ptr<MI::Serializer> serializer;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             serializer = self->app->NewSerializer();
         });
         return (PyObject*)Serializer_New(serializer);
@@ -169,7 +170,7 @@ static PyObject* Application_NewOperationOptions(Application* self, PyObject*)
     try
     {
         std::shared_ptr<MI::OperationOptions> operationOptions;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             operationOptions = self->app->NewOperationOptions();
         });
         return (PyObject*)OperationOptions_New(operationOptions);
@@ -185,7 +186,7 @@ static PyObject* Application_Close(Application *self, PyObject*)
 {
     try
     {
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             self->app->Close();
         });
         Py_RETURN_NONE;
@@ -205,7 +206,7 @@ static PyObject* Application_self(Application *self, PyObject*)
 
 static PyObject* Application_exit(Application* self, PyObject*)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         if (!self->app->IsClosed())
             self->app->Close();
     });

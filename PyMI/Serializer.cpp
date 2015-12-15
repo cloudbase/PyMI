@@ -10,14 +10,16 @@ static PyObject* Serializer_new(PyTypeObject* type, PyObject* args, PyObject* kw
 {
     Serializer* self = NULL;
     self = (Serializer*)type->tp_alloc(type, 0);
+    ::InitializeCriticalSection(&self->cs);
     return (PyObject *)self;
 }
 
 static void Serializer_dealloc(Serializer* self)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         self->serializer = NULL;
     });
+    ::DeleteCriticalSection(&self->cs);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -42,7 +44,7 @@ static PyObject* Serializer_self(Serializer *self, PyObject*)
 
 static PyObject* Serializer_exit(Serializer* self, PyObject*)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         if (!self->serializer->IsClosed())
             self->serializer->Close();
     });
@@ -65,7 +67,7 @@ static PyObject* Serializer_SerializeInstance(Serializer* self, PyObject* args, 
         bool includeClass = includeClassObj && PyObject_IsTrue(includeClassObj);
 
         std::wstring data;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             data = self->serializer->SerializeInstance(*((Instance*)instance)->instance, includeClass);
         });
         return PyUnicode_FromWideChar(data.c_str(), data.length());
@@ -93,7 +95,7 @@ static PyObject* Serializer_SerializeClass(Serializer* self, PyObject* args, PyO
         bool deep = deepObj && PyObject_IsTrue(deepObj);
 
         std::wstring data;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             data = self->serializer->SerializeClass(*((Class*)miClass)->miClass, deep);
         });
         return PyUnicode_FromWideChar(data.c_str(), data.length());

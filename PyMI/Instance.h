@@ -8,6 +8,7 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     std::shared_ptr<MI::Instance> instance;
+    CRITICAL_SECTION cs;
 } Instance;
 
 extern PyTypeObject InstanceType;

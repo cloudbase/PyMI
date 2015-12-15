@@ -294,7 +294,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\"</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)mi.pdb" "$(ProjectDir)src\mi\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug (Python 3.x)|Win32'">

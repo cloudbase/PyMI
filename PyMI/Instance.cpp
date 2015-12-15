@@ -10,6 +10,7 @@ static PyObject* Instance_new(PyTypeObject *type, PyObject *args, PyObject *kwds
     Instance* self = NULL;
     self = (Instance*)type->tp_alloc(type, 0);
     self->instance = NULL;
+    ::InitializeCriticalSection(&self->cs);
     return (PyObject *)self;
 }
 
@@ -21,9 +22,10 @@ static int Instance_init(Instance* self, PyObject* args, PyObject* kwds)
 
 static void Instance_dealloc(Instance* self)
 {
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         self->instance = NULL;
     });
+    ::DeleteCriticalSection(&self->cs);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -34,7 +36,7 @@ std::shared_ptr<MI::ValueElement> GetElement(Instance *self, PyObject *item)
     GetIndexOrName(item, name, i);
 
     std::shared_ptr<MI::ValueElement> element;
-    AllowThreads([&]() {
+    AllowThreads(&self->cs, [&]() {
         if (i >= 0)
         {
             element = (*self->instance)[(unsigned)i];
@@ -88,7 +90,7 @@ static Py_ssize_t Instance_length(Instance *self)
     try
     {
         Py_ssize_t l = 0;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             l = self->instance->GetElementsCount();
         });
         return l;
@@ -109,7 +111,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
         GetIndexOrName(item, name, i);
 
         MI_Type miType;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             if (i >= 0)
             {
                 miType = self->instance->GetElementType((unsigned)i);
@@ -122,7 +124,7 @@ static int Instance_ass_subscript(Instance* self, PyObject* item, PyObject* valu
 
         auto miValue = Py2MI(value, miType);
 
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             if (i >= 0)
             {
                 self->instance->SetElement((unsigned)i, *miValue);
@@ -163,7 +165,7 @@ static PyObject* Instance_GetClass(Instance *self, PyObject*)
     try
     {
         std::shared_ptr<MI::Class> c;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             c = self->instance->GetClass();
         });
         return (PyObject*)Class_New(c);
@@ -180,7 +182,7 @@ static PyObject* Instance_Clone(Instance *self, PyObject*)
     try
     {
         std::shared_ptr<MI::Instance> instance;
-        AllowThreads([&]() {
+        AllowThreads(&self->cs, [&]() {
             instance = self->instance->Clone();
         });
         return (PyObject*)Instance_New(instance);

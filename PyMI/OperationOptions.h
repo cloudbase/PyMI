@@ -8,6 +8,7 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
     std::shared_ptr<MI::OperationOptions> operationOptions;
+    CRITICAL_SECTION cs;
 } OperationOptions;
 
 extern PyTypeObject OperationOptionsType;
