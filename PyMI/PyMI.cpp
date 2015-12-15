@@ -41,31 +41,24 @@ PyObject* _initmi(void)
 
     PyObject* m = NULL;
 
-    ApplicationType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&ApplicationType) < 0)
         return NULL;
 
-    SessionType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&SessionType) < 0)
         return NULL;
 
-    ClassType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&ClassType) < 0)
         return NULL;
 
-    InstanceType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&InstanceType) < 0)
         return NULL;
 
-    OperationType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&OperationType) < 0)
         return NULL;
 
-    SerializerType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&SerializerType) < 0)
         return NULL;
 
-    OperationOptionsType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&OperationOptionsType) < 0)
         return NULL;
 
