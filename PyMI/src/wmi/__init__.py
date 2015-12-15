@@ -16,6 +16,7 @@
 import re
 import six
 import threading
+import weakref
 
 import mi
 
@@ -67,9 +68,19 @@ class _Path(object):
 
 
 class _Instance(object):
-    def __init__(self, conn, instance):
-        object.__setattr__(self, "_conn", conn)
+    def __init__(self, conn, instance, use_conn_weak_ref=False):
+        if use_conn_weak_ref:
+            object.__setattr__(self, "_conn_ref", weakref.ref(conn))
+        else:
+            object.__setattr__(self, "_conn_ref", conn)
         object.__setattr__(self, "_instance", instance)
+
+    @property
+    def _conn(self):
+        if isinstance(self._conn_ref, weakref.ref):
+            return self._conn_ref()
+        else:
+            return self._conn_ref
 
     @mi_to_wmi_exception
     def __getattr__(self, name):
@@ -173,12 +184,12 @@ class _Class(object):
 
 class _EventWatcher(object):
     def __init__(self, conn, wql):
-        self._conn = conn
         self._events_queue = []
         self._error = None
         self._event = threading.Event()
-        self._operation = self._conn.subscribe(
-            wql, self._indication_result)
+        self._operation = conn.subscribe(
+            wql, self._indication_result, self.close)
+        self._conn_ref = weakref.ref(conn)
 
     def _process_events(self):
         if self._error:
@@ -189,8 +200,8 @@ class _EventWatcher(object):
             return self._events_queue.pop(0)
 
     def __call__(self, timeout_ms=-1):
-        try:
-            while True:
+        while True:
+            try:
                 event = self._process_events()
                 if event:
                     return event
@@ -201,26 +212,37 @@ class _EventWatcher(object):
                 if not self._event.wait(timeout):
                     raise x_wmi_timed_out()
                 self._event.clear()
-        finally:
-            if not self._operation.has_more_results():
-                self.close()
+            finally:
+                if (not self._operation or
+                        not self._operation.has_more_results()):
+                    self.close()
+                    raise x_wmi("No more events")
 
     def _indication_result(self, instance, bookmark, machine_id, more_results,
                            result_code, error_string, error_details):
-        if instance:
-            event = instance[u"TargetInstance"]
-            self._events_queue.append(_Instance(self._conn, event.clone()))
-        if error_details:
-            self._error = (result_code, error_string,
-                           _Instance(self._conn, error_details.clone()))
-        self._event.set()
+        if self._conn_ref:
+            conn = self._conn_ref()
+            if conn:
+                if instance:
+                    event = instance[u"TargetInstance"]
+                    self._events_queue.append(
+                        _Instance(conn, event.clone(), use_conn_weak_ref=True))
+                if error_details:
+                    self._error = (
+                        result_code, error_string,
+                        _Instance(
+                            conn, error_details.clone(),
+                            use_conn_weak_ref=True))
+                self._event.set()
 
     def close(self):
         if self._operation:
             self._operation.cancel()
             self._operation.close()
-            self._operation = None
-            self._timeout_ms = None
+        self._event.set()
+        self._operation = None
+        self._timeout_ms = None
+        self._conn_ref = None
         self._events_queue = []
 
     def __del__(self):
@@ -238,11 +260,18 @@ class _Connection(object):
         self._cache_classes = cache_classes
         self._class_cache = {}
         self._method_params_cache = {}
+        self._notify_on_close = []
+
+    def _close(self):
+        for callback in self._notify_on_close:
+            callback()
+        self._notify_on_close = []
+        self._session = None
+        self._app = None
 
     @mi_to_wmi_exception
     def __del__(self):
-        self._session = None
-        self._app = None
+        self._close()
 
     @mi_to_wmi_exception
     def __getattr__(self, name):
@@ -385,9 +414,11 @@ class _Connection(object):
         self._session.delete_instance(self._ns, instance._instance)
 
     @mi_to_wmi_exception
-    def subscribe(self, query, indication_result):
-        return self._session.subscribe(
-            self._ns, six.text_type(query), indication_result)
+    def subscribe(self, query, indication_result_callback, close_callback):
+        op = self._session.subscribe(
+            self._ns, six.text_type(query), indication_result_callback)
+        self._notify_on_close.append(close_callback)
+        return op
 
 
 def _wrap_element(conn, name, el_type, value):
