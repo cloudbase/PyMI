@@ -49,6 +49,16 @@ def mi_to_wmi_exception(func):
     return func_wrapper
 
 
+_app = None
+
+
+def _get_app():
+    global _app
+    if not _app:
+        _app = mi.Application()
+    return _app
+
+
 class _Method(object):
     def __init__(self, conn, target, method_name):
         self._conn = conn
@@ -253,7 +263,7 @@ class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2",
                  protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
         self._ns = six.text_type(ns)
-        self._app = mi.Application()
+        self._app = _get_app()
         self._session = self._app.create_session(
             computer_name=six.text_type(computer_name),
             protocol=six.text_type(protocol))
