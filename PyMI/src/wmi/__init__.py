@@ -152,27 +152,23 @@ class _Class(object):
                 raise ValueError('Invalid argument')
             if not isinstance(v, list):
                 raise ValueError('Invalid argument')
-            for f in v:
-                if fields:
-                    fields += ", "
-                # TODO: sanitize input
-                fields += f
+            # TODO: sanitize input
+            fields = ", ".join(v)
         if not fields:
             fields = "*"
 
-        where = ""
-        for k, v in argv.items():
-            if not where:
-                where = " where "
-            else:
-                where += ", "
-            where += k + " = '%s'" % v
+        # TODO: sanitize input
+        filter = " and ".join(
+            "%(k)s = '%(v)s'" % {'k': k, 'v': v} for k, v in argv.items())
+        if filter:
+            where = " where %s" % filter
+        else:
+            where = ""
 
         wql = (u"select %(fields)s from %(class_name)s%(where)s" %
                {"fields": fields,
                 "class_name": self.class_name,
                 "where": where})
-
         return self._conn.query(wql)
 
     @mi_to_wmi_exception
