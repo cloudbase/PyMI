@@ -113,7 +113,7 @@ static PyObject* Operation_HasMoreResults(Operation* self, PyObject*)
 {
     try
     {
-        if (*self->operation)
+        if (self->operation->HasMoreResults())
         {
             Py_RETURN_TRUE;
         }

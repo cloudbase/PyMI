@@ -719,9 +719,12 @@ std::shared_ptr<Operation> Session::InvokeMethod(
 void Session::DeleteInstance(const std::wstring& ns, const Instance& instance)
 {
     MI_Operation op;
-    ::MI_Session_DeleteInstance(&this->m_session, 0, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
+    ::MI_Session_DeleteInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
     Operation operation(op);
-    operation.GetNextInstance();
+    while (operation.HasMoreResults())
+    {
+        operation.GetNextInstance();
+    }
 }
 
 void Session::ModifyInstance(const std::wstring& ns, const Instance& instance)
@@ -729,7 +732,10 @@ void Session::ModifyInstance(const std::wstring& ns, const Instance& instance)
     MI_Operation op;
     ::MI_Session_ModifyInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
     Operation operation(op);
-    operation.GetNextInstance();
+    while (operation.HasMoreResults())
+    {
+        operation.GetNextInstance();
+    }
 }
 
 void Session::CreateInstance(const std::wstring& ns, const Instance& instance)
@@ -737,7 +743,10 @@ void Session::CreateInstance(const std::wstring& ns, const Instance& instance)
     MI_Operation op;
     ::MI_Session_CreateInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
     Operation operation(op);
-    operation.GetNextInstance();
+    while (operation.HasMoreResults())
+    {
+        operation.GetNextInstance();
+    }
 }
 
 std::shared_ptr<Operation> Session::GetInstance(const std::wstring& ns, const Instance& keyInstance)
@@ -860,17 +869,46 @@ std::wstring Instance::GetPath()
         {
             o << L",";
         }
-        // TODO: handle non strings
-        if (element->m_type != MI_STRING)
+        o << it << L"=";
+
+        switch (element->m_type)
         {
+        case MI_STRING:
+            {
+                std::wstring value = element->m_value.string;
+                ReplaceAll(value, L"\\", L"\\\\");
+                ReplaceAll(value, L"\"", L"\\\"");
+                o << L"\"" << value << L"\"";
+            }
+            break;
+        case MI_UINT8:
+            o << element->m_value.uint8;
+            break;
+        case MI_UINT16:
+            o << element->m_value.uint16;
+            break;
+        case MI_UINT32:
+            o << element->m_value.uint32;
+            break;
+        case MI_UINT64:
+            o << element->m_value.uint64;
+            break;
+        case MI_SINT8:
+            o << element->m_value.sint8;
+            break;
+        case MI_SINT16:
+            o << element->m_value.sint16;
+            break;
+        case MI_SINT32:
+            o << element->m_value.sint32;
+            break;
+        case MI_SINT64:
+            o << element->m_value.sint64;
+            break;
+        default:
             throw Exception(L"Unsupported key type in path generation");
         }
 
-        std::wstring value = element->m_value.string;
-        ReplaceAll(value, L"\\", L"\\\\");
-        ReplaceAll(value, L"\"", L"\\\"");
-
-        o << it << L"=\"" << value << L"\"";
         isFirst = false;
     }
     return o.str();
