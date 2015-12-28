@@ -6,7 +6,6 @@
 
 using namespace MI;
 
-#define WMI_ERR_TIMEOUT 0x00040004
 
 static bool IsInstanceOf(const Instance& instance, const std::wstring& className)
 {
@@ -44,9 +43,9 @@ static void MICheckResult(MI_Result result, const MI_Instance* extError = nullpt
                 switch(errorCode->m_value.uint32)
                 {
                 case WMI_ERR_TIMEOUT:
-                    throw MITimeoutException(result, message);
+                    throw MITimeoutException(result, errorCode->m_value.uint32, message);
                 default:
-                    throw MIException(result, message);
+                    throw MIException(result, errorCode->m_value.uint32, message);
                 }
             }
         }

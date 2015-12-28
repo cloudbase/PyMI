@@ -4,6 +4,9 @@
 #include <exception>
 #include <string>
 
+#define WMI_ERR_TIMEOUT 0x00040004
+
+
 namespace MI
 {
     class Exception : public std::exception
@@ -21,16 +24,19 @@ namespace MI
     {
     private:
         const MI_Result m_result;
+        const MI_Uint32 m_errorCode;
         std::wstring MIResultToWString(MI_Result miResult) const;
 
     public:
-        MIException(MI_Result result, const std::wstring& message = L"");
+        MIException(MI_Result result, MI_Uint32 errorCode = 0, const std::wstring& message = L"");
     };
 
     class MITimeoutException : public MIException
     {
     public:
-        MITimeoutException(MI_Result result = MI_RESULT_FAILED, const std::wstring& message = L"A timeout occurred") : MIException(result, message) {}
+        MITimeoutException(MI_Result result = MI_RESULT_FAILED,
+                           MI_Uint32 errorCode = WMI_ERR_TIMEOUT,
+                           const std::wstring& message = L"A timeout occurred") : MIException(result, errorCode, message) {}
     };
 
     class OutOfMemoryException : public Exception

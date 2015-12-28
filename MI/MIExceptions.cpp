@@ -62,7 +62,7 @@ std::wstring MIException::MIResultToWString(MI_Result miResult) const
     }
 }
 
-MIException::MIException(MI_Result result, const std::wstring& message) : m_result(result), Exception(message)
+MIException::MIException(MI_Result result, MI_Uint32 errorCode, const std::wstring& message) : m_result(result), m_errorCode(errorCode), Exception(message)
 {
     if (!message.length())
     {
