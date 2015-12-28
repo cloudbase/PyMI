@@ -8,6 +8,28 @@ using namespace MI;
 
 #define WMI_ERR_TIMEOUT 0x00040004
 
+static bool IsInstanceOf(const Instance& instance, const std::wstring& className)
+{
+    if (instance.GetClassName() == className)
+    {
+        return true;
+    }
+    else
+    {
+        auto cls = instance.GetClass()->GetParentClass();
+        while (cls)
+        {
+            if (cls->GetClassName() == className)
+            {
+                return true;
+            }
+            cls = cls->GetParentClass();
+        }
+    }
+
+    return false;
+}
+
 static void MICheckResult(MI_Result result, const MI_Instance* extError = nullptr)
 {
     if (result != MI_RESULT_OK)
@@ -15,7 +37,7 @@ static void MICheckResult(MI_Result result, const MI_Instance* extError = nullpt
         if (extError)
         {
             Instance instance((MI_Instance*)extError, false);
-            if (instance.GetClassName() == L"MSFT_WmiError")
+            if(IsInstanceOf(instance, L"CIM_Error"))
             {
                 MI_Char* message = instance[L"Message"]->m_value.string;
                 auto errorCode = instance[L"error_code"];
@@ -419,6 +441,13 @@ std::wstring Class::GetClassName() const
     return className;
 }
 
+std::wstring Class::GetParentClassName() const
+{
+    const MI_Char* parentClassName = nullptr;
+    MICheckResult(::MI_Class_GetParentClassName(this->m_class, &parentClassName));
+    return parentClassName;
+}
+
 std::wstring Class::GetNameSpace() const
 {
     const MI_Char* nameSpace = nullptr;
@@ -488,6 +517,20 @@ unsigned Class::GetElementsCount() const
     MI_Uint32 count = 0;
     MICheckResult(::MI_Class_GetElementCount(this->m_class, &count));
     return count;
+}
+
+std::shared_ptr<Class> Class::GetParentClass() const
+{
+    MI_Class* newClass = nullptr;
+    MICheckResult(::MI_Class_GetParentClass(this->m_class, &newClass));
+    if (newClass)
+    {
+        return std::make_shared<Class>(newClass, true);
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 
 std::shared_ptr<Class> Class::Clone() const
@@ -879,37 +922,25 @@ std::shared_ptr<Class> Instance::GetClass() const
     return std::make_shared<Class>(miClass, true);
 }
 
-std::wstring Instance::GetClassName()
+std::wstring Instance::GetClassName() const
 {
-    if (!this->m_className.length())
-    {
-        const MI_Char* className = nullptr;
-        MICheckResult(::MI_Instance_GetClassName(this->m_instance, &className));
-        this->m_className = className;
-    }
-    return std::wstring(this->m_className);
+    const MI_Char* className = nullptr;
+    MICheckResult(::MI_Instance_GetClassName(this->m_instance, &className));
+    return std::wstring(className);
 }
 
-std::wstring Instance::GetNameSpace()
+std::wstring Instance::GetNameSpace() const
 {
-    if (!this->m_namespace.length())
-    {
-        const MI_Char* ns = nullptr;
-        MICheckResult(::MI_Instance_GetNameSpace(this->m_instance, &ns));
-        this->m_namespace = ns ? ns : L"";
-    }
-    return std::wstring(this->m_namespace);
+    const MI_Char* ns = nullptr;
+    MICheckResult(::MI_Instance_GetNameSpace(this->m_instance, &ns));
+    return std::wstring(ns ? ns : L"");
 }
 
-std::wstring Instance::GetServerName()
+std::wstring Instance::GetServerName() const
 {
-    if (!this->m_serverName.length())
-    {
-        const MI_Char* serverName = nullptr;
-        MICheckResult(::MI_Instance_GetServerName(this->m_instance, &serverName));
-        this->m_serverName = serverName ? serverName : L"";
-    }
-    return std::wstring(this->m_serverName);
+    const MI_Char* serverName = nullptr;
+    MICheckResult(::MI_Instance_GetServerName(this->m_instance, &serverName));
+    return std::wstring(serverName ? serverName : L"");
 }
 
 void Instance::Delete()

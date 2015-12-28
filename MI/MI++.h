@@ -219,6 +219,8 @@ namespace MI
         std::shared_ptr<MethodInfo> GetMethodInfo(unsigned index) const;
         std::wstring GetClassName() const;
         std::wstring GetNameSpace() const;
+        std::wstring GetParentClassName() const;
+        std::shared_ptr<Class> GetParentClass() const;
         std::shared_ptr<Class> Clone() const;
         void SetOutOfScope();
         void Delete();
@@ -229,9 +231,6 @@ namespace MI
     {
     private:
         MI_Instance* m_instance = nullptr;
-        std::wstring m_namespace;
-        std::wstring m_className;
-        std::wstring m_serverName;
         bool m_ownsInstance = false;
         std::shared_ptr<const std::vector<std::wstring>> m_keyElementNames = nullptr;
 
@@ -249,9 +248,9 @@ namespace MI
         MI_Instance* GetMIObject() { return this->m_instance; }
         std::shared_ptr<Instance> Instance::Clone() const;
         std::shared_ptr<Class> GetClass() const;
-        std::wstring GetClassName();
-        std::wstring GetNameSpace();
-        std::wstring GetServerName();
+        std::wstring GetClassName() const;
+        std::wstring GetNameSpace() const;
+        std::wstring GetServerName() const;
         unsigned GetElementsCount() const;
         std::wstring GetPath();
         std::shared_ptr<ValueElement> operator[] (const std::wstring& name) const;
