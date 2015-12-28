@@ -37,7 +37,7 @@ static void MICheckResult(MI_Result result, const MI_Instance* extError = nullpt
         if (extError)
         {
             Instance instance((MI_Instance*)extError, false);
-            if(IsInstanceOf(instance, L"CIM_Error"))
+            if(IsInstanceOf(instance, L"MSFT_WmiError"))
             {
                 MI_Char* message = instance[L"Message"]->m_value.string;
                 auto errorCode = instance[L"error_code"];
