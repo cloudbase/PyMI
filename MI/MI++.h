@@ -287,7 +287,7 @@ namespace MI
         std::shared_ptr<Instance> GetNextInstance();
         std::shared_ptr<Class> GetNextClass();
         std::shared_ptr<Instance> GetNextIndication();
-        operator bool() { return m_hasMoreResults != FALSE; }
+        bool HasMoreResults() { return m_hasMoreResults != FALSE; }
         void Cancel();
         void Close();
         bool IsClosed();
