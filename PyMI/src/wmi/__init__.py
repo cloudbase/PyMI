@@ -260,9 +260,11 @@ class _Connection(object):
                  protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
         self._ns = six.text_type(ns)
         self._app = _get_app()
+        self._protocol = six.text_type(protocol)
+        self._computer_name = six.text_type(computer_name)
         self._session = self._app.create_session(
-            computer_name=six.text_type(computer_name),
-            protocol=six.text_type(protocol))
+            computer_name=self._computer_name,
+            protocol=self._protocol)
         self._cache_classes = cache_classes
         self._class_cache = {}
         self._method_params_cache = {}
@@ -417,7 +419,15 @@ class _Connection(object):
 
     @mi_to_wmi_exception
     def delete_instance(self, instance):
-        self._session.delete_instance(self._ns, instance._instance)
+        # Deleting an instance using WMIDCOM fails with
+        # "Provider is not capable of the attempted operation"
+        if self._protocol != mi.PROTOCOL_WINRM:
+            tmp_session = self._app.create_session(
+                computer_name=self._computer_name,
+                protocol=mi.PROTOCOL_WINRM)
+        else:
+            tmp_session = self._session
+        tmp_session.delete_instance(self._ns, instance._instance)
 
     @mi_to_wmi_exception
     def subscribe(self, query, indication_result_callback, close_callback):
