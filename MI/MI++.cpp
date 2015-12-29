@@ -444,14 +444,14 @@ std::wstring Class::GetParentClassName() const
 {
     const MI_Char* parentClassName = nullptr;
     MICheckResult(::MI_Class_GetParentClassName(this->m_class, &parentClassName));
-    return parentClassName;
+    return parentClassName ? parentClassName : L"";
 }
 
 std::wstring Class::GetNameSpace() const
 {
     const MI_Char* nameSpace = nullptr;
     MICheckResult(::MI_Class_GetNameSpace(this->m_class, &nameSpace));
-    return nameSpace;
+    return nameSpace ? nameSpace : L"";
 }
 
 std::shared_ptr<const std::vector<std::wstring>> Class::GetKey()
@@ -521,7 +521,11 @@ unsigned Class::GetElementsCount() const
 std::shared_ptr<Class> Class::GetParentClass() const
 {
     MI_Class* newClass = nullptr;
-    MICheckResult(::MI_Class_GetParentClass(this->m_class, &newClass));
+    auto result = ::MI_Class_GetParentClass(this->m_class, &newClass);
+    if (result != MI_RESULT_INVALID_SUPERCLASS)
+    {
+        MICheckResult(result);
+    }
     if (newClass)
     {
         return std::make_shared<Class>(newClass, true);
