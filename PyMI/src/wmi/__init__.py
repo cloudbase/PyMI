@@ -72,9 +72,68 @@ class _Method(object):
 
 
 class _Path(object):
-    def __init__(self, mi_class):
+    """
+    Provides a SWbemObjectPath replacement.
+    """
+    def __init__(self, item):
         # TODO: add server, namespace
-        self.Class = mi_class
+        self._item = item
+
+    def __str__(self):
+        return self.Path
+
+    @property
+    def Authority(self):
+        raise NotImplementedError()
+
+    @property
+    def Class(self):
+        return self._item.get_class_name()
+
+    @property
+    def DisplayName(self):
+        return self.Path()
+
+    @property
+    def IsClass(self):
+        return isinstance(self._item, _Class)
+
+    @property
+    def IsSingleton(self):
+        raise NotImplementedError()
+
+    @property
+    def Keys(self):
+        raise NotImplementedError()
+
+    @property
+    def Locale(self):
+        raise NotImplementedError()
+
+    @property
+    def Namespace(self):
+        return self._item.get_namespace()
+
+    @property
+    def ParentNamespace(self):
+        raise NotImplementedError()
+
+    @property
+    def Path(self):
+        return self._item.get_path()
+
+    @property
+    def RelPath(self):
+        path = self._item.get_path()
+        return path[path.rfind(':') + 1:]
+
+    @property
+    def Security_(self):
+        raise NotImplementedError()
+
+    @property
+    def Server(self):
+        return self._item.get_server_name()
 
 
 class _Instance(object):
@@ -111,7 +170,7 @@ class _Instance(object):
 
     @mi_to_wmi_exception
     def path(self):
-        return _Path(self._instance.get_class_name())
+        return _Path(self._instance)
 
     @mi_to_wmi_exception
     def path_(self):
@@ -186,6 +245,10 @@ class _Class(object):
     def watch_for(self, raw_wql=None, notification_type="operation",
                   wmi_class=None, delay_secs=1, fields=[], **where_clause):
         return _EventWatcher(self._conn, six.text_type(raw_wql))
+
+    @mi_to_wmi_exception
+    def path(self):
+        return _Path(self._cls)
 
 
 class _EventWatcher(object):
