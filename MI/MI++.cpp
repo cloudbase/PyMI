@@ -443,7 +443,11 @@ std::wstring Class::GetClassName() const
 std::wstring Class::GetParentClassName() const
 {
     const MI_Char* parentClassName = nullptr;
-    MICheckResult(::MI_Class_GetParentClassName(this->m_class, &parentClassName));
+    auto result = ::MI_Class_GetParentClassName(this->m_class, &parentClassName);
+    if (result != MI_RESULT_INVALID_SUPERCLASS)
+    {
+        MICheckResult(result);
+    }
     return parentClassName ? parentClassName : L"";
 }
 
