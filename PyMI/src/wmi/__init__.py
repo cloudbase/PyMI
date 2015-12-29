@@ -124,7 +124,7 @@ class _Path(object):
     @property
     def RelPath(self):
         path = self._item.get_path()
-        return path[path.rfind(':') + 1:]
+        return path[path.find(':') + 1:]
 
     @property
     def Security_(self):
