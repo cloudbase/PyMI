@@ -76,7 +76,6 @@ class _Path(object):
     Provides a SWbemObjectPath replacement.
     """
     def __init__(self, item):
-        # TODO: add server, namespace
         self._item = item
 
     def __str__(self):
