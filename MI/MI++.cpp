@@ -38,14 +38,15 @@ static void MICheckResult(MI_Result result, const MI_Instance* extError = nullpt
             Instance instance((MI_Instance*)extError, false);
             if(IsInstanceOf(instance, L"MSFT_WmiError"))
             {
-                MI_Char* message = instance[L"Message"]->m_value.string;
-                auto errorCode = instance[L"error_code"];
-                switch(errorCode->m_value.uint32)
+                auto message = instance[L"Message"]->m_value.string;
+                auto errorCode = instance[L"error_code"]->m_value.uint32;
+
+                switch(errorCode)
                 {
                 case WMI_ERR_TIMEOUT:
-                    throw MITimeoutException(result, errorCode->m_value.uint32, message);
+                    throw MITimeoutException(result, errorCode, message);
                 default:
-                    throw MIException(result, errorCode->m_value.uint32, message);
+                    throw MIException(result, errorCode, message);
                 }
             }
         }

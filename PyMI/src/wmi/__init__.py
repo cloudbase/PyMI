@@ -15,13 +15,14 @@
 
 import re
 import six
+import struct
 import threading
 import weakref
 
 import mi
 
 
-class x_wmi (Exception):
+class x_wmi(Exception):
     def __init__(self, info="", com_error=None):
         self.info = info
         self.com_error = com_error
@@ -33,8 +34,21 @@ class x_wmi (Exception):
         )
 
 
-class x_wmi_timed_out (x_wmi):
+class x_wmi_timed_out(x_wmi):
     pass
+
+
+class com_error(Exception):
+    def __init__(self, hresult, strerror, excepinfo, argerror):
+        self.hresult = hresult
+        self.strerror = strerror
+        self.excepinfo = excepinfo
+        self.argerror = argerror
+
+
+def unsigned_to_signed(unsigned):
+    signed, = struct.unpack("l", struct.pack("L", unsigned))
+    return signed
 
 
 def mi_to_wmi_exception(func):
@@ -42,10 +56,17 @@ def mi_to_wmi_exception(func):
         try:
             return func(*args, **kwargs)
         except mi.error as ex:
+            d = ex.args[0]
+            hresult = unsigned_to_signed(d.get("error_code", 0))
+            com_ex = com_error(
+                hresult, d.get("message"),
+                (0, None, None, None, hresult),
+                None)
+
             if(isinstance(ex, mi.timeouterror)):
-                raise x_wmi_timed_out(str(ex), ex)
+                raise x_wmi_timed_out(d.get("message"), com_ex)
             else:
-                raise x_wmi(str(ex), ex)
+                raise x_wmi(d.get("message"), com_ex)
     return func_wrapper
 
 
@@ -580,6 +601,9 @@ def WMI(moniker="root/cimv2", privileges=None):
         moniker.replace("\\", "/"))
     conn = _Connection(computer_name=computer_name, ns=ns)
     if not class_name:
+        # Perform a simple operation to ensure the connection works.
+        # This is needed for compatibility with the WMI module.
+        conn.__provider
         return conn
     else:
         return conn.get_instance(class_name, key)

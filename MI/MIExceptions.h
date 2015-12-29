@@ -29,6 +29,8 @@ namespace MI
 
     public:
         MIException(MI_Result result, MI_Uint32 errorCode = 0, const std::wstring& message = L"");
+        MI_Result GetResult() const { return m_result; }
+        MI_Uint32 GetErrorCode() const { return m_errorCode; }
     };
 
     class MITimeoutException : public MIException

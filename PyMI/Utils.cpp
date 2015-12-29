@@ -473,16 +473,32 @@ PyObject* MI2Py(const MI_Value& value, MI_Type valueType, MI_Uint32 flags)
 void SetPyException(const std::exception& ex)
 {
     const char* message = ex.what();
-    if (dynamic_cast<const MI::MITimeoutException*>(&ex))
-    {
-        PyErr_SetString(PyMITimeoutError, message);
-    }
-    else if (dynamic_cast<const MI::TypeConversionException*>(&ex))
+    if (dynamic_cast<const MI::TypeConversionException*>(&ex))
     {
         PyErr_SetString(PyExc_TypeError, message);
     }
     else
     {
-        PyErr_SetString(PyMIError, message);
+        PyObject* d = PyDict_New();
+        PyObject* pyEx = nullptr;
+        if (dynamic_cast<const MI::MITimeoutException*>(&ex))
+        {
+            pyEx = PyMITimeoutError;
+        }
+        else
+        {
+            pyEx = PyMIError;
+        }
+
+        if (dynamic_cast<const MI::MIException*>(&ex))
+        {
+            auto miex = static_cast<const MI::MIException*>(&ex);
+            PyDict_SetItemString(d, "error_code", PyLong_FromUnsignedLong(miex->GetErrorCode()));
+            PyDict_SetItemString(d, "mi_result", PyLong_FromUnsignedLong(miex->GetResult()));
+        }
+
+        PyDict_SetItemString(d, "message", PyUnicode_FromString(message));
+        PyErr_SetObject(pyEx, d);
+        Py_DECREF(d);
     }
 }
