@@ -136,6 +136,20 @@ static PyObject* Class_GetNameSpace(Class* self, PyObject*)
     }
 }
 
+static PyObject* Class_GetServerName(Class* self, PyObject*)
+{
+    try
+    {
+        std::wstring& serverName = self->miClass->GetServerName();
+        return PyUnicode_FromWideChar(serverName.c_str(), serverName.length());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyMemberDef Class_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -143,6 +157,7 @@ static PyMemberDef Class_members[] = {
 static PyMethodDef Class_methods[] = {
     { "get_class_name", (PyCFunction)Class_GetClassName, METH_NOARGS, "" },
     { "get_namespace", (PyCFunction)Class_GetNameSpace, METH_NOARGS, "" },
+    { "get_server_name", (PyCFunction)Class_GetServerName, METH_NOARGS, "" },
     { "__getitem__", (PyCFunction)Class_subscript, METH_O | METH_COEXIST, "" },
     { "clone", (PyCFunction)Class_Clone, METH_NOARGS, "Clones this class." },
     { NULL }  /* Sentinel */

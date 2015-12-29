@@ -219,6 +219,7 @@ namespace MI
         std::shared_ptr<MethodInfo> GetMethodInfo(unsigned index) const;
         std::wstring GetClassName() const;
         std::wstring GetNameSpace() const;
+        std::wstring GetServerName() const;
         std::wstring GetParentClassName() const;
         std::shared_ptr<Class> GetParentClass() const;
         std::shared_ptr<Class> Clone() const;

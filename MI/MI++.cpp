@@ -458,6 +458,13 @@ std::wstring Class::GetNameSpace() const
     return nameSpace ? nameSpace : L"";
 }
 
+std::wstring Class::GetServerName() const
+{
+    const MI_Char* serverName = nullptr;
+    MICheckResult(::MI_Class_GetServerName(this->m_class, &serverName));
+    return std::wstring(serverName ? serverName : L"");
+}
+
 std::shared_ptr<const std::vector<std::wstring>> Class::GetKey()
 {
     if (!this->m_key)

@@ -236,6 +236,20 @@ static PyObject* Instance_GetNameSpace(Instance* self, PyObject*)
     }
 }
 
+static PyObject* Instance_GetServerName(Instance* self, PyObject*)
+{
+    try
+    {
+        std::wstring& serverName = self->instance->GetServerName();
+        return PyUnicode_FromWideChar(serverName.c_str(), serverName.length());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 Instance* Instance_New(std::shared_ptr<MI::Instance> instance)
 {
     Instance* obj = (Instance*)Instance_new(&InstanceType, NULL, NULL);
@@ -253,6 +267,7 @@ static PyMethodDef Instance_methods[] = {
     { "get_path", (PyCFunction)Instance_GetPath, METH_NOARGS, "" },
     { "get_class_name", (PyCFunction)Instance_GetClassName, METH_NOARGS, "" },
     { "get_namespace", (PyCFunction)Instance_GetNameSpace, METH_NOARGS, "" },
+    { "get_server_name", (PyCFunction)Instance_GetServerName, METH_NOARGS, "" },
     { "get_class", (PyCFunction)Instance_GetClass, METH_NOARGS, "" },
     { "clone", (PyCFunction)Instance_Clone, METH_NOARGS, "Clones this instance." },
     { NULL }  /* Sentinel */
