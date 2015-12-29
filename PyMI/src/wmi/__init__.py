@@ -362,7 +362,12 @@ class _Connection(object):
             # returned elements are ordered. This hack aligns with the WMIDCOM
             # behaviour to retain compatibility with the wmi.py module.
             for element in sorted(elements, key=lambda element: element[0]):
-                l.append(_wrap_element(self, *element))
+                # Workaround to avoid including the return value if the method
+                # returns void, as there's no direct way to determine it.
+                # This won't work if the method is expected to return a
+                # boolean value!!
+                if element != ('ReturnValue', mi.MI_BOOLEAN, True):
+                    l.append(_wrap_element(self, *element))
             return tuple(l)
 
     @mi_to_wmi_exception
