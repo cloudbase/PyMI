@@ -58,17 +58,17 @@ def mi_to_wmi_exception(func):
         except mi.error as ex:
             d = ex.args[0]
             hresult = unsigned_to_signed(d.get("error_code", 0))
+            err_msg = d.get("message") or ""
             com_ex = com_error(
-                hresult, d.get("message"),
-                (0, None, None, None, hresult),
+                hresult, err_msg,
+                (0, None, err_msg, None, None, hresult),
                 None)
 
             if(isinstance(ex, mi.timeouterror)):
-                raise x_wmi_timed_out(d.get("message"), com_ex)
+                raise x_wmi_timed_out(err_msg, com_ex)
             else:
-                raise x_wmi(d.get("message"), com_ex)
+                raise x_wmi(err_msg, com_ex)
     return func_wrapper
-
 
 _app = None
 
