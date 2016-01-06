@@ -273,12 +273,12 @@ class _Class(object):
 
 class _EventWatcher(object):
     def __init__(self, conn, wql):
+        self._conn_ref = weakref.ref(conn)
         self._events_queue = []
         self._error = None
         self._event = threading.Event()
         self._operation = conn.subscribe(
             wql, self._indication_result, self.close)
-        self._conn_ref = weakref.ref(conn)
 
     def _process_events(self):
         if self._error:
