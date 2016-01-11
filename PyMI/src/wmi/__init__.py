@@ -550,7 +550,7 @@ def _unwrap_element(el_type, value):
         if el_type == mi.MI_REFERENCE:
             instance = WMI(value)
             if instance is None:
-                raise Exception("Reference not found: %s" % value)
+                raise x_wmi("Reference not found: %s" % value)
             return instance._instance
         elif el_type == mi.MI_INSTANCE:
             return value._instance
