@@ -24,7 +24,7 @@ setup(
     packages=find_packages("src", exclude="samples"),
     package_dir={'': 'src'},
     # Note: this extension is compiled in Visual Studio
-    package_data={'mi': ['mi.pyd']},
+    package_data={'mi': ['mi.pyd', 'mi.pdb']},
     long_description=read('README.rst'),
     install_requires=['setuptools'],
     classifiers=[
