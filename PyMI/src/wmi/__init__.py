@@ -409,8 +409,7 @@ class _Connection(object):
                 mi_class, six.text_type(method_name))
             if self._cache_classes:
                 self._method_params_cache[(class_name, method_name)] = params
-                params = params.clone()
-        return params
+        return params.clone()
 
     @mi_to_wmi_exception
     def invoke_method(self, target, method_name, *args, **kwargs):
