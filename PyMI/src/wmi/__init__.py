@@ -404,7 +404,9 @@ class _Connection(object):
             class_name = mi_class.get_class_name()
             params = self._method_params_cache.get((class_name, method_name))
 
-        if params is None:
+        if params is not None:
+            params = params.clone()
+        else:
             params = self._app.create_method_params(
                 mi_class, six.text_type(method_name))
             if self._cache_classes:
