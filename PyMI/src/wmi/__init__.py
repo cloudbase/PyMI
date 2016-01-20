@@ -526,6 +526,11 @@ class _Connection(object):
         self._notify_on_close.append(close_callback)
         return op
 
+    @mi_to_wmi_exception
+    def watch_for(self, raw_wql=None, notification_type="operation",
+                  wmi_class=None, delay_secs=1, fields=[], **where_clause):
+        return _EventWatcher(self, six.text_type(raw_wql))
+
 
 def _wrap_element(conn, name, el_type, value):
     if isinstance(value, mi.Instance):
