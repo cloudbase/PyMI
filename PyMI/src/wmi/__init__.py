@@ -481,7 +481,7 @@ class _Connection(object):
                     if self._cache_classes:
                         self._class_cache[class_name] = cls
 
-        if cls:
+        if cls is not None:
             return _Class(self, class_name, cls)
 
     @mi_to_wmi_exception
