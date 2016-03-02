@@ -339,15 +339,21 @@ class _EventWatcher(object):
 
 
 class _Connection(object):
-    def __init__(self, computer_name=".", ns="root/cimv2",
+    def __init__(self, computer_name=".", ns="root/cimv2", locale_name=None,
                  protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
         self._ns = six.text_type(ns)
         self._app = _get_app()
         self._protocol = six.text_type(protocol)
         self._computer_name = six.text_type(computer_name)
+        if locale_name:
+            destination_options = self._app.create_destination_options()
+            destination_options.set_ui_locale(locale_name=six.text_type(locale_name))
+        else:
+            destination_options = None
         self._session = self._app.create_session(
             computer_name=self._computer_name,
-            protocol=self._protocol)
+            protocol=self._protocol,
+            destination_options=destination_options)
         self._cache_classes = cache_classes
         self._class_cache = {}
         self._method_params_cache = {}
@@ -603,10 +609,11 @@ def _parse_moniker(moniker):
 
 
 @mi_to_wmi_exception
-def WMI(moniker="root/cimv2", privileges=None):
+def WMI(moniker="root/cimv2", privileges=None, locale_name=None):
     computer_name, ns, class_name, key = _parse_moniker(
         moniker.replace("\\", "/"))
-    conn = _Connection(computer_name=computer_name, ns=ns)
+    conn = _Connection(computer_name=computer_name, ns=ns,
+                       locale_name=locale_name)
     if not class_name:
         # Perform a simple operation to ensure the connection works.
         # This is needed for compatibility with the WMI module.
