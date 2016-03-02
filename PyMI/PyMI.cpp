@@ -10,6 +10,7 @@
 #include "Instance.h"
 #include "Serializer.h"
 #include "OperationOptions.h"
+#include "DestinationOptions.h"
 
 #include <datetime.h>
 
@@ -62,6 +63,9 @@ PyObject* _initmi(void)
     if (PyType_Ready(&OperationOptionsType) < 0)
         return NULL;
 
+    if (PyType_Ready(&DestinationOptionsType) < 0)
+        return NULL;
+
 #ifdef IS_PY3K
     m = PyModule_Create(&mimodule);
     if (m == NULL)
@@ -92,6 +96,9 @@ PyObject* _initmi(void)
 
     Py_INCREF(&OperationOptionsType);
     PyModule_AddObject(m, "OperationOptions", (PyObject*)&OperationOptionsType);
+
+    Py_INCREF(&DestinationOptionsType);
+    PyModule_AddObject(m, "DestinationOptions", (PyObject*)&DestinationOptionsType);
 
     PyMIError = PyErr_NewException("PyMI.error", NULL, NULL);
     Py_INCREF(PyMIError);
