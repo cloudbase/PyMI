@@ -16,6 +16,7 @@ namespace MI
     class Class;
     class Serializer;
     class OperationOptions;
+    class DestinationOptions;
 
     class Callbacks
     {
@@ -70,8 +71,10 @@ namespace MI
         std::shared_ptr<Instance> NewInstance(const std::wstring& className);
         std::shared_ptr<Instance> NewMethodParamsInstance(const Class& miClass, const std::wstring& methodName);
         std::shared_ptr<Instance> NewInstanceFromClass(const std::wstring& className, const Class& miClass);
-        std::shared_ptr<Session> NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".");
+        std::shared_ptr<Session> NewSession(const std::wstring& protocol = L"", const std::wstring& computerName = L".",
+            std::shared_ptr<DestinationOptions> destinationOptions = nullptr);
         std::shared_ptr<OperationOptions> NewOperationOptions();
+        std::shared_ptr<DestinationOptions> NewDestinationOptions();
         std::shared_ptr<Serializer> NewSerializer();
     };
 
@@ -91,6 +94,23 @@ namespace MI
         MI_Interval GetTimeout();
         void Delete();
         virtual ~OperationOptions();
+    };
+
+    class DestinationOptions
+    {
+    private:
+        MI_DestinationOptions m_destinationOptions;
+        DestinationOptions(MI_DestinationOptions destinationOptions) : m_destinationOptions(destinationOptions) {}
+        DestinationOptions(const DestinationOptions &obj) {}
+
+        friend Application;
+
+    public:
+        std::shared_ptr<DestinationOptions> Clone() const;
+        void SetLocale(const std::wstring& locale);
+        std::wstring GetLocale();
+        void Delete();
+        virtual ~DestinationOptions();
     };
 
     class Session
