@@ -360,6 +360,13 @@ std::shared_ptr<OperationOptions> Application::NewOperationOptions()
     return std::shared_ptr<OperationOptions>(new OperationOptions(operationOptions));
 }
 
+std::shared_ptr<DestinationOptions> Application::NewDestinationOptions()
+{
+    MI_DestinationOptions destinationOptions;
+    MICheckResult(::MI_Application_NewDestinationOptions(&this->m_app, &destinationOptions));
+    return std::shared_ptr<DestinationOptions>(new DestinationOptions(destinationOptions));
+}
+
 unsigned Class::GetMethodCount() const
 {
     MI_Uint32 count = 0;
@@ -616,12 +623,14 @@ Class::~Class()
     }
 }
 
-std::shared_ptr<Session> Application::NewSession(const std::wstring& protocol, const std::wstring& computerName)
+std::shared_ptr<Session> Application::NewSession(const std::wstring& protocol, const std::wstring& computerName,
+    std::shared_ptr<DestinationOptions> destinationOptions)
 {
     MI_Instance* extError = nullptr;
     MI_Session session;
+
     MICheckResult(::MI_Application_NewSession(&this->m_app, protocol.length() ? protocol.c_str() : nullptr, computerName.c_str(),
-        nullptr, nullptr, &extError, &session), extError);
+        destinationOptions ? &destinationOptions->m_destinationOptions : nullptr, nullptr, &extError, &session), extError);
     return std::shared_ptr<Session>(new Session(session));
 }
 
@@ -655,6 +664,40 @@ OperationOptions::~OperationOptions()
 {
     MI_OperationOptions nullOperationOptions = MI_OPERATIONOPTIONS_NULL;
     if(memcmp(&this->m_operationOptions, &nullOperationOptions, sizeof(MI_OperationOptions)))
+    {
+        this->Delete();
+    }
+}
+
+void DestinationOptions::SetUILocale(const std::wstring& locale)
+{
+    MICheckResult(::MI_DestinationOptions_SetUILocale(&this->m_destinationOptions, locale.c_str()));
+}
+
+std::wstring DestinationOptions::GetUILocale()
+{
+    const MI_Char* locale;
+    MICheckResult(::MI_DestinationOptions_GetUILocale(&this->m_destinationOptions, &locale));
+    return locale;
+}
+
+std::shared_ptr<DestinationOptions> DestinationOptions::Clone() const
+{
+    MI_DestinationOptions clonedDestinationOptions;
+    MICheckResult(::MI_DestinationOptions_Clone(&this->m_destinationOptions, &clonedDestinationOptions));
+    return std::shared_ptr<DestinationOptions>(new DestinationOptions(clonedDestinationOptions));
+}
+
+void DestinationOptions::Delete()
+{
+    ::MI_DestinationOptions_Delete(&this->m_destinationOptions);
+    this->m_destinationOptions = MI_DESTINATIONOPTIONS_NULL;
+}
+
+DestinationOptions::~DestinationOptions()
+{
+    MI_DestinationOptions nullDestinationOptions = MI_DESTINATIONOPTIONS_NULL;
+    if(memcmp(&this->m_destinationOptions, &nullDestinationOptions, sizeof(MI_DestinationOptions)))
     {
         this->Delete();
     }
