@@ -543,13 +543,13 @@ def _wrap_element(conn, name, el_type, value):
         if el_type == mi.MI_INSTANCE:
             return _Instance(conn, value.clone())
         elif el_type == mi.MI_REFERENCE:
-            return value.get_path()
+            return WMI(value.get_path())
         else:
             raise Exception(
                 "Unsupported instance element type: %s" % el_type)
     if isinstance(value, (tuple, list)):
         if el_type == mi.MI_REFERENCEA:
-            return tuple([i.get_path() for i in value])
+            return tuple([WMI(i.get_path()) for i in value])
         elif el_type == mi.MI_INSTANCEA:
             return tuple([_Instance(conn, i.clone()) for i in value])
         else:
