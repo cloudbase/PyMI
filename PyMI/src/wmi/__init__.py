@@ -174,7 +174,14 @@ class _Instance(object):
     @mi_to_wmi_exception
     def __getattr__(self, name):
         try:
-            return _wrap_element(self._conn, *self._instance.get_element(name))
+            # If the class is an association class, certain of its properties
+            # are references which contain the paths to the associated objecs.
+            # The WMI module translates automatically into WMI objects those
+            # class properties that are references. To maintain the
+            # compatibility with the WMI module, those class properties that
+            # are references are translated into objects
+            return _wrap_element(self._conn, *self._instance.get_element(name),
+                                 convert_references=True)
         except mi.error:
             return _Method(self._conn, self, name)
 
@@ -538,11 +545,14 @@ class _Connection(object):
         return _EventWatcher(self, six.text_type(raw_wql))
 
 
-def _wrap_element(conn, name, el_type, value):
+def _wrap_element(conn, name, el_type, value, convert_references=False):
     if isinstance(value, mi.Instance):
         if el_type == mi.MI_INSTANCE:
             return _Instance(conn, value.clone())
         elif el_type == mi.MI_REFERENCE:
+            if convert_references:
+                # Reload the object to populate all properties
+                return WMI(value.get_path())
             return value.get_path()
         else:
             raise Exception(
