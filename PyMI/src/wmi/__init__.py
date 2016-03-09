@@ -496,14 +496,11 @@ class _Connection(object):
         key_instance = self.new_instance_from_class(c)
         for k, v in key.items():
             key_instance._instance[six.text_type(k)] = v
-        try:
-            with self._session.get_instance(
-                    self._ns, key_instance._instance) as op:
-                instance = op.get_next_instance()
-                if instance:
-                    return _Instance(self, instance.clone())
-        except mi.error:
-            return None
+        with self._session.get_instance(
+                self._ns, key_instance._instance) as op:
+            instance = op.get_next_instance()
+            if instance:
+                return _Instance(self, instance.clone())
 
     @mi_to_wmi_exception
     def create_instance(self, instance):
