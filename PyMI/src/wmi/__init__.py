@@ -320,9 +320,21 @@ class _EventWatcher(object):
             conn = self._conn_ref()
             if conn:
                 if instance:
-                    event = instance[u"TargetInstance"]
-                    self._events_queue.append(
-                        _Instance(conn, event.clone(), use_conn_weak_ref=True))
+                    event = _Instance(conn,
+                                      instance[u"TargetInstance"].clone(),
+                                      use_conn_weak_ref=True)
+                    try:
+                        previous_inst = _Instance(
+                            conn, instance[u'PreviousInstance'].clone(),
+                            use_conn_weak_ref=True)
+                        object.__setattr__(event, 'previous', previous_inst)
+                    except (mi.error, AttributeError):
+                        # The 'PreviousInstance' attribute may be missing, for
+                        # example in case of a creation event or simply
+                        # because this field was not requested.
+                        pass
+
+                    self._events_queue.append(event)
                 if error_details:
                     self._error = (
                         result_code, error_string,
