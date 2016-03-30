@@ -122,6 +122,10 @@ void MIValue::SetArrayItem(const MIValue& value, MI_Uint32 index)
             strDest = new MI_Char[len];
             memcpy_s(strDest, len * sizeof(MI_Char), value.m_value.string, len * sizeof(MI_Char));
         }
+        else
+        {
+            throw Exception(L"Array item cannot be NULL");
+        }
         memcpy_s(&m_value.uint8a.data[index * itemSize], itemSize, &strDest, itemSize);
     }
     else
