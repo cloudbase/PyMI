@@ -38,6 +38,10 @@ class x_wmi_timed_out(x_wmi):
     pass
 
 
+class x_wmi_not_found(x_wmi):
+    pass
+
+
 class com_error(Exception):
     def __init__(self, hresult, strerror, excepinfo, argerror):
         self.hresult = hresult
@@ -64,7 +68,9 @@ def mi_to_wmi_exception(func):
                 (0, None, err_msg, None, None, hresult),
                 None)
 
-            if(isinstance(ex, mi.timeouterror)):
+            if d.get('mi_result') == 6:
+                raise x_wmi_not_found(err_msg, com_ex)
+            elif(isinstance(ex, mi.timeouterror)):
                 raise x_wmi_timed_out(err_msg, com_ex)
             else:
                 raise x_wmi(err_msg, com_ex)
@@ -582,7 +588,7 @@ def _unwrap_element(el_type, value):
         if el_type == mi.MI_REFERENCE:
             instance = WMI(value)
             if instance is None:
-                raise Exception("Reference not found: %s" % value)
+                raise x_wmi_not_found("Reference not found: %s" % value)
             return instance._instance
         elif el_type == mi.MI_INSTANCE:
             return value._instance
