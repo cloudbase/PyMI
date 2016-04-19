@@ -11,6 +11,7 @@
 #include "Serializer.h"
 #include "OperationOptions.h"
 #include "DestinationOptions.h"
+#include "MiError.h"
 
 #include <datetime.h>
 
@@ -143,6 +144,12 @@ PyObject* _initmi(void)
     PyObject_SetAttrString(m, "MI_REFERENCEA", PyLong_FromLong(MI_REFERENCEA));
     PyObject_SetAttrString(m, "MI_INSTANCEA", PyLong_FromLong(MI_INSTANCEA));
     PyObject_SetAttrString(m, "MI_ARRAY", PyLong_FromLong(MI_ARRAY));
+
+    PyObject* mi_error = MiError_Init();
+    if (mi_error == NULL)
+        return NULL;
+    else
+        PyObject_SetAttrString(m, "mi_error", mi_error);
 
     return m;
 }

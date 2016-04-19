@@ -40,6 +40,9 @@
     <ClInclude Include="Operation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="MiError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -53,6 +56,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="OperationOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DestinationOptions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -78,6 +84,9 @@
     <ClCompile Include="Operation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MiError.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,6 +97,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="OperationOptions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DestinationOptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -9,6 +9,8 @@
 
 namespace MI
 {
+    extern const wchar_t* MI_RESULT_STRINGS[27];
+
     class Exception : public std::exception
     {
     protected:
