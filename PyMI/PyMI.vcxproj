@@ -523,6 +523,7 @@
     <ClInclude Include="DestinationOptions.h" />
     <ClInclude Include="Instance.h" />
     <ClInclude Include="Operation.h" />
+    <ClInclude Include="MiError.h" />
     <ClInclude Include="OperationOptions.h" />
     <ClInclude Include="PyMI.h" />
     <ClInclude Include="Serializer.h" />
@@ -538,6 +539,7 @@
     <ClCompile Include="DestinationOptions.cpp" />
     <ClCompile Include="Instance.cpp" />
     <ClCompile Include="Operation.cpp" />
+    <ClCompile Include="MiError.cpp" />
     <ClCompile Include="OperationOptions.cpp" />
     <ClCompile Include="PyMI.cpp" />
     <ClCompile Include="Serializer.cpp" />

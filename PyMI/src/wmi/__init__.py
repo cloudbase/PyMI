@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import abc
 import re
 import six
 import struct
@@ -20,6 +21,7 @@ import threading
 import weakref
 
 import mi
+from mi import mi_error
 
 
 class x_wmi(Exception):
@@ -85,6 +87,8 @@ class _Method(object):
         self._conn = conn
         self._target = target
         self._method_name = method_name
+
+        self._conn._get_method_params(target, method_name)
 
     @mi_to_wmi_exception
     def __call__(self, *args, **kwargs):
@@ -156,20 +160,21 @@ class _Path(object):
         return self._item.get_server_name()
 
 
-class _Instance(object):
-    def __init__(self, conn, instance, use_conn_weak_ref=False):
-        if use_conn_weak_ref:
-            object.__setattr__(self, "_conn_ref", weakref.ref(conn))
-        else:
-            object.__setattr__(self, "_conn_ref", conn)
-        object.__setattr__(self, "_instance", instance)
+@six.add_metaclass(abc.ABCMeta)
+class _BaseEntity(object):
+    _convert_references = False
 
-    @property
-    def _conn(self):
-        if isinstance(self._conn_ref, weakref.ref):
-            return self._conn_ref()
-        else:
-            return self._conn_ref
+    @abc.abstractmethod
+    def get_wrapped_object(self):
+        pass
+
+    @abc.abstractmethod
+    def get_class_name(self):
+        pass
+
+    @abc.abstractmethod
+    def get_class(self):
+        pass
 
     @mi_to_wmi_exception
     def __getattr__(self, name):
@@ -179,11 +184,59 @@ class _Instance(object):
             # The WMI module translates automatically into WMI objects those
             # class properties that are references. To maintain the
             # compatibility with the WMI module, those class properties that
-            # are references are translated into objects
-            return _wrap_element(self._conn, *self._instance.get_element(name),
-                                 convert_references=True)
+            # are references are translated into objects.
+            obj = self.get_wrapped_object()
+            return _wrap_element(self._conn, *obj.get_element(name),
+                                 convert_references=self._convert_references)
         except mi.error:
-            return _Method(self._conn, self, name)
+            try:
+                return _Method(self._conn, self, name)
+            except mi.error as err:
+                if err.message['mi_result'] == (
+                        mi_error.MI_RESULT_METHOD_NOT_FOUND):
+                    err_msg = ("'%(cls_name)s' has no attribute "
+                               "'%(attr_name)s'.")
+                    raise AttributeError(
+                        err_msg % dict(cls_name=self.get_class_name(),
+                                       attr_name=name))
+                else:
+                    raise
+
+    @mi_to_wmi_exception
+    def path(self):
+        return _Path(self.get_wrapped_object())
+
+
+class _Instance(_BaseEntity):
+    _convert_references = True
+
+    def __init__(self, conn, instance, use_conn_weak_ref=False):
+        if use_conn_weak_ref:
+            object.__setattr__(self, "_conn_ref", weakref.ref(conn))
+        else:
+            object.__setattr__(self, "_conn_ref", conn)
+        object.__setattr__(self, "_instance", instance)
+        object.__setattr__(self, "_cls_name", None)
+
+    @property
+    def _conn(self):
+        if isinstance(self._conn_ref, weakref.ref):
+            return self._conn_ref()
+        else:
+            return self._conn_ref
+
+    def get_wrapped_object(self):
+        return self._instance
+
+    def get_class_name(self):
+        if not self._cls_name:
+            object.__setattr__(self, '_cls_name',
+                               self._instance.get_class_name())
+        return self._cls_name
+
+    def get_class(self):
+        class_name = self.get_class_name()
+        return self._conn.get_class(class_name)
 
     @mi_to_wmi_exception
     def __setattr__(self, name, value):
@@ -194,10 +247,6 @@ class _Instance(object):
     def associators(self, wmi_association_class=None, wmi_result_class=None):
         return self._conn.get_associators(
             self, wmi_association_class, wmi_result_class)
-
-    @mi_to_wmi_exception
-    def path(self):
-        return _Path(self._instance)
 
     @mi_to_wmi_exception
     def path_(self):
@@ -224,11 +273,20 @@ class _Instance(object):
             self.__setattr__(k, v)
 
 
-class _Class(object):
+class _Class(_BaseEntity):
     def __init__(self, conn, class_name, cls):
         self._conn = conn
         self.class_name = six.text_type(class_name)
         self._cls = cls
+
+    def get_wrapped_object(self):
+        return self._cls
+
+    def get_class_name(self):
+        return self.class_name
+
+    def get_class(self):
+        return self
 
     @mi_to_wmi_exception
     def __call__(self, *argc, **argv):
@@ -258,13 +316,6 @@ class _Class(object):
         return self._conn.query(wql)
 
     @mi_to_wmi_exception
-    def __getattr__(self, name):
-        try:
-            return _wrap_element(self._conn, *self._cls.get_element(name))
-        except mi.error:
-            return _Method(self._conn, self, name)
-
-    @mi_to_wmi_exception
     def new(self):
         return self._conn.new_instance_from_class(self)
 
@@ -272,10 +323,6 @@ class _Class(object):
     def watch_for(self, raw_wql=None, notification_type="operation",
                   wmi_class=None, delay_secs=1, fields=[], **where_clause):
         return _EventWatcher(self._conn, six.text_type(raw_wql))
-
-    @mi_to_wmi_exception
-    def path(self):
-        return _Path(self._cls)
 
 
 class _EventWatcher(object):
@@ -422,16 +469,17 @@ class _Connection(object):
                 result_class=six.text_type(wmi_result_class)) as q:
             return self._get_instances(q)
 
-    def _get_method_params(self, mi_class, method_name):
+    def _get_method_params(self, target, method_name):
         params = None
         class_name = None
         if self._cache_classes:
-            class_name = mi_class.get_class_name()
+            class_name = target.get_class_name()
             params = self._method_params_cache.get((class_name, method_name))
 
         if params is not None:
             params = params.clone()
         else:
+            mi_class = target.get_class().get_wrapped_object()
             params = self._app.create_method_params(
                 mi_class, six.text_type(method_name))
             if self._cache_classes:
@@ -441,14 +489,9 @@ class _Connection(object):
 
     @mi_to_wmi_exception
     def invoke_method(self, target, method_name, *args, **kwargs):
-        if isinstance(target, _Instance):
-            mi_target = target._instance
-            mi_class = self.get_class(mi_target.get_class_name())._cls
-        else:
-            mi_target = target._cls
-            mi_class = mi_target
+        mi_target = target.get_wrapped_object()
+        params = self._get_method_params(target, method_name)
 
-        params = self._get_method_params(mi_class, method_name)
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
             params[i] = _unwrap_element(el_type, v)
@@ -484,7 +527,7 @@ class _Connection(object):
     def new_instance_from_class(self, cls):
         return _Instance(
             self, self._app.create_instance_from_class(
-                cls.class_name, cls._cls))
+                cls.class_name, cls.get_wrapped_object()))
 
     @mi_to_wmi_exception
     def serialize_instance(self, instance):
