@@ -660,6 +660,8 @@ def _parse_moniker(moniker):
                 class_name, kvs = m.groups()
                 for kv in kvs.split(","):
                     m = re.match("([^=]+)=\"(.*)\"", kv)
+                    if not m:
+                        m = re.match("([^=]+)=(.*)", kv)
                     name, value = m.groups()
                     # TODO: improve unescaping
                     key[name] = value.replace("//", "\\")
