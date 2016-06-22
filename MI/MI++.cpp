@@ -38,7 +38,9 @@ static void MICheckResult(MI_Result result, const MI_Instance* extError = nullpt
             Instance instance((MI_Instance*)extError, false);
             if(IsInstanceOf(instance, L"MSFT_WmiError"))
             {
-                auto message = instance[L"Message"]->m_value.string;
+                MI_Char* message = instance[L"Message"]->m_value.string;
+                message = message ? message : L"";
+
                 auto errorCode = instance[L"error_code"]->m_value.uint32;
 
                 switch(errorCode)
