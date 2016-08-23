@@ -673,9 +673,12 @@ def _parse_moniker(moniker):
 
 
 @mi_to_wmi_exception
-def WMI(moniker="root/cimv2", privileges=None, locale_name=None):
+def WMI(moniker="root/cimv2", privileges=None, locale_name=None, computer="",
+        user="", password=""):
     computer_name, ns, class_name, key = _parse_moniker(
         moniker.replace("\\", "/"))
+    if computer_name == '.':
+        computer_name = computer or '.'
     conn = _Connection(computer_name=computer_name, ns=ns,
                        locale_name=locale_name)
     if not class_name:
