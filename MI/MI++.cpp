@@ -743,20 +743,27 @@ Session::~Session()
     }
 }
 
-std::shared_ptr<Operation> Session::ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect)
+std::shared_ptr<Operation> Session::ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect,
+                                              std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op = MI_OPERATION_NULL;
-    ::MI_Session_QueryInstances(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), dialect.c_str(),
+    ::MI_Session_QueryInstances(
+        &this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+        operationOptions ? &operationOptions->m_operationOptions : nullptr,
+        ns.c_str(), dialect.c_str(),
         query.c_str(), nullptr, &op);
     return std::make_shared<Operation>(op);
 }
 
 std::shared_ptr<Operation> Session::GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass,
-    const std::wstring& resultClass, const std::wstring& role, const std::wstring& resultRole, bool keysOnly)
+    const std::wstring& resultClass, const std::wstring& role, const std::wstring& resultRole, bool keysOnly,
+    std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_AssociatorInstances(
-        &this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance,
+        &this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+        operationOptions ? &operationOptions->m_operationOptions : nullptr,
+        ns.c_str(), instance.m_instance,
         assocClass.length() ? assocClass.c_str() : nullptr,
         resultClass.length() ? resultClass.c_str() : nullptr,
         role.length() ? role.c_str() : nullptr,
@@ -766,31 +773,38 @@ std::shared_ptr<Operation> Session::GetAssociators(const std::wstring& ns, const
 }
 
 std::shared_ptr<Operation> Session::InvokeMethod(
-    Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams)
+    Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams,
+    std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
-        nullptr, instance.GetNameSpace().c_str(), instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance,
+        operationOptions ? &operationOptions->m_operationOptions : nullptr,
+        instance.GetNameSpace().c_str(), instance.GetClassName().c_str(), methodName.c_str(), instance.m_instance,
         inboundParams && inboundParams->GetElementsCount() > 0 ? inboundParams->m_instance : nullptr,
         nullptr, &op);
     return std::make_shared<Operation>(op);
 }
 
 std::shared_ptr<Operation> Session::InvokeMethod(
-    const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams)
+    const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams,
+    std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op = MI_OPERATION_NULL;
     ::MI_Session_Invoke(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
-        nullptr, ns.c_str(), className.c_str(), methodName.c_str(), nullptr,
+        operationOptions ? &operationOptions->m_operationOptions : nullptr,
+        ns.c_str(), className.c_str(), methodName.c_str(), nullptr,
         inboundParams && inboundParams->GetElementsCount() > 0 ? inboundParams->m_instance : nullptr,
         nullptr, &op);
     return std::make_shared<Operation>(op);
 }
 
-void Session::DeleteInstance(const std::wstring& ns, const Instance& instance)
+void Session::DeleteInstance(const std::wstring& ns, const Instance& instance,
+                             std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op;
-    ::MI_Session_DeleteInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
+    ::MI_Session_DeleteInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+		                        operationOptions ? &operationOptions->m_operationOptions : nullptr,
+                                ns.c_str(), instance.m_instance, nullptr, &op);
     Operation operation(op);
     while (operation.HasMoreResults())
     {
@@ -798,10 +812,13 @@ void Session::DeleteInstance(const std::wstring& ns, const Instance& instance)
     }
 }
 
-void Session::ModifyInstance(const std::wstring& ns, const Instance& instance)
+void Session::ModifyInstance(const std::wstring& ns, const Instance& instance,
+                             std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op;
-    ::MI_Session_ModifyInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
+    ::MI_Session_ModifyInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+                                operationOptions ? &operationOptions->m_operationOptions : nullptr,
+                                ns.c_str(), instance.m_instance, nullptr, &op);
     Operation operation(op);
     while (operation.HasMoreResults())
     {
@@ -809,10 +826,13 @@ void Session::ModifyInstance(const std::wstring& ns, const Instance& instance)
     }
 }
 
-void Session::CreateInstance(const std::wstring& ns, const Instance& instance)
+void Session::CreateInstance(const std::wstring& ns, const Instance& instance,
+                             std::shared_ptr<OperationOptions> operationOptions)
 {
     MI_Operation op;
-    ::MI_Session_CreateInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI, nullptr, ns.c_str(), instance.m_instance, nullptr, &op);
+    ::MI_Session_CreateInstance(&this->m_session, MI_OPERATIONFLAGS_DEFAULT_RTTI,
+                                operationOptions ? &operationOptions->m_operationOptions : nullptr,
+                                ns.c_str(), instance.m_instance, nullptr, &op);
     Operation operation(op);
     while (operation.HasMoreResults())
     {

@@ -36,21 +36,30 @@ static void Session_dealloc(Session* self)
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
+
 static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds)
 {
     wchar_t* ns = NULL;
     wchar_t* query = NULL;
     wchar_t* dialect = L"WQL";
+    PyObject* operationOptions = NULL;
 
-    static char *kwlist[] = { "ns", "query", "dialect", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|u", kwlist, &ns, &query, &dialect))
+    static char *kwlist[] = { "ns", "query", "dialect", "operation_options", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|uO", kwlist, &ns, &query,
+                                     &dialect, &operationOptions))
         return NULL;
 
     try
     {
+        ValidatePyObjectType(operationOptions, L"operation_options",
+                             &OperationOptionsType, L"OperationOptions");
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
-            op = self->session->ExecQuery(ns, query, dialect);
+            op = self->session->ExecQuery(
+                ns, query, dialect,
+                !CheckPyNone(operationOptions)
+                    ? ((OperationOptions*)operationOptions)->operationOptions
+                    : NULL);
         });
         return (PyObject*)Operation_New(op);
     }
@@ -70,21 +79,31 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
     wchar_t* role = L"";
     wchar_t* resultRole = L"";
     PyObject* keysOnlyObj = NULL;
+    PyObject* operationOptions = NULL;
 
-    static char *kwlist[] = { "ns", "instance", "assoc_class", "result_class", "role", "result_role", "keys_only", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|uuuuO", kwlist, &ns, &instance, &assocClass, &resultClass, &role, &resultRole, &keysOnlyObj))
+    static char *kwlist[] = { "ns", "instance", "assoc_class", "result_class",
+                              "role", "result_role", "keys_only", "operation_options", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|uuuuOO", kwlist, &ns, &instance,
+                                     &assocClass, &resultClass, &role, &resultRole,
+                                     &keysOnlyObj, &operationOptions))
         return NULL;
 
     try
     {
-        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+        ValidatePyObjectType(instance, L"instance", &InstanceType, L"Instance", false);
+        ValidatePyObjectType(operationOptions, L"operation_options",
+                             &OperationOptionsType, L"OperationOptions");
 
         bool keysOnly = keysOnlyObj && PyObject_IsTrue(keysOnlyObj);
 
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
-            op = self->session->GetAssociators(ns, *((Instance*)instance)->instance, assocClass, resultClass, role, resultRole, keysOnly);
+            op = self->session->GetAssociators(
+                ns, *((Instance*)instance)->instance, assocClass,
+                resultClass, role, resultRole, keysOnly,
+                !CheckPyNone(operationOptions)
+                    ? ((OperationOptions*)operationOptions)->operationOptions
+                    : NULL);
         });
         return (PyObject*)Operation_New(op);
     }
@@ -133,18 +152,25 @@ static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject 
 {
     wchar_t* ns = NULL;
     PyObject* instance = NULL;
+    PyObject* operationOptions = NULL;
 
-    static char *kwlist[] = { "ns", "instance", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
+    static char *kwlist[] = { "ns", "instance", "operation_options", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|O", kwlist, &ns,
+                                     &instance, &operationOptions))
         return NULL;
 
     try
     {
-        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+        ValidatePyObjectType(instance, L"instance", &InstanceType, L"Instance", false);
+        ValidatePyObjectType(operationOptions, L"operation_options",
+                             &OperationOptionsType, L"OperationOptions");
 
         AllowThreads(&self->cs, [&]() {
-            self->session->CreateInstance(ns, *((Instance*)instance)->instance);
+            self->session->CreateInstance(
+                ns, *((Instance*)instance)->instance,
+                !CheckPyNone(operationOptions)
+                    ? ((OperationOptions*)operationOptions)->operationOptions
+                    : NULL);
         });
         Py_RETURN_NONE;
     }
@@ -159,18 +185,25 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
 {
     wchar_t* ns = NULL;
     PyObject* instance = NULL;
+    PyObject* operationOptions = NULL;
 
-    static char *kwlist[] = { "ns", "instance", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
+    static char *kwlist[] = { "ns", "instance", "operation_options", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|O", kwlist, &ns,
+                                     &instance, &operationOptions))
         return NULL;
 
     try
     {
-        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+        ValidatePyObjectType(instance, L"instance", &InstanceType, L"Instance", false);
+        ValidatePyObjectType(operationOptions, L"operation_options",
+                             &OperationOptionsType, L"OperationOptions");
 
         AllowThreads(&self->cs, [&]() {
-            self->session->ModifyInstance(ns, *((Instance*)instance)->instance);
+            self->session->ModifyInstance(
+                ns, *((Instance*)instance)->instance,
+                !CheckPyNone(operationOptions)
+                    ? ((OperationOptions*)operationOptions)->operationOptions
+                    : NULL);
         });
         Py_RETURN_NONE;
     }
@@ -185,18 +218,25 @@ static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject 
 {
     wchar_t* ns = NULL;
     PyObject* instance = NULL;
+    PyObject* operationOptions = NULL;
 
-    static char *kwlist[] = { "ns", "instance", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &instance))
+    static char *kwlist[] = { "ns", "instance", "operation_options", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|O", kwlist, &ns,
+                                     &instance, &operationOptions))
         return NULL;
 
     try
     {
-        if (!PyObject_IsInstance(instance, reinterpret_cast<PyObject*>(&InstanceType)))
-            throw MI::TypeConversionException(L"\"instance\" must have type Instance");
+        ValidatePyObjectType(instance, L"instance", &InstanceType, L"Instance", false);
+        ValidatePyObjectType(operationOptions, L"operation_options",
+                             &OperationOptionsType, L"OperationOptions");
 
         AllowThreads(&self->cs, [&]() {
-            self->session->DeleteInstance(ns, *((Instance*)instance)->instance);
+            self->session->DeleteInstance(
+                ns, *((Instance*)instance)->instance,
+                !CheckPyNone(operationOptions)
+                    ? ((OperationOptions*)operationOptions)->operationOptions
+                    : NULL);
         });
         Py_RETURN_NONE;
     }
@@ -308,22 +348,28 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
     PyObject* target = NULL;
     wchar_t* methodName = NULL;
     PyObject* inboundParams = NULL;
+    PyObject* operationOptions = NULL;
 
-    static char *kwlist[] = { "target", "method_name", "inbound_params", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|O", kwlist, &target, &methodName, &inboundParams))
+    static char *kwlist[] = { "target", "method_name", "inbound_params", "operation_options", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|OO", kwlist,
+                                     &target, &methodName, &inboundParams, &operationOptions))
         return NULL;
 
     try
     {
-        if (!CheckPyNone(inboundParams) && !PyObject_IsInstance(inboundParams, reinterpret_cast<PyObject*>(&InstanceType)))
-            throw MI::TypeConversionException(L"\"inbound_params\" must have type Instance");
+        ValidatePyObjectType(inboundParams, L"inbound_params", &InstanceType, L"Instance");
+        ValidatePyObjectType(operationOptions, L"operation_options",
+                             &OperationOptionsType, L"OperationOptions");
 
         std::shared_ptr<MI::Operation> op;
         if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&InstanceType)))
         {
             AllowThreads(&self->cs, [&]() {
                 op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName,
-                    !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL);
+                    !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL,
+                    !CheckPyNone(operationOptions)
+                        ? ((OperationOptions*)operationOptions)->operationOptions
+                        : NULL);
             });
         }
         else if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&ClassType)))
@@ -331,7 +377,10 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
             AllowThreads(&self->cs, [&]() {
                 auto miClass = ((Class*)target)->miClass;
                 op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), methodName,
-                    !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL);
+                    !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL,
+                    !CheckPyNone(operationOptions)
+                        ? ((OperationOptions*)operationOptions)->operationOptions
+                        : NULL);
             });
         }
         else

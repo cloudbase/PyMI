@@ -502,3 +502,16 @@ void SetPyException(const std::exception& ex)
         Py_DECREF(d);
     }
 }
+
+void ValidatePyObjectType(PyObject* obj, const std::wstring& objName,
+                          PyTypeObject* expectedType, const std::wstring& expectedTypeName,
+                          bool allowNone)
+{
+    bool isNone = CheckPyNone(obj);
+
+    if ((isNone && !allowNone) ||
+        (!isNone && !PyObject_IsInstance(obj,
+                                         reinterpret_cast<PyObject*>(expectedType))))
+        throw MI::TypeConversionException(
+            L"\"" + objName + L"\"must have type " + expectedTypeName);
+}
