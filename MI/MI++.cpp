@@ -655,7 +655,6 @@ std::shared_ptr<OperationOptions> OperationOptions::Clone() const
     return std::shared_ptr<OperationOptions>(new OperationOptions(clonedOperationOptions));
 }
 
-
 void OperationOptions::Delete()
 {
     ::MI_OperationOptions_Delete(&this->m_operationOptions);
@@ -681,6 +680,18 @@ std::wstring DestinationOptions::GetUILocale()
     const MI_Char* locale;
     MICheckResult(::MI_DestinationOptions_GetUILocale(&this->m_destinationOptions, &locale));
     return locale;
+}
+
+void DestinationOptions::SetTimeout(const MI_Interval& timeout)
+{
+    MICheckResult(::MI_DestinationOptions_SetTimeout(&this->m_destinationOptions, &timeout));
+}
+
+MI_Interval DestinationOptions::GetTimeout()
+{
+    MI_Interval timeout;
+    MICheckResult(::MI_DestinationOptions_GetTimeout(&this->m_destinationOptions, &timeout));
+    return timeout;
 }
 
 std::shared_ptr<DestinationOptions> DestinationOptions::Clone() const

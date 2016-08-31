@@ -15,6 +15,7 @@
 
 import abc
 import datetime
+import importlib
 import re
 import six
 import struct
@@ -55,6 +56,11 @@ def _get_eventlet_original(module_name):
         return eventlet.patcher.original(module_name)
     else:
         return importlib.import_module(module_name)
+
+
+# Default operation timeout in seconds.
+# In order to enable it, this value must be set.
+DEFAULT_OPERATION_TIMEOUT = None
 
 
 class x_wmi(Exception):
@@ -441,24 +447,39 @@ class _EventWatcher(object):
 
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2", locale_name=None,
-                 protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
+                 protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True,
+                 operation_timeout=None):
         self._ns = six.text_type(ns)
         self._app = _get_app()
         self._protocol = six.text_type(protocol)
         self._computer_name = six.text_type(computer_name)
-        if locale_name:
-            destination_options = self._app.create_destination_options()
-            destination_options.set_ui_locale(locale_name=six.text_type(locale_name))
-        else:
-            destination_options = None
+
+        op_timeout = operation_timeout or DEFAULT_OPERATION_TIMEOUT
+
+        self._set_destination_options(locale_name, op_timeout)
         self._session = self._app.create_session(
             computer_name=self._computer_name,
             protocol=self._protocol,
-            destination_options=destination_options)
+            destination_options=self._destination_options)
         self._cache_classes = cache_classes
         self._class_cache = {}
         self._method_params_cache = {}
         self._notify_on_close = []
+
+    def _set_destination_options(self, locale_name=None,
+                                 operation_timeout=None):
+        self._destination_options = None
+
+        if not locale_name and operation_timeout is None:
+            return
+
+        self._destination_options = self._app.create_destination_options()
+        if locale_name:
+            self._destination_options.set_ui_locale(
+                locale_name=six.text_type(locale_name))
+        if operation_timeout is not None:
+            timeout = datetime.timedelta(0, operation_timeout, 0)
+            self._destination_options.set_timeout(timeout)
 
     def _close(self):
         for callback in self._notify_on_close:
@@ -625,7 +646,8 @@ class _Connection(object):
         if self._protocol != mi.PROTOCOL_WINRM:
             tmp_session = self._app.create_session(
                 computer_name=self._computer_name,
-                protocol=mi.PROTOCOL_WINRM)
+                protocol=mi.PROTOCOL_WINRM,
+                destination_options=self._destination_options)
         else:
             tmp_session = self._session
         tmp_session.delete_instance(self._ns, instance._instance)
@@ -720,13 +742,14 @@ def _parse_moniker(moniker):
 
 @mi_to_wmi_exception
 def WMI(moniker="root/cimv2", privileges=None, locale_name=None, computer="",
-        user="", password=""):
+        user="", password="", operation_timeout=None):
     computer_name, ns, class_name, key = _parse_moniker(
         moniker.replace("\\", "/"))
     if computer_name == '.':
         computer_name = computer or '.'
     conn = _Connection(computer_name=computer_name, ns=ns,
-                       locale_name=locale_name)
+                       locale_name=locale_name,
+                       operation_timeout=operation_timeout)
     if not class_name:
         # Perform a simple operation to ensure the connection works.
         # This is needed for compatibility with the WMI module.

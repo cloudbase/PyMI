@@ -107,6 +107,8 @@ namespace MI
 
     public:
         std::shared_ptr<DestinationOptions> Clone() const;
+        void SetTimeout(const MI_Interval& timeout);
+        MI_Interval GetTimeout();
         void SetUILocale(const std::wstring& locale);
         std::wstring GetUILocale();
         void Delete();
