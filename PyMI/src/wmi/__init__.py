@@ -14,14 +14,47 @@
 #    under the License.
 
 import abc
+import datetime
 import re
 import six
 import struct
-import threading
 import weakref
 
 import mi
 from mi import mi_error
+
+try:
+    import eventlet
+    from eventlet import tpool
+    # If eventlet is installed, we'll make sure that other greenthreads will
+    # not be blocked while WMI operations are performed by using tpool.
+    # This behavior can be disabled by using the following flag.
+    EVENTLET_NONBLOCKING_MODE_ENABLED = True
+except ImportError:
+    eventlet = None
+    EVENTLET_NONBLOCKING_MODE_ENABLED = False
+
+
+def avoid_blocking_call(f):
+    # Performs blocking calls in a different thread using tpool.execute
+    # when called from a greenthread.
+    # Note that eventlet.getcurrent will always return a greenlet object.
+    # Still, in case of a greenthread, the parent greenlet will always be the
+    # hub loop greenlet.
+    def wrapper(*args, **kwargs):
+        if (EVENTLET_NONBLOCKING_MODE_ENABLED and
+                eventlet.getcurrent().parent):
+            return tpool.execute(f, *args, **kwargs)
+        else:
+            return f(*args, **kwargs)
+    return wrapper
+
+
+def _get_eventlet_original(module_name):
+    if eventlet:
+        return eventlet.patcher.original(module_name)
+    else:
+        return importlib.import_module(module_name)
 
 
 class x_wmi(Exception):
@@ -90,6 +123,7 @@ class _Method(object):
 
         self._conn._get_method_params(target, method_name)
 
+    @avoid_blocking_call
     @mi_to_wmi_exception
     def __call__(self, *args, **kwargs):
         return self._conn.invoke_method(
@@ -327,10 +361,12 @@ class _Class(_BaseEntity):
 
 class _EventWatcher(object):
     def __init__(self, conn, wql):
+        native_threading = _get_eventlet_original('threading')
+
         self._conn_ref = weakref.ref(conn)
         self._events_queue = []
         self._error = None
-        self._event = threading.Event()
+        self._event = native_threading.Event()
         self._operation = conn.subscribe(
             wql, self._indication_result, self.close)
 
@@ -342,6 +378,7 @@ class _EventWatcher(object):
         if self._events_queue:
             return self._events_queue.pop(0)
 
+    @avoid_blocking_call
     def __call__(self, timeout_ms=-1):
         while True:
             try:
@@ -349,9 +386,7 @@ class _EventWatcher(object):
                 if event:
                     return event
 
-                timeout = None
-                if timeout_ms >= 0:
-                    timeout = timeout_ms / 1000.0
+                timeout = timeout_ms / 1000.0 if timeout_ms else None
                 if not self._event.wait(timeout):
                     raise x_wmi_timed_out()
                 self._event.clear()
@@ -449,6 +484,7 @@ class _Connection(object):
         return l
 
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def query(self, wql):
         wql = wql.replace("\\", "\\\\")
         with self._session.exec_query(
@@ -456,6 +492,7 @@ class _Connection(object):
             return self._get_instances(q)
 
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def get_associators(self, instance, wmi_association_class=None,
                         wmi_result_class=None):
         if wmi_association_class is None:
@@ -524,6 +561,7 @@ class _Connection(object):
             return tuple(l)
 
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def new_instance_from_class(self, cls):
         return _Instance(
             self, self._app.create_instance_from_class(
@@ -541,18 +579,23 @@ class _Connection(object):
             cls = self._class_cache.get(class_name)
 
         if cls is None:
-            with self._session.get_class(
-                    ns=self._ns, class_name=class_name) as op:
-                cls = op.get_next_class()
-                if cls is not None:
-                    cls = cls.clone()
-                    if self._cache_classes:
-                        self._class_cache[class_name] = cls
+            cls = self._get_mi_class(class_name)
+            if self._cache_classes and cls:
+                self._class_cache[class_name] = cls
 
         if cls is not None:
             return _Class(self, class_name, cls)
 
+    @avoid_blocking_call
+    def _get_mi_class(self, class_name):
+        with self._session.get_class(
+                ns=self._ns, class_name=class_name) as op:
+            cls = op.get_next_class()
+            cls = cls.clone() if cls is not None else cls
+            return cls
+
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def get_instance(self, class_name, key):
         c = self.get_class(class_name)
         key_instance = self.new_instance_from_class(c)
@@ -565,14 +608,17 @@ class _Connection(object):
                 return _Instance(self, instance.clone())
 
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def create_instance(self, instance):
         self._session.create_instance(self._ns, instance._instance)
 
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def modify_instance(self, instance):
         self._session.modify_instance(self._ns, instance._instance)
 
     @mi_to_wmi_exception
+    @avoid_blocking_call
     def delete_instance(self, instance):
         # Deleting an instance using WMIDCOM fails with
         # "Provider is not capable of the attempted operation"
