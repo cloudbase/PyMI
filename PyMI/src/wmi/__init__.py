@@ -231,8 +231,9 @@ class _BaseEntity(object):
             # compatibility with the WMI module, those class properties that
             # are references are translated into objects.
             obj = self.get_wrapped_object()
-            return _wrap_element(self._conn, *obj.get_element(name),
-                                 convert_references=self._convert_references)
+            return self._conn._wrap_element(
+                *obj.get_element(name),
+                convert_references=self._convert_references)
         except mi.error:
             try:
                 return _Method(self._conn, self, name)
@@ -286,7 +287,8 @@ class _Instance(_BaseEntity):
     @mi_to_wmi_exception
     def __setattr__(self, name, value):
         _, el_type, _ = self._instance.get_element(name)
-        self._instance[six.text_type(name)] = _unwrap_element(el_type, value)
+        self._instance[six.text_type(name)] = self._conn._unwrap_element(
+            el_type, value)
 
     @mi_to_wmi_exception
     def associators(self, wmi_association_class=u"", wmi_result_class=u"",
@@ -464,9 +466,10 @@ class _Connection(object):
         self._protocol = six.text_type(protocol)
         self._computer_name = six.text_type(computer_name)
 
-        op_timeout = operation_timeout or DEFAULT_OPERATION_TIMEOUT
+        self._locale_name = locale_name
+        self._op_timeout = operation_timeout or DEFAULT_OPERATION_TIMEOUT
 
-        self._set_destination_options(locale_name, op_timeout)
+        self._set_destination_options()
         self._session = self._app.create_session(
             computer_name=self._computer_name,
             protocol=self._protocol,
@@ -476,19 +479,18 @@ class _Connection(object):
         self._method_params_cache = {}
         self._notify_on_close = []
 
-    def _set_destination_options(self, locale_name=None,
-                                 operation_timeout=None):
+    def _set_destination_options(self):
         self._destination_options = None
 
-        if not locale_name and operation_timeout is None:
+        if not self._locale_name and self._op_timeout is None:
             return
 
         self._destination_options = self._app.create_destination_options()
-        if locale_name:
+        if self._locale_name:
             self._destination_options.set_ui_locale(
-                locale_name=six.text_type(locale_name))
-        if operation_timeout is not None:
-            timeout = datetime.timedelta(0, operation_timeout, 0)
+                locale_name=six.text_type(self._locale_name))
+        if self._op_timeout is not None:
+            timeout = datetime.timedelta(0, self._op_timeout, 0)
             self._destination_options.set_timeout(timeout)
 
     def _close(self):
@@ -575,10 +577,10 @@ class _Connection(object):
 
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
-            params[i] = _unwrap_element(el_type, v)
+            params[i] = self._unwrap_element(el_type, v)
         for k, v in kwargs.items():
             _, el_type, _ = params.get_element(k)
-            params[k] = _unwrap_element(el_type, v)
+            params[k] = self._unwrap_element(el_type, v)
 
         if not params:
             params = None
@@ -602,7 +604,7 @@ class _Connection(object):
                 # This won't work if the method is expected to return a
                 # boolean value!!
                 if element != ('ReturnValue', mi.MI_BOOLEAN, True):
-                    l.append(_wrap_element(self, *element))
+                    l.append(self._wrap_element(*element))
             return tuple(l)
 
     @mi_to_wmi_exception
@@ -698,51 +700,54 @@ class _Connection(object):
                   wmi_class=None, delay_secs=1, fields=[], **where_clause):
         return _EventWatcher(self, six.text_type(raw_wql))
 
-
-def _wrap_element(conn, name, el_type, value, convert_references=False):
-    if isinstance(value, mi.Instance):
-        if el_type == mi.MI_INSTANCE:
-            return _Instance(conn, value.clone())
-        elif el_type == mi.MI_REFERENCE:
-            if convert_references:
-                # Reload the object to populate all properties
-                return WMI(value.get_path())
-            return value.get_path()
-        else:
-            raise Exception(
-                "Unsupported instance element type: %s" % el_type)
-    if isinstance(value, (tuple, list)):
-        if el_type == mi.MI_REFERENCEA:
-            return tuple([i.get_path() for i in value])
-        elif el_type == mi.MI_INSTANCEA:
-            return tuple([_Instance(conn, i.clone()) for i in value])
-        else:
-            return tuple(value)
-    else:
-        return value
-
-
-def _unwrap_element(el_type, value):
-    if value is not None:
-        if el_type == mi.MI_REFERENCE:
-            instance = WMI(value)
-            if instance is None:
-                raise Exception("Reference not found: %s" % value)
-            return instance._instance
-        elif el_type == mi.MI_INSTANCE:
-            return value._instance
-        elif el_type == mi.MI_BOOLEAN:
-            if isinstance(value, (str, six.text_type)):
-                return value.lower() in ['true', 'yes', '1']
+    def _wrap_element(self, name, el_type, value, convert_references=False):
+        if isinstance(value, mi.Instance):
+            if el_type == mi.MI_INSTANCE:
+                return _Instance(self, value.clone())
+            elif el_type == mi.MI_REFERENCE:
+                if convert_references:
+                    # Reload the object to populate all properties
+                    return WMI(value.get_path(),
+                               locale_name=self._locale_name,
+                               operation_timeout=self._op_timeout)
+                return value.get_path()
             else:
-                return value
-        elif el_type & mi.MI_ARRAY:
-            l = []
-            for item in value:
-                l.append(_unwrap_element(el_type ^ mi.MI_ARRAY, item))
-            return tuple(l)
+                raise Exception(
+                    "Unsupported instance element type: %s" % el_type)
+        if isinstance(value, (tuple, list)):
+            if el_type == mi.MI_REFERENCEA:
+                return tuple([i.get_path() for i in value])
+            elif el_type == mi.MI_INSTANCEA:
+                return tuple([_Instance(self, i.clone()) for i in value])
+            else:
+                return tuple(value)
         else:
             return value
+
+    def _unwrap_element(self, el_type, value):
+        if value is not None:
+            if el_type == mi.MI_REFERENCE:
+                instance = WMI(value,
+                               locale_name=self._locale_name,
+                               operation_timeout=self._op_timeout)
+                if instance is None:
+                    raise Exception("Reference not found: %s" % value)
+                return instance._instance
+            elif el_type == mi.MI_INSTANCE:
+                return value._instance
+            elif el_type == mi.MI_BOOLEAN:
+                if isinstance(value, (str, six.text_type)):
+                    return value.lower() in ['true', 'yes', '1']
+                else:
+                    return value
+            elif el_type & mi.MI_ARRAY:
+                l = []
+                for item in value:
+                    l.append(self._unwrap_element(el_type ^ mi.MI_ARRAY,
+                                                  item))
+                return tuple(l)
+            else:
+                return value
 
 
 def _parse_moniker(moniker):
