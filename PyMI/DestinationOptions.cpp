@@ -3,6 +3,8 @@
 #include "PyMI.h"
 #include "Utils.h"
 
+#include <datetime.h>
+
 
 static PyObject* DestinationOptions_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
@@ -92,6 +94,49 @@ static PyObject* DestinationOptions_SetUILocale(DestinationOptions* self, PyObje
     }
 }
 
+static PyObject* DestinationOptions_GetTimeout(DestinationOptions* self, PyObject* timeout)
+{
+    try
+    {
+        MI_Interval interval;
+        AllowThreads(&self->cs, [&]() {
+            interval = self->destinationOptions->GetTimeout();
+        });
+        return PyDeltaFromMIInterval(interval);
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* DestinationOptions_SetTimeout(DestinationOptions* self, PyObject* timeout)
+{
+    PyDateTime_IMPORT;
+
+    if (!PyDelta_Check(timeout))
+    {
+        PyErr_SetString(PyExc_TypeError, "parameter timeout must be of type datetime.timedelta");
+        return NULL;
+    }
+
+    try
+    {
+        MI_Interval miTimeout;
+        MIIntervalFromPyDelta(timeout, miTimeout);
+        AllowThreads(&self->cs, [&]() {
+            self->destinationOptions->SetTimeout(miTimeout);
+        });
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
 static PyMemberDef DestinationOptions_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -100,6 +145,8 @@ static PyMethodDef DestinationOptions_methods[] = {
     { "clone", (PyCFunction)DestinationOptions_Clone, METH_NOARGS, "Clones the DestinationOptions." },
     { "get_ui_locale", (PyCFunction)DestinationOptions_GetUILocale, METH_NOARGS, "Returns the UI locale." },
     { "set_ui_locale", (PyCFunction)DestinationOptions_SetUILocale, METH_VARARGS | METH_KEYWORDS, "Sets the UI locale." },
+    { "get_timeout", (PyCFunction)DestinationOptions_GetTimeout, METH_NOARGS, "Returns the default operation timeout." },
+    { "set_timeout", (PyCFunction)DestinationOptions_SetTimeout, METH_O, "Sets the default operation timeout." },
     { NULL }  /* Sentinel */
 };
 

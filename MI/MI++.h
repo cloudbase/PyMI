@@ -107,6 +107,8 @@ namespace MI
 
     public:
         std::shared_ptr<DestinationOptions> Clone() const;
+        void SetTimeout(const MI_Interval& timeout);
+        MI_Interval GetTimeout();
         void SetUILocale(const std::wstring& locale);
         std::wstring GetUILocale();
         void Delete();
@@ -123,19 +125,27 @@ namespace MI
         friend Application;
 
     public:
-        std::shared_ptr<Operation> ExecQuery(const std::wstring& ns, const std::wstring& query, const std::wstring& dialect = L"WQL");
+        std::shared_ptr<Operation> ExecQuery(const std::wstring& ns, const std::wstring& query,
+                                             const std::wstring& dialect = L"WQL",
+                                             std::shared_ptr<OperationOptions> operationOptions = nullptr);
         std::shared_ptr<Operation> InvokeMethod(
-            Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams);
+            Instance& instance, const std::wstring& methodName, std::shared_ptr<const Instance> inboundParams,
+            std::shared_ptr<OperationOptions> operationOptions = nullptr);
         std::shared_ptr<Operation> InvokeMethod(
-            const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance>);
-        void CreateInstance(const std::wstring& ns, const Instance& instance);
-        void ModifyInstance(const std::wstring& ns, const Instance& instance);
-        void DeleteInstance(const std::wstring& ns, const Instance& instance);
+            const std::wstring& ns, const std::wstring& className, const std::wstring& methodName, std::shared_ptr<const Instance>,
+            std::shared_ptr<OperationOptions> operationOptions = nullptr);
+        void CreateInstance(const std::wstring& ns, const Instance& instance,
+            std::shared_ptr<OperationOptions> operationOptions = nullptr);
+        void ModifyInstance(const std::wstring& ns, const Instance& instance,
+            std::shared_ptr<OperationOptions> operationOptions = nullptr);
+        void DeleteInstance(const std::wstring& ns, const Instance& instance,
+                            std::shared_ptr<OperationOptions> operationOptions = nullptr);
         std::shared_ptr<Operation> GetClass(const std::wstring& ns, const std::wstring& className);
         std::shared_ptr<Operation> GetInstance(const std::wstring& ns, const Instance& keyInstance);
         std::shared_ptr<Operation> GetAssociators(const std::wstring& ns, const Instance& instance, const std::wstring& assocClass = L"",
             const std::wstring& resultClass = L"", const std::wstring& role = L"",
-            const std::wstring& resultRole = L"", bool keysOnly = false);
+            const std::wstring& resultRole = L"", bool keysOnly = false,
+            std::shared_ptr<OperationOptions> operationOptions = nullptr);
         std::shared_ptr<Operation> Subscribe(const std::wstring& ns, const std::wstring& query, std::shared_ptr<Callbacks> callback = nullptr,
             std::shared_ptr<OperationOptions> operationOptions = nullptr, const std::wstring& dialect = L"WQL");
         void Close();

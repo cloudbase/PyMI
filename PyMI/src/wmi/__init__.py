@@ -15,6 +15,7 @@
 
 import abc
 import datetime
+import importlib
 import re
 import six
 import struct
@@ -55,6 +56,16 @@ def _get_eventlet_original(module_name):
         return eventlet.patcher.original(module_name)
     else:
         return importlib.import_module(module_name)
+
+
+# Default operation timeout in seconds.
+# In order to enable it, this value must be set.
+DEFAULT_OPERATION_TIMEOUT = None
+
+
+# Default operation timeout in seconds.
+# In order to enable it, this value must be set.
+DEFAULT_OPERATION_TIMEOUT = None
 
 
 class x_wmi(Exception):
@@ -220,8 +231,9 @@ class _BaseEntity(object):
             # compatibility with the WMI module, those class properties that
             # are references are translated into objects.
             obj = self.get_wrapped_object()
-            return _wrap_element(self._conn, *obj.get_element(name),
-                                 convert_references=self._convert_references)
+            return self._conn._wrap_element(
+                *obj.get_element(name),
+                convert_references=self._convert_references)
         except mi.error:
             try:
                 return _Method(self._conn, self, name)
@@ -275,12 +287,15 @@ class _Instance(_BaseEntity):
     @mi_to_wmi_exception
     def __setattr__(self, name, value):
         _, el_type, _ = self._instance.get_element(name)
-        self._instance[six.text_type(name)] = _unwrap_element(el_type, value)
+        self._instance[six.text_type(name)] = self._conn._unwrap_element(
+            el_type, value)
 
     @mi_to_wmi_exception
-    def associators(self, wmi_association_class=None, wmi_result_class=None):
+    def associators(self, wmi_association_class=u"", wmi_result_class=u"",
+                    operation_timeout=None):
         return self._conn.get_associators(
-            self, wmi_association_class, wmi_result_class)
+            self, wmi_association_class, wmi_result_class,
+            operation_timeout)
 
     @mi_to_wmi_exception
     def path_(self):
@@ -291,15 +306,15 @@ class _Instance(_BaseEntity):
         return self._conn.serialize_instance(self)
 
     @mi_to_wmi_exception
-    def put(self):
+    def put(self, operation_timeout=None):
         if not self._instance.get_path():
-            self._conn.create_instance(self)
+            self._conn.create_instance(self, operation_timeout)
         else:
-            self._conn.modify_instance(self)
+            self._conn.modify_instance(self, operation_timeout)
 
     @mi_to_wmi_exception
-    def Delete_(self):
-        self._conn.delete_instance(self)
+    def Delete_(self, operation_timeout=None):
+        self._conn.delete_instance(self, operation_timeout)
 
     @mi_to_wmi_exception
     def set(self, **kwargs):
@@ -324,6 +339,8 @@ class _Class(_BaseEntity):
 
     @mi_to_wmi_exception
     def __call__(self, *argc, **argv):
+        operation_timeout = argv.pop("operation_timeout", None)
+
         fields = ""
         for i, v in enumerate(argc):
             if i > 0:
@@ -347,7 +364,8 @@ class _Class(_BaseEntity):
                {"fields": fields,
                 "class_name": self.class_name,
                 "where": where})
-        return self._conn.query(wql)
+        return self._conn.query(
+            wql, operation_timeout=operation_timeout)
 
     @mi_to_wmi_exception
     def new(self):
@@ -441,24 +459,39 @@ class _EventWatcher(object):
 
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2", locale_name=None,
-                 protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True):
+                 protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True,
+                 operation_timeout=None):
         self._ns = six.text_type(ns)
         self._app = _get_app()
         self._protocol = six.text_type(protocol)
         self._computer_name = six.text_type(computer_name)
-        if locale_name:
-            destination_options = self._app.create_destination_options()
-            destination_options.set_ui_locale(locale_name=six.text_type(locale_name))
-        else:
-            destination_options = None
+
+        self._locale_name = locale_name
+        self._op_timeout = operation_timeout or DEFAULT_OPERATION_TIMEOUT
+
+        self._set_destination_options()
         self._session = self._app.create_session(
             computer_name=self._computer_name,
             protocol=self._protocol,
-            destination_options=destination_options)
+            destination_options=self._destination_options)
         self._cache_classes = cache_classes
         self._class_cache = {}
         self._method_params_cache = {}
         self._notify_on_close = []
+
+    def _set_destination_options(self):
+        self._destination_options = None
+
+        if not self._locale_name and self._op_timeout is None:
+            return
+
+        self._destination_options = self._app.create_destination_options()
+        if self._locale_name:
+            self._destination_options.set_ui_locale(
+                locale_name=six.text_type(self._locale_name))
+        if self._op_timeout is not None:
+            timeout = datetime.timedelta(0, self._op_timeout, 0)
+            self._destination_options.set_timeout(timeout)
 
     def _close(self):
         for callback in self._notify_on_close:
@@ -483,27 +516,38 @@ class _Connection(object):
             i = op.get_next_instance()
         return l
 
+    def _get_operation_options(self, operation_timeout=None):
+        operation_options = None
+        if operation_timeout is not None:
+            timeout = datetime.timedelta(0, operation_timeout, 0)
+            operation_options = self._app.create_operation_options()
+            operation_options.set_timeout(timeout)
+        return operation_options
+
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def query(self, wql):
+    def query(self, wql, operation_timeout=None):
         wql = wql.replace("\\", "\\\\")
+        operation_options = self._get_operation_options(
+            operation_timeout=operation_timeout)
+
         with self._session.exec_query(
-                ns=self._ns, query=six.text_type(wql)) as q:
+                ns=self._ns, query=six.text_type(wql),
+                operation_options=operation_options) as q:
             return self._get_instances(q)
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def get_associators(self, instance, wmi_association_class=None,
-                        wmi_result_class=None):
-        if wmi_association_class is None:
-            wmi_association_class = u""
-        if wmi_result_class is None:
-            wmi_result_class = u""
-
+    def get_associators(self, instance, wmi_association_class=u"",
+                        wmi_result_class=u"",
+                        operation_timeout=None):
+        operation_options = self._get_operation_options(
+            operation_timeout=operation_timeout)
         with self._session.get_associators(
                 ns=self._ns, instance=instance._instance,
                 assoc_class=six.text_type(wmi_association_class),
-                result_class=six.text_type(wmi_result_class)) as q:
+                result_class=six.text_type(wmi_result_class),
+                operation_options=operation_options) as q:
             return self._get_instances(q)
 
     def _get_method_params(self, target, method_name):
@@ -528,19 +572,22 @@ class _Connection(object):
     def invoke_method(self, target, method_name, *args, **kwargs):
         mi_target = target.get_wrapped_object()
         params = self._get_method_params(target, method_name)
+        operation_options = self._get_operation_options(
+            operation_timeout=kwargs.pop('operation_timeout', None))
 
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
-            params[i] = _unwrap_element(el_type, v)
+            params[i] = self._unwrap_element(el_type, v)
         for k, v in kwargs.items():
             _, el_type, _ = params.get_element(k)
-            params[k] = _unwrap_element(el_type, v)
+            params[k] = self._unwrap_element(el_type, v)
 
         if not params:
             params = None
 
         with self._session.invoke_method(
-                mi_target, six.text_type(method_name), params) as op:
+                mi_target, six.text_type(method_name), params,
+                operation_options) as op:
             l = []
             r = op.get_next_instance()
             elements = []
@@ -557,7 +604,7 @@ class _Connection(object):
                 # This won't work if the method is expected to return a
                 # boolean value!!
                 if element != ('ReturnValue', mi.MI_BOOLEAN, True):
-                    l.append(_wrap_element(self, *element))
+                    l.append(self._wrap_element(*element))
             return tuple(l)
 
     @mi_to_wmi_exception
@@ -609,26 +656,37 @@ class _Connection(object):
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def create_instance(self, instance):
-        self._session.create_instance(self._ns, instance._instance)
+    def create_instance(self, instance, operation_timeout=None):
+        operation_options = self._get_operation_options(
+            operation_timeout=operation_timeout)
+        self._session.create_instance(self._ns, instance._instance,
+                                      operation_options)
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def modify_instance(self, instance):
-        self._session.modify_instance(self._ns, instance._instance)
+    def modify_instance(self, instance, operation_timeout=None):
+        operation_options = self._get_operation_options(
+            operation_timeout=operation_timeout)
+        self._session.modify_instance(self._ns, instance._instance,
+                                      operation_options)
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def delete_instance(self, instance):
+    def delete_instance(self, instance, operation_timeout=None):
         # Deleting an instance using WMIDCOM fails with
         # "Provider is not capable of the attempted operation"
         if self._protocol != mi.PROTOCOL_WINRM:
             tmp_session = self._app.create_session(
                 computer_name=self._computer_name,
-                protocol=mi.PROTOCOL_WINRM)
+                protocol=mi.PROTOCOL_WINRM,
+                destination_options=self._destination_options)
         else:
             tmp_session = self._session
-        tmp_session.delete_instance(self._ns, instance._instance)
+
+        operation_options = self._get_operation_options(
+            operation_timeout=operation_timeout)
+        tmp_session.delete_instance(self._ns, instance._instance,
+                                    operation_options)
 
     @mi_to_wmi_exception
     def subscribe(self, query, indication_result_callback, close_callback):
@@ -642,51 +700,54 @@ class _Connection(object):
                   wmi_class=None, delay_secs=1, fields=[], **where_clause):
         return _EventWatcher(self, six.text_type(raw_wql))
 
-
-def _wrap_element(conn, name, el_type, value, convert_references=False):
-    if isinstance(value, mi.Instance):
-        if el_type == mi.MI_INSTANCE:
-            return _Instance(conn, value.clone())
-        elif el_type == mi.MI_REFERENCE:
-            if convert_references:
-                # Reload the object to populate all properties
-                return WMI(value.get_path())
-            return value.get_path()
-        else:
-            raise Exception(
-                "Unsupported instance element type: %s" % el_type)
-    if isinstance(value, (tuple, list)):
-        if el_type == mi.MI_REFERENCEA:
-            return tuple([i.get_path() for i in value])
-        elif el_type == mi.MI_INSTANCEA:
-            return tuple([_Instance(conn, i.clone()) for i in value])
-        else:
-            return tuple(value)
-    else:
-        return value
-
-
-def _unwrap_element(el_type, value):
-    if value is not None:
-        if el_type == mi.MI_REFERENCE:
-            instance = WMI(value)
-            if instance is None:
-                raise Exception("Reference not found: %s" % value)
-            return instance._instance
-        elif el_type == mi.MI_INSTANCE:
-            return value._instance
-        elif el_type == mi.MI_BOOLEAN:
-            if isinstance(value, (str, six.text_type)):
-                return value.lower() in ['true', 'yes', '1']
+    def _wrap_element(self, name, el_type, value, convert_references=False):
+        if isinstance(value, mi.Instance):
+            if el_type == mi.MI_INSTANCE:
+                return _Instance(self, value.clone())
+            elif el_type == mi.MI_REFERENCE:
+                if convert_references:
+                    # Reload the object to populate all properties
+                    return WMI(value.get_path(),
+                               locale_name=self._locale_name,
+                               operation_timeout=self._op_timeout)
+                return value.get_path()
             else:
-                return value
-        elif el_type & mi.MI_ARRAY:
-            l = []
-            for item in value:
-                l.append(_unwrap_element(el_type ^ mi.MI_ARRAY, item))
-            return tuple(l)
+                raise Exception(
+                    "Unsupported instance element type: %s" % el_type)
+        if isinstance(value, (tuple, list)):
+            if el_type == mi.MI_REFERENCEA:
+                return tuple([i.get_path() for i in value])
+            elif el_type == mi.MI_INSTANCEA:
+                return tuple([_Instance(self, i.clone()) for i in value])
+            else:
+                return tuple(value)
         else:
             return value
+
+    def _unwrap_element(self, el_type, value):
+        if value is not None:
+            if el_type == mi.MI_REFERENCE:
+                instance = WMI(value,
+                               locale_name=self._locale_name,
+                               operation_timeout=self._op_timeout)
+                if instance is None:
+                    raise Exception("Reference not found: %s" % value)
+                return instance._instance
+            elif el_type == mi.MI_INSTANCE:
+                return value._instance
+            elif el_type == mi.MI_BOOLEAN:
+                if isinstance(value, (str, six.text_type)):
+                    return value.lower() in ['true', 'yes', '1']
+                else:
+                    return value
+            elif el_type & mi.MI_ARRAY:
+                l = []
+                for item in value:
+                    l.append(self._unwrap_element(el_type ^ mi.MI_ARRAY,
+                                                  item))
+                return tuple(l)
+            else:
+                return value
 
 
 def _parse_moniker(moniker):
@@ -720,13 +781,14 @@ def _parse_moniker(moniker):
 
 @mi_to_wmi_exception
 def WMI(moniker="root/cimv2", privileges=None, locale_name=None, computer="",
-        user="", password=""):
+        user="", password="", operation_timeout=None):
     computer_name, ns, class_name, key = _parse_moniker(
         moniker.replace("\\", "/"))
     if computer_name == '.':
         computer_name = computer or '.'
     conn = _Connection(computer_name=computer_name, ns=ns,
-                       locale_name=locale_name)
+                       locale_name=locale_name,
+                       operation_timeout=operation_timeout)
     if not class_name:
         # Perform a simple operation to ensure the connection works.
         # This is needed for compatibility with the WMI module.

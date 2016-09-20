@@ -17,3 +17,6 @@ void CallPythonCallback(PyObject* callable, const char* format, ...);
 void MIIntervalFromPyDelta(PyObject* pyDelta, MI_Interval& interval);
 PyObject* PyDeltaFromMIInterval(const MI_Interval& interval);
 bool CheckPyNone(PyObject* obj);
+void ValidatePyObjectType(PyObject* obj, const std::wstring& objName,
+                          PyTypeObject* expectedType, const std::wstring& expectedTypeName,
+                          bool allowNone = true);
