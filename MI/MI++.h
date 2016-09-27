@@ -111,6 +111,12 @@ namespace MI
         MI_Interval GetTimeout();
         void SetUILocale(const std::wstring& locale);
         std::wstring GetUILocale();
+        void SetTransport(const std::wstring& transport);
+        std::wstring GetTransport();
+        void AddCredentials(const std::wstring& authType,
+                            const std::wstring& certThumbprint);
+        void AddCredentials(const std::wstring& authType, const std::wstring& domain,
+                            const std::wstring& username, const std::wstring& password);
         void Delete();
         virtual ~DestinationOptions();
     };

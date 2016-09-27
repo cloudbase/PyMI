@@ -137,6 +137,78 @@ static PyObject* DestinationOptions_SetTimeout(DestinationOptions* self, PyObjec
     }
 }
 
+static PyObject* DestinationOptions_SetTransport(DestinationOptions* self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* transport = NULL;
+    static char *kwlist[] = { "transport", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &transport))
+        return NULL;
+
+    try
+    {
+        AllowThreads(&self->cs, [&]() {
+            self->destinationOptions->SetTransport(transport);
+        });
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* DestinationOptions_GetTransport(DestinationOptions* self)
+{
+    try
+    {
+        std::wstring transport;
+        AllowThreads(&self->cs, [&]() {
+            transport = self->destinationOptions->GetTransport();
+        });
+        const std::string sTmp(transport.begin(), transport.end());
+        return PyUnicode_FromString(sTmp.c_str());
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+static PyObject* DestinationOptions_AddCredentials(DestinationOptions* self, PyObject *args, PyObject *kwds)
+{
+    wchar_t* authType = NULL;
+    wchar_t* domain = NULL;
+    wchar_t* username = NULL;
+    wchar_t* password = NULL;
+    wchar_t* certThumbprint = NULL;
+
+    static char *kwlist[] = { "auth_type", "domain", "username", "password", "cert_thumbprint", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u|uuuu", kwlist,
+                                     &authType, &domain, &username, &password, &certThumbprint))
+        return NULL;
+
+    try
+    {
+        if (certThumbprint && wcslen(certThumbprint))
+            AllowThreads(&self->cs, [&]() {
+                self->destinationOptions->AddCredentials(authType, certThumbprint);
+            });
+        else
+            AllowThreads(&self->cs, [&]() {
+                self->destinationOptions->AddCredentials(authType, domain, username, password);
+            });
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+
 static PyMemberDef DestinationOptions_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -145,8 +217,11 @@ static PyMethodDef DestinationOptions_methods[] = {
     { "clone", (PyCFunction)DestinationOptions_Clone, METH_NOARGS, "Clones the DestinationOptions." },
     { "get_ui_locale", (PyCFunction)DestinationOptions_GetUILocale, METH_NOARGS, "Returns the UI locale." },
     { "set_ui_locale", (PyCFunction)DestinationOptions_SetUILocale, METH_VARARGS | METH_KEYWORDS, "Sets the UI locale." },
+    { "get_transport", (PyCFunction)DestinationOptions_GetTransport, METH_VARARGS | METH_KEYWORDS, "Gets the transport protocol." },
+    { "set_transport", (PyCFunction)DestinationOptions_SetTransport, METH_VARARGS | METH_KEYWORDS, "Sets the transport protocol." },
     { "get_timeout", (PyCFunction)DestinationOptions_GetTimeout, METH_NOARGS, "Returns the default operation timeout." },
     { "set_timeout", (PyCFunction)DestinationOptions_SetTimeout, METH_O, "Sets the default operation timeout." },
+    { "add_credentials", (PyCFunction)DestinationOptions_AddCredentials, METH_VARARGS | METH_KEYWORDS, "Adds credentials." },
     { NULL }  /* Sentinel */
 };
 

@@ -460,14 +460,21 @@ class _EventWatcher(object):
 class _Connection(object):
     def __init__(self, computer_name=".", ns="root/cimv2", locale_name=None,
                  protocol=mi.PROTOCOL_WMIDCOM, cache_classes=True,
-                 operation_timeout=None):
+                 operation_timeout=None, user="", password="",
+                 user_cert_thumbprint="", auth_type="", transport=None):
         self._ns = six.text_type(ns)
         self._app = _get_app()
         self._protocol = six.text_type(protocol)
         self._computer_name = six.text_type(computer_name)
+        self._transport = transport
 
         self._locale_name = locale_name
         self._op_timeout = operation_timeout or DEFAULT_OPERATION_TIMEOUT
+
+        self._user = user
+        self._password = password
+        self._auth_type = auth_type
+        self._cert_thumbprint = user_cert_thumbprint
 
         self._set_destination_options()
         self._session = self._app.create_session(
@@ -480,18 +487,34 @@ class _Connection(object):
         self._notify_on_close = []
 
     def _set_destination_options(self):
-        self._destination_options = None
-
-        if not self._locale_name and self._op_timeout is None:
-            return
-
         self._destination_options = self._app.create_destination_options()
+
         if self._locale_name:
             self._destination_options.set_ui_locale(
                 locale_name=six.text_type(self._locale_name))
+
         if self._op_timeout is not None:
             timeout = datetime.timedelta(0, self._op_timeout, 0)
             self._destination_options.set_timeout(timeout)
+
+        if self._transport:
+            self._destination_options.set_transport(self._transport)
+
+        if self._user or self._cert_thumbprint:
+            user, domain = self._get_username_and_domain()
+            self._destination_options.add_credentials(
+                self._auth_type, domain, user, self._password,
+                self._cert_thumbprint)
+
+    def _get_username_and_domain(self):
+        username = self._user.replace("/", "\\")
+        if "\\" in username:
+            domain, user = username.split("\\")
+        elif "@" in username:
+            user, domain = username.split("@")
+        else:
+            user, domain = username, ""
+        return user, domain
 
     def _close(self):
         for callback in self._notify_on_close:
@@ -709,7 +732,13 @@ class _Connection(object):
                     # Reload the object to populate all properties
                     return WMI(value.get_path(),
                                locale_name=self._locale_name,
-                               operation_timeout=self._op_timeout)
+                               operation_timeout=self._op_timeout,
+                               user=self._user,
+                               password=self._password,
+                               user_cert_thumbprint=self._cert_thumbprint,
+                               auth_type=self._auth_type,
+                               transport=self._transport,
+                               protocol=self._protocol)
                 return value.get_path()
             else:
                 raise Exception(
@@ -729,7 +758,13 @@ class _Connection(object):
             if el_type == mi.MI_REFERENCE:
                 instance = WMI(value,
                                locale_name=self._locale_name,
-                               operation_timeout=self._op_timeout)
+                               operation_timeout=self._op_timeout,
+                               user=self._user,
+                               password=self._password,
+                               user_cert_thumbprint=self._cert_thumbprint,
+                               auth_type=self._auth_type,
+                               transport=self._transport,
+                               protocol=self._protocol)
                 if instance is None:
                     raise Exception("Reference not found: %s" % value)
                 return instance._instance
@@ -781,14 +816,21 @@ def _parse_moniker(moniker):
 
 @mi_to_wmi_exception
 def WMI(moniker="root/cimv2", privileges=None, locale_name=None, computer="",
-        user="", password="", operation_timeout=None):
+        user="", password="", user_cert_thumbprint="",
+        auth_type=mi.MI_AUTH_TYPE_DEFAULT, operation_timeout=None,
+        transport=None, protocol=mi.PROTOCOL_WMIDCOM):
     computer_name, ns, class_name, key = _parse_moniker(
         moniker.replace("\\", "/"))
     if computer_name == '.':
         computer_name = computer or '.'
     conn = _Connection(computer_name=computer_name, ns=ns,
                        locale_name=locale_name,
-                       operation_timeout=operation_timeout)
+                       operation_timeout=operation_timeout,
+                       user=user, password=password,
+                       user_cert_thumbprint=user_cert_thumbprint,
+                       auth_type=auth_type,
+                       transport=transport,
+                       protocol=protocol)
     if not class_name:
         # Perform a simple operation to ensure the connection works.
         # This is needed for compatibility with the WMI module.

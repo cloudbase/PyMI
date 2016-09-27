@@ -694,6 +694,38 @@ MI_Interval DestinationOptions::GetTimeout()
     return timeout;
 }
 
+void DestinationOptions::SetTransport(const std::wstring& transport)
+{
+    MICheckResult(::MI_DestinationOptions_SetTransport(&this->m_destinationOptions, transport.c_str()));
+}
+
+std::wstring DestinationOptions::GetTransport()
+{
+    const MI_Char* transport;
+    MICheckResult(::MI_DestinationOptions_GetTransport(&this->m_destinationOptions, &transport));
+    return transport;
+}
+
+void DestinationOptions::AddCredentials(const std::wstring& authType,
+                                        const std::wstring& certThumbprint) {
+    MI_UserCredentials creds = { 0 };
+    creds.authenticationType = authType.c_str();
+    creds.credentials.certificateThumbprint = certThumbprint.c_str();
+
+    MICheckResult(::MI_DestinationOptions_AddDestinationCredentials(&this->m_destinationOptions, &creds));
+}
+
+void DestinationOptions::AddCredentials(const std::wstring& authType, const std::wstring& domain,
+                                        const std::wstring& username, const std::wstring& password) {
+    MI_UserCredentials creds;
+    creds.authenticationType = authType.c_str();
+    creds.credentials.usernamePassword.domain = domain.c_str();
+    creds.credentials.usernamePassword.username = username.c_str();
+    creds.credentials.usernamePassword.password = password.c_str();
+
+    MICheckResult(::MI_DestinationOptions_AddDestinationCredentials(&this->m_destinationOptions, &creds));
+}
+
 std::shared_ptr<DestinationOptions> DestinationOptions::Clone() const
 {
     MI_DestinationOptions clonedDestinationOptions;
