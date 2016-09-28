@@ -92,6 +92,10 @@ namespace MI
         std::shared_ptr<OperationOptions> Clone() const;
         void SetTimeout(const MI_Interval& timeout);
         MI_Interval GetTimeout();
+        void SetCustomOption(const std::wstring& optionName,
+                             MI_Type optionValueType,
+                             const MIValue& optionValue,
+                             MI_Boolean mustComply);
         void Delete();
         virtual ~OperationOptions();
     };

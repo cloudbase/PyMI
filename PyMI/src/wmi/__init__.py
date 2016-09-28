@@ -63,11 +63,6 @@ def _get_eventlet_original(module_name):
 DEFAULT_OPERATION_TIMEOUT = None
 
 
-# Default operation timeout in seconds.
-# In order to enable it, this value must be set.
-DEFAULT_OPERATION_TIMEOUT = None
-
-
 class x_wmi(Exception):
     def __init__(self, info="", com_error=None):
         self.info = info
@@ -292,10 +287,10 @@ class _Instance(_BaseEntity):
 
     @mi_to_wmi_exception
     def associators(self, wmi_association_class=u"", wmi_result_class=u"",
-                    operation_timeout=None):
+                    operation_options=None):
         return self._conn.get_associators(
             self, wmi_association_class, wmi_result_class,
-            operation_timeout)
+            operation_options)
 
     @mi_to_wmi_exception
     def path_(self):
@@ -306,15 +301,15 @@ class _Instance(_BaseEntity):
         return self._conn.serialize_instance(self)
 
     @mi_to_wmi_exception
-    def put(self, operation_timeout=None):
+    def put(self, operation_options=None):
         if not self._instance.get_path():
-            self._conn.create_instance(self, operation_timeout)
+            self._conn.create_instance(self, operation_options)
         else:
-            self._conn.modify_instance(self, operation_timeout)
+            self._conn.modify_instance(self, operation_options)
 
     @mi_to_wmi_exception
-    def Delete_(self, operation_timeout=None):
-        self._conn.delete_instance(self, operation_timeout)
+    def Delete_(self, operation_options=None):
+        self._conn.delete_instance(self, operation_options)
 
     @mi_to_wmi_exception
     def set(self, **kwargs):
@@ -339,7 +334,7 @@ class _Class(_BaseEntity):
 
     @mi_to_wmi_exception
     def __call__(self, *argc, **argv):
-        operation_timeout = argv.pop("operation_timeout", None)
+        operation_options = argv.pop("operation_options", None)
 
         fields = ""
         for i, v in enumerate(argc):
@@ -365,7 +360,7 @@ class _Class(_BaseEntity):
                 "class_name": self.class_name,
                 "where": where})
         return self._conn.query(
-            wql, operation_timeout=operation_timeout)
+            wql, operation_options=operation_options)
 
     @mi_to_wmi_exception
     def new(self):
@@ -539,20 +534,35 @@ class _Connection(object):
             i = op.get_next_instance()
         return l
 
-    def _get_operation_options(self, operation_timeout=None):
-        operation_options = None
-        if operation_timeout is not None:
+    def _get_mi_operation_options(self, operation_options=None):
+        if not operation_options:
+            return
+
+        mi_op_options = self._app.create_operation_options()
+
+        if operation_options.get('operation_timeout') is not None:
+            operation_timeout = operation_options['operation_timeout']
             timeout = datetime.timedelta(0, operation_timeout, 0)
-            operation_options = self._app.create_operation_options()
-            operation_options.set_timeout(timeout)
-        return operation_options
+            mi_op_options.set_timeout(timeout)
+
+        for option in operation_options.get('custom_options', []):
+            # The value_type must be a MI type, such as MI_Array.
+            # The value object will then be 'casted' to that type.
+            option_value = self._unwrap_element(option['value_type'],
+                                                option['value'])
+            mi_op_options.set_custom_option(
+                name=option['name'],
+                value_type=option['value_type'],
+                value=option_value,
+                must_comply=option.get('must_comply', True))
+        return mi_op_options
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def query(self, wql, operation_timeout=None):
+    def query(self, wql, operation_options=None):
         wql = wql.replace("\\", "\\\\")
-        operation_options = self._get_operation_options(
-            operation_timeout=operation_timeout)
+        operation_options = self._get_mi_operation_options(
+            operation_options=operation_options)
 
         with self._session.exec_query(
                 ns=self._ns, query=six.text_type(wql),
@@ -563,9 +573,9 @@ class _Connection(object):
     @avoid_blocking_call
     def get_associators(self, instance, wmi_association_class=u"",
                         wmi_result_class=u"",
-                        operation_timeout=None):
-        operation_options = self._get_operation_options(
-            operation_timeout=operation_timeout)
+                        operation_options=None):
+        operation_options = self._get_mi_operation_options(
+            operation_options=operation_options)
         with self._session.get_associators(
                 ns=self._ns, instance=instance._instance,
                 assoc_class=six.text_type(wmi_association_class),
@@ -595,8 +605,8 @@ class _Connection(object):
     def invoke_method(self, target, method_name, *args, **kwargs):
         mi_target = target.get_wrapped_object()
         params = self._get_method_params(target, method_name)
-        operation_options = self._get_operation_options(
-            operation_timeout=kwargs.pop('operation_timeout', None))
+        operation_options = self._get_mi_operation_options(
+            operation_options=kwargs.pop('operation_options', None))
 
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
@@ -679,23 +689,23 @@ class _Connection(object):
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def create_instance(self, instance, operation_timeout=None):
-        operation_options = self._get_operation_options(
-            operation_timeout=operation_timeout)
+    def create_instance(self, instance, operation_options=None):
+        operation_options = self._get_mi_operation_options(
+            operation_options=operation_options)
         self._session.create_instance(self._ns, instance._instance,
                                       operation_options)
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def modify_instance(self, instance, operation_timeout=None):
-        operation_options = self._get_operation_options(
-            operation_timeout=operation_timeout)
+    def modify_instance(self, instance, operation_options=None):
+        operation_options = self._get_mi_operation_options(
+            operation_options=operation_options)
         self._session.modify_instance(self._ns, instance._instance,
                                       operation_options)
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def delete_instance(self, instance, operation_timeout=None):
+    def delete_instance(self, instance, operation_options=None):
         # Deleting an instance using WMIDCOM fails with
         # "Provider is not capable of the attempted operation"
         if self._protocol != mi.PROTOCOL_WINRM:
@@ -706,8 +716,8 @@ class _Connection(object):
         else:
             tmp_session = self._session
 
-        operation_options = self._get_operation_options(
-            operation_timeout=operation_timeout)
+        operation_options = self._get_mi_operation_options(
+            operation_options=operation_options)
         tmp_session.delete_instance(self._ns, instance._instance,
                                     operation_options)
 

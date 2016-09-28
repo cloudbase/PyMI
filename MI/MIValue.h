@@ -5,6 +5,7 @@
 namespace MI
 {
     class Instance;
+    class OperationOptions;
 
     class MIValue
     {
@@ -19,6 +20,7 @@ namespace MI
         void CopyWString(const std::wstring& value);
 
         friend Instance;
+        friend OperationOptions;
 
     public:
         static std::shared_ptr<MIValue> FromBoolean(MI_Boolean value);

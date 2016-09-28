@@ -37,7 +37,8 @@ class BaseFunctionalTestCase(testtools.TestCase):
             try:
                 (fd, tmp_path) = tempfile.mkstemp(suffix='pymi-test')
                 os.close(fd)
-                kwargs['temp_file_path'] = tmp_path
+                # This will behave similar to the mock.patch decorator.
+                args += (tmp_path, )
                 return f(*args, **kwargs)
             finally:
                 if os.path.exists(tmp_path):

@@ -98,6 +98,37 @@ static PyObject* OperationOptions_SetTimeout(OperationOptions* self, PyObject* t
     }
 }
 
+
+static PyObject* OperationOptions_SetCustomOption(OperationOptions* self,  PyObject *args, PyObject *kwds)
+{
+    wchar_t* optionName = NULL;
+    unsigned int optionValueType = 0;
+    PyObject* optionValue = NULL;
+    PyObject* mustComply = NULL;
+
+    static char *kwlist[] = { "name", "value_type", "value", "must_comply", NULL };
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uIO|O", kwlist,
+                                     &optionName, &optionValueType,
+                                     &optionValue, &mustComply))
+        return NULL;
+
+    try
+    {
+        auto miValue = Py2MI(optionValue, (MI_Type)optionValueType);
+        AllowThreads(&self->cs, [&]() {
+            self->operationOptions->SetCustomOption(optionName, (MI_Type)optionValueType,
+                                                    *miValue, PyObject_IsTrue(mustComply));
+        });
+        Py_RETURN_NONE;
+    }
+    catch (std::exception& ex)
+    {
+        SetPyException(ex);
+        return NULL;
+    }
+}
+
+
 static PyMemberDef OperationOptions_members[] = {
     { NULL }  /* Sentinel */
 };
@@ -106,6 +137,8 @@ static PyMethodDef OperationOptions_methods[] = {
     { "clone", (PyCFunction)OperationOptions_Clone, METH_NOARGS, "Clones the OperationOptions." },
     { "get_timeout", (PyCFunction)OperationOptions_GetTimeout, METH_NOARGS, "Returns the timeout." },
     { "set_timeout", (PyCFunction)OperationOptions_SetTimeout, METH_O, "Sets a timeout." },
+    { "set_custom_option", (PyCFunction)OperationOptions_SetCustomOption,
+                           METH_VARARGS | METH_KEYWORDS, "Sets a custom option." },
     { NULL }  /* Sentinel */
 };
 
