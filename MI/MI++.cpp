@@ -661,6 +661,16 @@ void OperationOptions::Delete()
     this->m_operationOptions = MI_OPERATIONOPTIONS_NULL;
 }
 
+void OperationOptions::SetCustomOption(const std::wstring& optionName,
+                                       MI_Type optionValueType,
+                                       const MIValue& optionValue,
+                                       MI_Boolean mustComply)
+{
+    MICheckResult(::MI_OperationOptions_SetCustomOption(
+        &this->m_operationOptions, optionName.c_str(), optionValueType,
+        &optionValue.m_value, mustComply));
+}
+
 OperationOptions::~OperationOptions()
 {
     MI_OperationOptions nullOperationOptions = MI_OPERATIONOPTIONS_NULL;
