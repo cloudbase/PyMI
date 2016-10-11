@@ -26,11 +26,13 @@ from mi import mi_error
 
 try:
     import eventlet
+    from eventlet import patcher
     from eventlet import tpool
-    # If eventlet is installed, we'll make sure that other greenthreads will
-    # not be blocked while WMI operations are performed by using tpool.
+    # If eventlet is installed and the 'thread' module is patched, we'll make
+    # sure that other greenthreads will not be blocked while WMI operations
+    # are performed by using tpool.
     # This behavior can be disabled by using the following flag.
-    EVENTLET_NONBLOCKING_MODE_ENABLED = True
+    EVENTLET_NONBLOCKING_MODE_ENABLED = patcher.is_monkey_patched('thread')
 except ImportError:
     eventlet = None
     EVENTLET_NONBLOCKING_MODE_ENABLED = False
