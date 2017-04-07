@@ -129,13 +129,33 @@ class _Method(object):
         self._target = target
         self._method_name = method_name
 
-        self._conn._get_method_params(target, method_name)
+        self._params = self._conn._get_method_params(target, method_name)
 
     @avoid_blocking_call
     @mi_to_wmi_exception
     def __call__(self, *args, **kwargs):
         return self._conn.invoke_method(
             self._target, self._method_name, *args, **kwargs)
+
+    def __str__(self):
+        try:
+            args = []
+            # an MI object's length is the number of attributes the object it
+            # represents has.
+            for i in range(len(self._params)):
+                key, value_type, value = self._params.get_element(i)
+                args.append(key)
+
+            obj_string = '<function %s (%s)>' % (
+                self._method_name, ', '.join(args))
+
+            return obj_string
+
+        except Exception:
+            return super(_BaseEntity, self).__str__()
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class _Path(object):
@@ -217,6 +237,33 @@ class _BaseEntity(object):
     @abc.abstractmethod
     def get_class(self):
         pass
+
+    def __str__(self):
+        try:
+            obj = self.get_wrapped_object()
+
+            obj_string = 'instance of %s\n{' % obj.get_class_name()
+
+            # an MI object's length is the number of attributes the object it
+            # represents has.
+            for i in range(len(obj)):
+                key, value_type, value = obj.get_element(i)
+                if value_type == mi.MI_STRING:
+                    value = '"%s"' % value
+                obj_string += "\n\t%s = %s;" % (key, value)
+
+            obj_string += '\n};'
+
+            return obj_string
+        except Exception:
+            return super(_BaseEntity, self).__str__()
+
+    def __repr__(self):
+        try:
+            obj = self.get_wrapped_object()
+            return '<pymi_object: %s>' % obj.get_path()
+        except Exception:
+            return super(_BaseEntity, self).__repr__()
 
     @mi_to_wmi_exception
     def __getattr__(self, name):
