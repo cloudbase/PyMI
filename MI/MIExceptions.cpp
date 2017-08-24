@@ -38,7 +38,7 @@ const wchar_t* MI::MI_RESULT_STRINGS[] =
     L"MI_RESULT_SERVER_IS_SHUTTING_DOWN"
 };
 
-const char* Exception::what() const
+const char* Exception::what() const noexcept
 {
     return this->m_message.c_str();
 }
