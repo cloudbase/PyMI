@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Python.h>
-#include <mi.h>
+#include <MI.h>
 #include <MIExceptions.h>
 #include <string>
 #include <functional>
