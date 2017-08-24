@@ -287,7 +287,7 @@ namespace MI
         Instance(MI_Instance* instance, bool ownsInstance, ScopeContextOwner* scopeOwner = nullptr) :
             m_instance(instance), m_ownsInstance(ownsInstance), ScopedItem(scopeOwner) {}
         MI_Instance* GetMIObject() { return this->m_instance; }
-        std::shared_ptr<Instance> Instance::Clone() const;
+        std::shared_ptr<Instance> Clone() const;
         std::shared_ptr<Class> GetClass() const;
         std::wstring GetClassName() const;
         std::wstring GetNameSpace() const;
