@@ -74,7 +74,10 @@ automatically generated in the *dist* folder for release builds.
 
 Note: the target Python version must be present. The Python path can be
 customized by setting the corresponding PythonDir* user macro,
-e.g. *PythonDir_34_x64*.
+e.g. *PythonDir_34_x64*. The *wheel* and *GitPython* packages are required during the build process: ::
+
+    pip install wheel
+    pip install GitPython
 
 References
 ----------
