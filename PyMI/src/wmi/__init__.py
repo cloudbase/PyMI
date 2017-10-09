@@ -553,7 +553,7 @@ class _Connection(object):
             option_value = self._unwrap_element(option['value_type'],
                                                 option['value'])
             mi_op_options.set_custom_option(
-                name=option['name'],
+                name=six.text_type(option['name']),
                 value_type=option['value_type'],
                 value=option_value,
                 must_comply=option.get('must_comply', True))
