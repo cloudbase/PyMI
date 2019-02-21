@@ -10,6 +10,8 @@
     <PythonDir_34_x64>c:\Python34_x64</PythonDir_34_x64>
     <PythonDir_36_x64>c:\Python36_x64</PythonDir_36_x64>
     <PythonDir_36_x86>c:\Python36</PythonDir_36_x86>
+    <PythonDir_37_x64>c:\Python37_x64</PythonDir_37_x64>
+    <PythonDir_37_x86>c:\Python37</PythonDir_37_x86>
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
@@ -38,6 +40,14 @@
     </BuildMacro>
     <BuildMacro Include="PythonDir_36_x86">
       <Value>$(PythonDir_36_x86)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_37_x64">
+      <Value>$(PythonDir_37_x64)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="PythonDir_37_x86">
+      <Value>$(PythonDir_37_x86)</Value>
       <EnvironmentVariable>true</EnvironmentVariable>
     </BuildMacro>
   </ItemGroup>
