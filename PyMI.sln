@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2000
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyMI", "PyMI\PyMI.vcxproj", "{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -26,6 +26,8 @@ Global
 		Release (Python 3.5)|x86 = Release (Python 3.5)|x86
 		Release (Python 3.6)|x64 = Release (Python 3.6)|x64
 		Release (Python 3.6)|x86 = Release (Python 3.6)|x86
+		Release (Python 3.7)|x64 = Release (Python 3.7)|x64
+		Release (Python 3.7)|x86 = Release (Python 3.7)|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Debug (Python 2.7)|x64.ActiveCfg = Debug|x64
@@ -56,6 +58,10 @@ Global
 		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.6)|x64.Build.0 = Release (Python 3.6)|x64
 		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.6)|x86.ActiveCfg = Release (Python 3.6)|Win32
 		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.6)|x86.Build.0 = Release (Python 3.6)|Win32
+		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.7)|x64.ActiveCfg = Release (Python 3.7)|x64
+		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.7)|x64.Build.0 = Release (Python 3.7)|x64
+		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.7)|x86.ActiveCfg = Release (Python 3.7)|Win32
+		{99CD5168-1D78-4584-A9DA-5ABF96FC89CF}.Release (Python 3.7)|x86.Build.0 = Release (Python 3.7)|Win32
 		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Debug (Python 2.7)|x64.ActiveCfg = Debug|x64
 		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Debug (Python 2.7)|x64.Build.0 = Debug|x64
 		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Debug (Python 2.7)|x86.ActiveCfg = Debug|Win32
@@ -84,8 +90,15 @@ Global
 		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.6)|x64.Build.0 = Release (Python 3.6)|x64
 		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.6)|x86.ActiveCfg = Release (Python 3.6)|Win32
 		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.6)|x86.Build.0 = Release (Python 3.6)|Win32
+		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.7)|x64.ActiveCfg = Release (Python 3.7)|x64
+		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.7)|x64.Build.0 = Release (Python 3.7)|x64
+		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.7)|x86.ActiveCfg = Release (Python 3.7)|Win32
+		{87DACAD9-74AA-46EE-AF08-BDB918FD13F3}.Release (Python 3.7)|x86.Build.0 = Release (Python 3.7)|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7BCA7706-CB41-4634-92EC-3DB937C8DB20}
 	EndGlobalSection
 EndGlobal
