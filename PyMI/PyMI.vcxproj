@@ -568,7 +568,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_27_x86)\python.exe" setup.py bdist_wheel --python-tag cp27
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_27_x86)\python.exe" setup_vs.py bdist_wheel --python-tag cp27
 
 </Command>
     </PostBuildEvent>
@@ -592,7 +592,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_35_x86)\python.exe" setup.py bdist_wheel --python-tag cp35</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_35_x86)\python.exe" setup_vs.py bdist_wheel --python-tag cp35</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.6)|Win32'">
@@ -614,7 +614,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_36_x86)\python.exe" setup.py bdist_wheel --python-tag cp35</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_36_x86)\python.exe" setup_vs.py bdist_wheel --python-tag cp35</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.7)|Win32'">
@@ -636,7 +636,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_37_x86)\python.exe" setup.py bdist_wheel --python-tag cp37</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_37_x86)\python.exe" setup_vs.py bdist_wheel --python-tag cp37</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.4)|Win32'">
@@ -658,7 +658,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_34_x86)\python.exe" setup.py bdist_wheel --python-tag cp34</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_34_x86)\python.exe" setup_vs.py bdist_wheel --python-tag cp34</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -680,7 +680,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_27_x64)\python.exe" setup.py bdist_wheel --python-tag cp27</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_27_x64)\python.exe" setup_vs.py bdist_wheel --python-tag cp27</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.5)|x64'">
@@ -702,7 +702,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_35_x64)\python.exe" setup.py bdist_wheel --python-tag cp35</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_35_x64)\python.exe" setup_vs.py bdist_wheel --python-tag cp35</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.6)|x64'">
@@ -724,7 +724,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_36_x64)\python.exe" setup.py bdist_wheel --python-tag cp36</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_36_x64)\python.exe" setup_vs.py bdist_wheel --python-tag cp36</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.7)|x64'">
@@ -746,7 +746,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_37_x64)\python.exe" setup.py bdist_wheel --python-tag cp37</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_37_x64)\python.exe" setup_vs.py bdist_wheel --python-tag cp37</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release (Python 3.4)|x64'">
@@ -768,7 +768,7 @@
       <AdditionalDependencies>mi++.lib;mi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_34_x64)\python.exe" setup.py bdist_wheel --python-tag cp34</Command>
+      <Command>copy "$(TargetPath)" "$(ProjectDir)src\mi\" &amp;&amp; copy "$(TargetDir)\mi.pdb" "$(ProjectDir)src\mi\" &amp;&amp; cd "$(ProjectDir)" &amp;&amp; "$(PythonDir_34_x64)\python.exe" setup_vs.py bdist_wheel --python-tag cp34</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -823,8 +823,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="README.rst" />
-    <None Include="setup.py" />
-    <None Include="src\wmi\__init__.py" />
+    <None Include="setup_vs.py" />
+    <None Include="..\wmi\__init__.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

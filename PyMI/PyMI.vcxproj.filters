@@ -104,7 +104,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="src\wmi\__init__.py">
+    <None Include="..\wmi\__init__.py">
       <Filter>Python</Filter>
     </None>
     <None Include="setup.py">
