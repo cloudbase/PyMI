@@ -68,6 +68,69 @@ which provides a simpler and higher level interface over the *mi* API: ::
 Build
 -----
 
+Use the following to build Python 3 wheels. Those will be copied to the build
+dir.
+
+    python setup.py bdist_wheel
+
+The best way to build PyMI for Python 2.7 or 3.4 and below is to use the
+Visual Studio solution (described below). This will statically link the
+vc140 runtime, which is required by PyMI.
+
+Custom VS env vars
+^^^^^^^^^^^^^^^^^^
+
+distutils will automatically locate your Visual Studio and Windows SDK
+installation. If you'd like to call vcvarsall.bat yourself and use a specific
+version, use the following:
+
+   function SetVCVars($vcvarsdir, $platform="amd64")
+    {
+        pushd $vcvarsdir
+        try
+        {
+            cmd /c "vcvarsall.bat $platform & set" |
+            foreach {
+              if ($_ -match "=") {
+                $v = $_.split("="); set-item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
+              }
+            }
+        }
+        finally
+        {
+            popd
+        }
+    }
+
+    # Replace this folder with the one in which the vcvarsall.bat script is
+    # located (the exact location depends on the Visual Studio version).
+    # SetVCVars "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build"
+    SetVCVars "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC"
+
+    $env:DISTUTILS_USE_SDK=1
+    $env:MSSdk=1
+
+    python setup.py bdist_wheel
+
+Debug builds
+^^^^^^^^^^^^
+
+The easiest way to do a debug build is to set the following in setup.cfg:
+
+    [build]
+    debug = 1
+
+This will be honored regardless of the build type (e.g. stdist, wheel, etc).
+
+To enable distutils debug logging, you may set the following:
+
+    $env:DISTUTILS_DEBUG = 1
+
+Before doing a debug build, you may wish to clean the build dir.
+
+Using the Visual Studio Solution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Open the provided *PyMI.sln* solution in Visual Studio 2015 [#VS2015]_, choose
 your target Python version / platform and build. Wheel packages are
 automatically generated in the *dist* folder for release builds.
@@ -78,6 +141,12 @@ e.g. *PythonDir_34_x64*. The *wheel* and *GitPython* packages are required durin
 
     pip install wheel
     pip install GitPython
+
+As an alternative, you can use the MSBuild CLI tool:
+
+    $env:MSBuildEmitSolution="TRUE"
+    MSBuild.exe .\PyMI.sln /p:Configuration="Release (Python 3.7)"
+
 
 References
 ----------

@@ -24,6 +24,7 @@ import weakref
 
 import mi
 from mi import mi_error
+import pbr.version
 
 try:
     import eventlet
@@ -37,6 +38,14 @@ try:
 except ImportError:
     eventlet = None
     EVENTLET_NONBLOCKING_MODE_ENABLED = False
+
+__all__ = ['__version__']
+
+version_info = pbr.version.VersionInfo('PyMI')
+try:
+    __version__ = version_info.version_string()
+except AttributeError:
+    __version__ = None
 
 
 def avoid_blocking_call(f):

@@ -1,6 +1,9 @@
+# This module is used by the Visual Studio solution.
+
 import git
 import os
 from setuptools import setup, find_packages
+from setuptools.command import build_clib
 
 
 def get_git_version():
@@ -21,8 +24,8 @@ setup(
     license="Apache 2.0",
     keywords="wmi mi windows",
     url="https://github.com/cloudbase/PyMI",
-    packages=find_packages("src", exclude="samples"),
-    package_dir={'': 'src'},
+    packages=find_packages("src") + find_packages(".."),
+    package_dir={'mi': 'src/mi', 'wmi': '../wmi'},
     # Note: this extension is compiled in Visual Studio
     package_data={'mi': ['mi.pyd', 'mi.pdb']},
     long_description=read('README.rst'),
