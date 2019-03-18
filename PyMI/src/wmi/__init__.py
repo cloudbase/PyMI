@@ -434,6 +434,7 @@ class _EventWatcher(object):
         self._event = native_threading.Event()
         self._operation = conn.subscribe(
             wql, self._indication_result, self.close)
+        self._operation_finished = native_threading.Event()
 
     def _process_events(self):
         if self._error:
@@ -463,6 +464,9 @@ class _EventWatcher(object):
 
     def _indication_result(self, instance, bookmark, machine_id, more_results,
                            result_code, error_string, error_details):
+        if not more_results:
+            self._operation_finished.set()
+
         if self._conn_ref:
             conn = self._conn_ref()
             if conn:
@@ -490,10 +494,22 @@ class _EventWatcher(object):
                             use_conn_weak_ref=True))
                 self._event.set()
 
+    @avoid_blocking_call
+    def _wait_for_operation_cancel(self):
+        self._operation_finished.wait()
+
     def close(self):
         if self._operation:
             self._operation.cancel()
+            # Those operations are asynchronous. We'll need to wait for the
+            # subscription to be canceled before deallocating objects,
+            # otherwise MI can crash when receiving further events. We rely on
+            # the fact that an event will be emitted once the subscription is
+            # canceled.
+            self._wait_for_operation_cancel()
+
             self._operation.close()
+
         self._event.set()
         self._operation = None
         self._timeout_ms = None
