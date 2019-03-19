@@ -428,7 +428,7 @@ class _EventWatcher(object):
     def __init__(self, conn, wql):
         native_threading = _get_eventlet_original('threading')
 
-        self._conn_ref = weakref.ref(conn)
+        self._conn = conn
         self._events_queue = []
         self._error = None
         self._event = native_threading.Event()
@@ -467,32 +467,29 @@ class _EventWatcher(object):
         if not more_results:
             self._operation_finished.set()
 
-        if self._conn_ref:
-            conn = self._conn_ref()
-            if conn:
-                if instance:
-                    event = _Instance(conn,
-                                      instance[u"TargetInstance"].clone(),
-                                      use_conn_weak_ref=True)
-                    try:
-                        previous_inst = _Instance(
-                            conn, instance[u'PreviousInstance'].clone(),
-                            use_conn_weak_ref=True)
-                        object.__setattr__(event, 'previous', previous_inst)
-                    except (mi.error, AttributeError):
-                        # The 'PreviousInstance' attribute may be missing, for
-                        # example in case of a creation event or simply
-                        # because this field was not requested.
-                        pass
+        if instance:
+            event = _Instance(self._conn,
+                              instance[u"TargetInstance"].clone(),
+                              use_conn_weak_ref=True)
+            try:
+                previous_inst = _Instance(
+                    self._conn, instance[u'PreviousInstance'].clone(),
+                    use_conn_weak_ref=True)
+                object.__setattr__(event, 'previous', previous_inst)
+            except (mi.error, AttributeError):
+                # The 'PreviousInstance' attribute may be missing, for
+                # example in case of a creation event or simply
+                # because this field was not requested.
+                pass
 
-                    self._events_queue.append(event)
-                if error_details:
-                    self._error = (
-                        result_code, error_string,
-                        _Instance(
-                            conn, error_details.clone(),
-                            use_conn_weak_ref=True))
-                self._event.set()
+            self._events_queue.append(event)
+        if error_details:
+            self._error = (
+                result_code, error_string,
+                _Instance(
+                    self._conn, error_details.clone(),
+                    use_conn_weak_ref=True))
+        self._event.set()
 
     @avoid_blocking_call
     def _wait_for_operation_cancel(self):
@@ -513,8 +510,8 @@ class _EventWatcher(object):
         self._event.set()
         self._operation = None
         self._timeout_ms = None
-        self._conn_ref = None
         self._events_queue = []
+        self._conn = None
 
     def __del__(self):
         self.close()
