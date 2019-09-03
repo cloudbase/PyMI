@@ -14,6 +14,7 @@
 #    under the License.
 
 import abc
+import ctypes
 import datetime
 import importlib
 import re
@@ -63,6 +64,8 @@ def _get_eventlet_original(module_name):
 # Default operation timeout in seconds.
 # In order to enable it, this value must be set.
 DEFAULT_OPERATION_TIMEOUT = None
+
+WBEM_E_PROVIDER_NOT_CAPABLE = 0x80041024
 
 
 class x_wmi(Exception):
@@ -754,21 +757,32 @@ class _Connection(object):
 
     @mi_to_wmi_exception
     @avoid_blocking_call
-    def delete_instance(self, instance, operation_options=None):
-        # Deleting an instance using WMIDCOM fails with
-        # "Provider is not capable of the attempted operation"
-        if self._protocol != mi.PROTOCOL_WINRM:
-            tmp_session = self._app.create_session(
-                computer_name=self._computer_name,
-                protocol=mi.PROTOCOL_WINRM,
-                destination_options=self._destination_options)
-        else:
-            tmp_session = self._session
-
+    def _delete_instance(self, session, instance, operation_options=None):
         operation_options = self._get_mi_operation_options(
             operation_options=operation_options)
-        tmp_session.delete_instance(self._ns, instance._instance,
-                                    operation_options)
+        session.delete_instance(self._ns, instance._instance,
+                                operation_options)
+
+    def delete_instance(self, instance, operation_options=None):
+        try:
+            self._delete_instance(self._session, instance,
+                                  operation_options)
+        except x_wmi as exc:
+            # Deleting an instance using WMIDCOM can fail with
+            # WBEM_E_PROVIDER_NOT_CAPABLE.
+            # One affected WMI class is root/cimv2:WT_Host, there may
+            # be others as well.
+            err = ctypes.c_uint(exc.com_error.hresult).value
+            if (err == WBEM_E_PROVIDER_NOT_CAPABLE and
+                    self._protocol != mi.PROTOCOL_WINRM):
+                tmp_session = self._app.create_session(
+                    computer_name=self._computer_name,
+                    protocol=mi.PROTOCOL_WINRM,
+                    destination_options=self._destination_options)
+                self._delete_instance(tmp_session, instance,
+                                      operation_options)
+            else:
+                raise
 
     @mi_to_wmi_exception
     def subscribe(self, query, indication_result_callback, close_callback):
