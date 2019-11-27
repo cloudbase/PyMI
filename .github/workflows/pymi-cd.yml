@@ -1,0 +1,32 @@
+name: PyMI CD
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    strategy:
+      max-parallel: 100
+      matrix:
+        python-version: [3.6, 3.7, 3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Test and build PyMI
+      shell: cmd
+      run: |
+        SETLOCAL EnableDelayedExpansion
+        pip install -r requirements.txt || exit /b
+        pip install nose testtools wheel || exit /b
+        pip install . || exit /b
+        nosetests wmi
+        python setup.py bdist_wheel
+    - uses: actions/upload-artifact@v1
+      with:
+        name: pymi_wheel_py${{ matrix.python-version }}
+        path: 'dist'
