@@ -294,7 +294,7 @@ class _BaseEntity(object):
             try:
                 return _Method(self._conn, self, name)
             except mi.error as err:
-                if err.message['mi_result'] == (
+                if err.args[0].get('mi_result') == (
                         mi_error.MI_RESULT_METHOD_NOT_FOUND):
                     err_msg = ("'%(cls_name)s' has no attribute "
                                "'%(attr_name)s'.")
