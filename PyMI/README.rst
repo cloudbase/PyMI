@@ -14,7 +14,9 @@ Installation
 ------------
 
 Pip is the preferred way to install PyMI. Pre-compiled binary wheels are
-available on Pypi [#pymipypi]_: ::
+available on Pypi [#pymipypi]_:
+
+.. code-block:: powershell
 
     pip install PyMI
 
@@ -29,7 +31,9 @@ MI module basic usage
 ^^^^^^^^^^^^^^^^^^^^^
 
 Here's a simple example which enumerates all processes and kills any instance of
-"KillerRabbitOfCaerbannog.exe". ::
+"KillerRabbitOfCaerbannog.exe".
+
+.. code-block:: python
 
     import mi
 
@@ -55,7 +59,9 @@ WMI module basic usage
 ^^^^^^^^^^^^^^^^^^^^^^
 
 And here's the same example written using the *WMI* module replacement,
-which provides a simpler and higher level interface over the *mi* API: ::
+which provides a simpler and higher level interface over the *mi* API:
+
+.. code-block:: python
 
     import wmi
 
@@ -71,6 +77,8 @@ Build
 Use the following to build Python 3 wheels. Those will be copied to the build
 dir.
 
+.. code-block:: powershell
+
     python setup.py bdist_wheel
 
 The best way to build PyMI for Python 2.7 or 3.4 and below is to use the
@@ -84,7 +92,9 @@ distutils will automatically locate your Visual Studio and Windows SDK
 installation. If you'd like to call vcvarsall.bat yourself and use a specific
 version, use the following:
 
-   function SetVCVars($vcvarsdir, $platform="amd64")
+.. code-block:: powershell
+
+    function SetVCVars($vcvarsdir, $platform="amd64")
     {
         pushd $vcvarsdir
         try
@@ -117,12 +127,16 @@ Debug builds
 
 The easiest way to do a debug build is to set the following in setup.cfg:
 
+.. code-block::
+
     [build]
     debug = 1
 
 This will be honored regardless of the build type (e.g. stdist, wheel, etc).
 
 To enable distutils debug logging, you may set the following:
+
+.. code-block:: powershell
 
     $env:DISTUTILS_DEBUG = 1
 
@@ -137,12 +151,16 @@ automatically generated in the *dist* folder for release builds.
 
 Note: the target Python version must be present. The Python path can be
 customized by setting the corresponding PythonDir* user macro,
-e.g. *PythonDir_34_x64*. The *wheel* and *GitPython* packages are required during the build process: ::
+e.g. *PythonDir_34_x64*. The *wheel* and *GitPython* packages are required during the build process:
+
+.. code-block:: powershell
 
     pip install wheel
     pip install GitPython
 
 As an alternative, you can use the MSBuild CLI tool:
+
+.. code-block:: powershell
 
     $env:MSBuildEmitSolution="TRUE"
     MSBuild.exe .\PyMI.sln /p:Configuration="Release (Python 3.7)"
