@@ -1,3 +1,5 @@
+from distutils import _msvccompiler
+from distutils import ccompiler
 import os
 import setuptools
 
@@ -5,6 +7,38 @@ try:
     import multiprocessing  # noqa
 except ImportError:
     pass
+
+
+# MSVCP140.dll isn't included by Python along with the C runtime,
+# for which reason we're going to statically link it for now.
+# This can be disabled using the PYMI_VCRUNTIME_DYNAMIC_LINKING
+# flag.
+# Unfortunately distutils harcodes the "/MD" flag.
+class Compiler(_msvccompiler.MSVCCompiler):
+    def initialize(self, *args, **kwargs):
+        super(Compiler, self).initialize(*args, **kwargs)
+
+        dynamically_link_runtime = os.environ.get(
+          "PYMI_VCRUNTIME_DYNAMIC_LINKING", "").lower() in (
+          "yes", "y", "1", "true", "t")
+        if not dynamically_link_runtime:
+            self._statically_link_runtime()
+
+    def _statically_link_runtime(self):
+        if '/MD' in self.compile_options:
+          self.compile_options.remove('/MD')
+          self.compile_options.append('/MT')
+        if '/MDd' in self.compile_options_debug:
+          self.compile_options_debug.remove('/MDd')
+          self.compile_options_debug.append('/MTd')
+
+
+def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
+    return Compiler(None, dry_run, force)
+
+
+ccompiler.new_compiler = new_compiler
+
 
 # Setuptools requires relative paths
 mi_dir = 'MI'

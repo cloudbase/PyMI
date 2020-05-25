@@ -122,6 +122,12 @@ version, use the following:
 
     python setup.py bdist_wheel
 
+Make sure to use the Visual Studio toolset that matches the Python version
+that you're targetting: https://wiki.python.org/moin/WindowsCompilers.
+
+By default, we're statically linking the VC runtime. To enable dynamic
+linking, set ``$env:PYMI_VCRUNTIME_DYNAMIC_LINKING="y"``.
+
 Debug builds
 ^^^^^^^^^^^^
 
