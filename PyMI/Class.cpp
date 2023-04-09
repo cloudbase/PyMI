@@ -112,7 +112,7 @@ static PyObject* Class_GetClassName(Class* self, PyObject*)
 {
     try
     {
-        std::wstring& className = self->miClass->GetClassName();
+        std::wstring className = self->miClass->GetClassName();
         return PyUnicode_FromWideChar(className.c_str(), className.length());
     }
     catch (std::exception& ex)
@@ -126,7 +126,7 @@ static PyObject* Class_GetNameSpace(Class* self, PyObject*)
 {
     try
     {
-        std::wstring& nameSpace = self->miClass->GetNameSpace();
+        std::wstring nameSpace = self->miClass->GetNameSpace();
         return PyUnicode_FromWideChar(nameSpace.c_str(), nameSpace.length());
     }
     catch (std::exception& ex)
@@ -140,7 +140,7 @@ static PyObject* Class_GetServerName(Class* self, PyObject*)
 {
     try
     {
-        std::wstring& serverName = self->miClass->GetServerName();
+        std::wstring serverName = self->miClass->GetServerName();
         return PyUnicode_FromWideChar(serverName.c_str(), serverName.length());
     }
     catch (std::exception& ex)

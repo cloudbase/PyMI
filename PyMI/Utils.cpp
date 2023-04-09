@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include "instance.h"
 #include <codecvt>
+#include <locale>
 
 #include <datetime.h>
 
@@ -151,7 +152,7 @@ std::wstring Py2WString(PyObject* pyValue)
         throw MI::Exception(L"PyUnicode_AsWideChar failed");
     }
 
-    auto& value = std::wstring(w, len);
+    auto value = std::wstring(w, len);
     delete[] w;
     return value;
 }
@@ -167,9 +168,9 @@ std::shared_ptr<MI::MIValue> Py2StrMIValue(PyObject* pyValue)
     try
     {
 #ifdef IS_PY3K
-        auto& value = Py2WString(pyStrValue);
+        auto value = Py2WString(pyStrValue);
 #else
-        auto& value = std::string(PyString_AsString(pyStrValue));
+        auto value = std::string(PyString_AsString(pyStrValue));
 #endif
         Py_DECREF(pyStrValue);
         return MI::MIValue::FromString(value);
@@ -372,7 +373,7 @@ std::shared_ptr<MI::MIValue> Py2MI(PyObject* pyValue, MI_Type valueType)
                 pyObj = PyList_GetItem(pyValue, i);
             }
 
-            auto& tmpValue = Py2MI(pyObj, itemType);
+            auto tmpValue = Py2MI(pyObj, itemType);
             value->SetArrayItem(*tmpValue, (unsigned)i);
         }
         return value;
