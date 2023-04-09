@@ -2,6 +2,7 @@ from distutils import _msvccompiler
 from distutils import ccompiler
 import os
 import setuptools
+import sys
 
 try:
     import multiprocessing  # noqa
@@ -37,7 +38,8 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
     return Compiler(None, dry_run, force)
 
 
-ccompiler.new_compiler = new_compiler
+if 'MSC' in sys.version:
+    ccompiler.new_compiler = new_compiler
 
 
 # Setuptools requires relative paths
