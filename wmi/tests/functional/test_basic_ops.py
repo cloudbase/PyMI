@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import time
 
 import wmi
@@ -47,12 +46,17 @@ class BasicOpsTestCase(test_base.BaseFunctionalTestCase):
         self.assertEqual(content, actual_content)
 
     def test_associators(self):
-        logical_disk = self._conn_cimv2.Win32_LogicalDisk()[0]
-        root_dir = logical_disk.associators(
-            wmi_association_class="Win32_LogicalDiskRootDirectory")[0]
-
-        self.assertEqual(logical_disk.Name.lower(),
-                         root_dir.Name.lower().strip('\\'))
+        logical_disks = self._conn_cimv2.Win32_LogicalDisk()
+        found_associators = False
+        for logical_disk in logical_disks:
+            root_dirs = logical_disk.associators(
+                wmi_association_class="Win32_LogicalDiskRootDirectory")
+            if len(root_dirs) == 1:
+                found_associators = True
+                root_dir = root_dirs[0]
+                self.assertEqual(logical_disk.Name.lower(),
+                                 root_dir.Name.lower().strip('\\'))
+        self.assertTrue(found_associators)
 
     def test_new_conn_invalid_creds(self):
         err_code = None

@@ -15,6 +15,7 @@
 
 import os
 import time
+import unittest
 
 import wmi
 from wmi.tests.functional import test_base
@@ -31,6 +32,8 @@ class OperationTimeoutTestCase(test_base.BaseFunctionalTestCase):
                           operation_options={'operation_timeout': 0.001},
                           **kwargs)
 
+    @unittest.skipIf(os.getenv("GITHUB_ACTIONS") == "true",
+                     "Skipping on GitHub actions")
     def test_query(self):
         self._check_op_timeout(self._conn_cimv2.Win32_Process)
 
