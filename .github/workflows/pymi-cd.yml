@@ -9,12 +9,12 @@ jobs:
     strategy:
       max-parallel: 100
       matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Test and build PyMI
@@ -24,9 +24,9 @@ jobs:
         pip install -r requirements.txt || exit /b
         pip install nose testtools wheel || exit /b
         pip install . || exit /b
-        nosetests wmi
-        python setup.py bdist_wheel
-    - uses: actions/upload-artifact@v1
+        python -m unittest discover || exit /b
+        python setup.py bdist_wheel || exit /b
+    - uses: actions/upload-artifact@v3
       with:
         name: pymi_wheel_py${{ matrix.python-version }}
         path: 'dist'

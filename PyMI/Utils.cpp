@@ -120,7 +120,7 @@ void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
 #endif
     if (PyUnicode_Check(item))
     {
-        Py_ssize_t len = PyUnicode_GetSize(item) + 1;
+        Py_ssize_t len = PyUnicode_GetLength(item) + 1;
         wchar_t* w = new wchar_t[len];
 
         if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)item, w, len) < 0)
@@ -143,7 +143,7 @@ void GetIndexOrName(PyObject *item, std::wstring& name, Py_ssize_t& i)
 
 std::wstring Py2WString(PyObject* pyValue)
 {
-    auto len = PyUnicode_GetSize(pyValue) + 1;
+    auto len = PyUnicode_GetLength(pyValue) + 1;
     wchar_t* w = new wchar_t[len];
 
     if (PyUnicode_AsWideChar((PYUNICODEASVARCHARARG1TYPE*)pyValue, w, len) < 0)
