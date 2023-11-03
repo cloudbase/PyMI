@@ -39,13 +39,13 @@ static void Session_dealloc(Session* self)
 
 static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
-    wchar_t* query = NULL;
-    wchar_t* dialect = L"WQL";
+    char* ns = NULL;
+    char* query = NULL;
+    char* dialect = "WQL";
     PyObject* operationOptions = NULL;
 
     static char *kwlist[] = { "ns", "query", "dialect", "operation_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|uO", kwlist, &ns, &query,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|sO", kwlist, &ns, &query,
                                      &dialect, &operationOptions))
         return NULL;
 
@@ -56,7 +56,7 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
             op = self->session->ExecQuery(
-                ns, query, dialect,
+                ToWstring(ns).c_str(), ToWstring(query).c_str(), ToWstring(dialect).c_str(),
                 !CheckPyNone(operationOptions)
                     ? ((OperationOptions*)operationOptions)->operationOptions
                     : NULL);
@@ -73,17 +73,17 @@ static PyObject* Session_ExecQuery(Session *self, PyObject *args, PyObject *kwds
 static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject *kwds)
 {
     PyObject* instance = NULL;
-    wchar_t* ns = NULL;
-    wchar_t* assocClass = L"";
-    wchar_t* resultClass = L"";
-    wchar_t* role = L"";
-    wchar_t* resultRole = L"";
+    char* ns = NULL;
+    char* assocClass = "";
+    char* resultClass = "";
+    char* role = "";
+    char* resultRole = "";
     PyObject* keysOnlyObj = NULL;
     PyObject* operationOptions = NULL;
 
     static char *kwlist[] = { "ns", "instance", "assoc_class", "result_class",
                               "role", "result_role", "keys_only", "operation_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|uuuuOO", kwlist, &ns, &instance,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|ssssOO", kwlist, &ns, &instance,
                                      &assocClass, &resultClass, &role, &resultRole,
                                      &keysOnlyObj, &operationOptions))
         return NULL;
@@ -99,8 +99,8 @@ static PyObject* Session_GetAssociators(Session *self, PyObject *args, PyObject 
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
             op = self->session->GetAssociators(
-                ns, *((Instance*)instance)->instance, assocClass,
-                resultClass, role, resultRole, keysOnly,
+                ToWstring(ns).c_str(), *((Instance*)instance)->instance, ToWstring(assocClass).c_str(),
+                ToWstring(resultClass).c_str(), ToWstring(role).c_str(), ToWstring(resultRole).c_str(), keysOnly,
                 !CheckPyNone(operationOptions)
                     ? ((OperationOptions*)operationOptions)->operationOptions
                     : NULL);
@@ -150,12 +150,12 @@ static PyObject* Session_exit(Session* self, PyObject*)
 
 static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
+    char* ns = NULL;
     PyObject* instance = NULL;
     PyObject* operationOptions = NULL;
 
     static char *kwlist[] = { "ns", "instance", "operation_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|O", kwlist, &ns,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", kwlist, &ns,
                                      &instance, &operationOptions))
         return NULL;
 
@@ -167,7 +167,7 @@ static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject 
 
         AllowThreads(&self->cs, [&]() {
             self->session->CreateInstance(
-                ns, *((Instance*)instance)->instance,
+                ToWstring(ns).c_str(), *((Instance*)instance)->instance,
                 !CheckPyNone(operationOptions)
                     ? ((OperationOptions*)operationOptions)->operationOptions
                     : NULL);
@@ -183,12 +183,12 @@ static PyObject* Session_CreateInstance(Session *self, PyObject *args, PyObject 
 
 static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
+    char* ns = NULL;
     PyObject* instance = NULL;
     PyObject* operationOptions = NULL;
 
     static char *kwlist[] = { "ns", "instance", "operation_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|O", kwlist, &ns,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", kwlist, &ns,
                                      &instance, &operationOptions))
         return NULL;
 
@@ -200,7 +200,7 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
 
         AllowThreads(&self->cs, [&]() {
             self->session->ModifyInstance(
-                ns, *((Instance*)instance)->instance,
+                ToWstring(ns).c_str(), *((Instance*)instance)->instance,
                 !CheckPyNone(operationOptions)
                     ? ((OperationOptions*)operationOptions)->operationOptions
                     : NULL);
@@ -216,12 +216,12 @@ static PyObject* Session_ModifyInstance(Session *self, PyObject *args, PyObject 
 
 static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
+    char* ns = NULL;
     PyObject* instance = NULL;
     PyObject* operationOptions = NULL;
 
     static char *kwlist[] = { "ns", "instance", "operation_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO|O", kwlist, &ns,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O", kwlist, &ns,
                                      &instance, &operationOptions))
         return NULL;
 
@@ -233,7 +233,7 @@ static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject 
 
         AllowThreads(&self->cs, [&]() {
             self->session->DeleteInstance(
-                ns, *((Instance*)instance)->instance,
+                ToWstring(ns).c_str(), *((Instance*)instance)->instance,
                 !CheckPyNone(operationOptions)
                     ? ((OperationOptions*)operationOptions)->operationOptions
                     : NULL);
@@ -249,18 +249,18 @@ static PyObject* Session_DeleteInstance(Session *self, PyObject *args, PyObject 
 
 static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
-    wchar_t* className = NULL;
+    char* ns = NULL;
+    char* className = NULL;
 
     static char *kwlist[] = { "ns", "class_name", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu", kwlist, &ns, &className))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", kwlist, &ns, &className))
         return NULL;
 
     try
     {
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
-            op = self->session->GetClass(ns, className);
+            op = self->session->GetClass(ToWstring(ns).c_str(), ToWstring(className).c_str());
         });
         return (PyObject*)Operation_New(op);
     }
@@ -273,11 +273,11 @@ static PyObject* Session_GetClass(Session *self, PyObject *args, PyObject *kwds)
 
 static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
+    char* ns = NULL;
     PyObject* keyInstance = NULL;
 
     static char *kwlist[] = { "ns", "key_instance", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &ns, &keyInstance))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO", kwlist, &ns, &keyInstance))
         return NULL;
 
     try
@@ -287,7 +287,7 @@ static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kw
 
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
-            op = self->session->GetInstance(ns, *((Instance*)keyInstance)->instance);
+            op = self->session->GetInstance(ToWstring(ns).c_str(), *((Instance*)keyInstance)->instance);
         });
         return (PyObject*)Operation_New(op);
     }
@@ -300,14 +300,14 @@ static PyObject* Session_GetInstance(Session *self, PyObject *args, PyObject *kw
 
 static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* ns = NULL;
-    wchar_t* query = NULL;
+    char* ns = NULL;
+    char* query = NULL;
     PyObject* indicationResultCallback = NULL;
     PyObject* operationOptions = NULL;
-    wchar_t* dialect = L"WQL";
+    char* dialect = "WQL";
 
     static char *kwlist[] = { "ns", "query", "indication_result", "operation_options", "dialect", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uu|OOu", kwlist, &ns, &query, &indicationResultCallback, &operationOptions, &dialect))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|OOs", kwlist, &ns, &query, &indicationResultCallback, &operationOptions, &dialect))
         return NULL;
 
     try
@@ -325,9 +325,9 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
 
         std::shared_ptr<MI::Operation> op;
         AllowThreads(&self->cs, [&]() {
-            op = self->session->Subscribe(ns, query, callbacks,
+            op = self->session->Subscribe(ToWstring(ns).c_str(), ToWstring(query).c_str(), callbacks,
                 !CheckPyNone(operationOptions) ? ((OperationOptions*)operationOptions)->operationOptions : NULL,
-                dialect);
+                ToWstring(dialect).c_str());
         });
         PyObject* obj = (PyObject*)Operation_New(op);
         if (callbacks)
@@ -346,12 +346,12 @@ static PyObject* Session_Subscribe(Session *self, PyObject *args, PyObject *kwds
 static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *kwds)
 {
     PyObject* target = NULL;
-    wchar_t* methodName = NULL;
+    char* methodName = NULL;
     PyObject* inboundParams = NULL;
     PyObject* operationOptions = NULL;
 
     static char *kwlist[] = { "target", "method_name", "inbound_params", "operation_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou|OO", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Os|OO", kwlist,
                                      &target, &methodName, &inboundParams, &operationOptions))
         return NULL;
 
@@ -365,7 +365,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         if (PyObject_IsInstance(target, reinterpret_cast<PyObject*>(&InstanceType)))
         {
             AllowThreads(&self->cs, [&]() {
-                op = self->session->InvokeMethod(*((Instance*)target)->instance, methodName,
+                op = self->session->InvokeMethod(*((Instance*)target)->instance, ToWstring(methodName).c_str(),
                     !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL,
                     !CheckPyNone(operationOptions)
                         ? ((OperationOptions*)operationOptions)->operationOptions
@@ -376,7 +376,7 @@ static PyObject* Session_InvokeMethod(Session *self, PyObject *args, PyObject *k
         {
             AllowThreads(&self->cs, [&]() {
                 auto miClass = ((Class*)target)->miClass;
-                op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), methodName,
+                op = self->session->InvokeMethod(miClass->GetNameSpace(), miClass->GetClassName(), ToWstring(methodName).c_str(),
                     !CheckPyNone(inboundParams) ? ((Instance*)inboundParams)->instance : NULL,
                     !CheckPyNone(operationOptions)
                         ? ((OperationOptions*)operationOptions)->operationOptions

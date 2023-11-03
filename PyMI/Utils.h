@@ -20,3 +20,4 @@ bool CheckPyNone(PyObject* obj);
 void ValidatePyObjectType(PyObject* obj, const std::wstring& objName,
                           PyTypeObject* expectedType, const std::wstring& expectedTypeName,
                           bool allowNone = true);
+std::wstring ToWstring(const std::string& inString);
