@@ -19,15 +19,15 @@ static PyObject* Application_new(PyTypeObject *type, PyObject *args, PyObject *k
 
 static int Application_init(Application *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* appId = L"";
+    char* appId = "";
     static char *kwlist[] = { "app_id", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|u", kwlist, &appId))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s", kwlist, &appId))
         return -1;
 
     try
     {
         AllowThreads(&self->cs, [&]() {
-            self->app = std::make_shared<MI::Application>(appId);
+            self->app = std::make_shared<MI::Application>(ToWstring(appId).c_str());
         });
         return 0;
     }
@@ -40,12 +40,12 @@ static int Application_init(Application *self, PyObject *args, PyObject *kwds)
 
 static PyObject* Application_NewSession(Application *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* protocol = L"";
-    wchar_t* computerName = L".";
+    char* protocol = "";
+    char* computerName = ".";
     PyObject* destinationOptions = NULL;
 
     static char *kwlist[] = { "protocol", "computer_name", "destination_options", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|uuO", kwlist, &protocol, &computerName, &destinationOptions))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ssO", kwlist, &protocol, &computerName, &destinationOptions))
         return NULL;
 
     try
@@ -57,7 +57,7 @@ static PyObject* Application_NewSession(Application *self, PyObject *args, PyObj
 
         std::shared_ptr<MI::Session> session;
         AllowThreads(&self->cs, [&]() {
-            session = self->app->NewSession(protocol, computerName,
+            session = self->app->NewSession(ToWstring(protocol).c_str(), ToWstring(computerName).c_str(),
                 !CheckPyNone(destinationOptions) ? ((DestinationOptions*)destinationOptions)->destinationOptions : NULL);
         });
         return (PyObject*)Session_New(session);
@@ -84,10 +84,10 @@ static void Application_dealloc(Application* self)
 static PyObject* Application_NewMethodInboundParameters(Application *self, PyObject *args, PyObject *kwds)
 {
     PyObject* pyClass = NULL;
-    wchar_t* methodName = NULL;
+    char* methodName = NULL;
 
     static char *kwlist[] = { "mi_class", "method_name", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ou", kwlist, &pyClass, &methodName))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Os", kwlist, &pyClass, &methodName))
         return NULL;
 
     try
@@ -97,7 +97,7 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
 
         std::shared_ptr<MI::Instance> instance;
         AllowThreads(&self->cs, [&]() {
-            instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, methodName);
+            instance = self->app->NewMethodParamsInstance(*((Class*)pyClass)->miClass, ToWstring(methodName).c_str());
         });
         return (PyObject*)Instance_New(instance);
     }
@@ -110,16 +110,16 @@ static PyObject* Application_NewMethodInboundParameters(Application *self, PyObj
 
 static PyObject* Application_NewInstance(Application *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* className = NULL;
+    char* className = NULL;
     static char *kwlist[] = { "class_name", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &className))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &className))
         return NULL;
 
     try
     {
         std::shared_ptr<MI::Instance> instance;
         AllowThreads(&self->cs, [&]() {
-            instance = self->app->NewInstance(className);
+            instance = self->app->NewInstance(ToWstring(className).c_str());
         });
         return (PyObject*)Instance_New(instance);
     }
@@ -132,10 +132,10 @@ static PyObject* Application_NewInstance(Application *self, PyObject *args, PyOb
 
 static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* className = NULL;
+    char* className = NULL;
     PyObject* miClass = NULL;
     static char *kwlist[] = { "class_name", "mi_class", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "uO", kwlist, &className, &miClass))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO", kwlist, &className, &miClass))
         return NULL;
 
     try
@@ -145,7 +145,7 @@ static PyObject* Application_NewInstanceFromClass(Application *self, PyObject *a
 
         std::shared_ptr<MI::Instance> instance;
         AllowThreads(&self->cs, [&]() {
-            instance = self->app->NewInstanceFromClass(className, *((Class*)miClass)->miClass);
+            instance = self->app->NewInstanceFromClass(ToWstring(className).c_str(), *((Class*)miClass)->miClass);
         });
         return (PyObject*)Instance_New(instance);
     }

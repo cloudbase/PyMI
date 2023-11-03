@@ -516,3 +516,31 @@ void ValidatePyObjectType(PyObject* obj, const std::wstring& objName,
         throw MI::TypeConversionException(
             L"\"" + objName + L"\"must have type " + expectedTypeName);
 }
+
+std::wstring ToWstring(const std::string& inString)
+{
+    if (inString.empty())
+    {
+        return L"";
+    }
+
+    int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, &inString.at(0), (int)inString.size(), nullptr, 0);
+    if (sizeNeeded <= 0)
+    {
+        DWORD err = GetLastError();
+        throw MI::TypeConversionException(
+            L"wstring conversion failed. Error: " + std::to_wstring(err));
+    }
+
+    std::wstring result(sizeNeeded, 0);
+    sizeNeeded = MultiByteToWideChar(
+        CP_UTF8, 0, &inString.at(0), (int)inString.size(),
+        &result.at(0), sizeNeeded);
+    if (sizeNeeded <= 0) {
+        DWORD err = GetLastError();
+        throw MI::TypeConversionException(
+            L"wstring conversion failed. Error: " + std::to_wstring(err));
+    }
+
+    return result;
+}

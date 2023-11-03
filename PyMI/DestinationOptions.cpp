@@ -75,15 +75,15 @@ static PyObject* DestinationOptions_GetUILocale(DestinationOptions* self)
 
 static PyObject* DestinationOptions_SetUILocale(DestinationOptions* self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* locale = NULL;
+    char* locale = NULL;
     static char *kwlist[] = { "locale_name", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &locale))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &locale))
         return NULL;
 
     try
     {
         AllowThreads(&self->cs, [&]() {
-            self->destinationOptions->SetUILocale(locale);
+            self->destinationOptions->SetUILocale(ToWstring(locale).c_str());
         });
         Py_RETURN_NONE;
     }
@@ -139,15 +139,15 @@ static PyObject* DestinationOptions_SetTimeout(DestinationOptions* self, PyObjec
 
 static PyObject* DestinationOptions_SetTransport(DestinationOptions* self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* transport = NULL;
+    char* transport = NULL;
     static char *kwlist[] = { "transport", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u", kwlist, &transport))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &transport))
         return NULL;
 
     try
     {
         AllowThreads(&self->cs, [&]() {
-            self->destinationOptions->SetTransport(transport);
+            self->destinationOptions->SetTransport(ToWstring(transport).c_str());
         });
         Py_RETURN_NONE;
     }
@@ -178,26 +178,26 @@ static PyObject* DestinationOptions_GetTransport(DestinationOptions* self)
 
 static PyObject* DestinationOptions_AddCredentials(DestinationOptions* self, PyObject *args, PyObject *kwds)
 {
-    wchar_t* authType = NULL;
-    wchar_t* domain = NULL;
-    wchar_t* username = NULL;
-    wchar_t* password = NULL;
-    wchar_t* certThumbprint = NULL;
+    char* authType = NULL;
+    char* domain = NULL;
+    char* username = NULL;
+    char* password = NULL;
+    char* certThumbprint = NULL;
 
     static char *kwlist[] = { "auth_type", "domain", "username", "password", "cert_thumbprint", NULL };
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "u|uuuu", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|ssss", kwlist,
                                      &authType, &domain, &username, &password, &certThumbprint))
         return NULL;
 
     try
     {
-        if (certThumbprint && wcslen(certThumbprint))
+        if (ToWstring(certThumbprint).c_str() && wcslen(ToWstring(certThumbprint).c_str()))
             AllowThreads(&self->cs, [&]() {
-                self->destinationOptions->AddCredentials(authType, certThumbprint);
+                self->destinationOptions->AddCredentials(ToWstring(authType).c_str(), ToWstring(certThumbprint).c_str());
             });
         else
             AllowThreads(&self->cs, [&]() {
-                self->destinationOptions->AddCredentials(authType, domain, username, password);
+                self->destinationOptions->AddCredentials(ToWstring(authType).c_str(), ToWstring(domain).c_str(), ToWstring(username).c_str(), ToWstring(password).c_str());
             });
         Py_RETURN_NONE;
     }
