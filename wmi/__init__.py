@@ -681,6 +681,7 @@ class _Connection(object):
         params = self._get_method_params(target, method_name)
         operation_options = self._get_mi_operation_options(
             operation_options=kwargs.pop('operation_options', None))
+        keep_bool_ret_vals = kwargs.pop('keep_bool_ret_vals', False)
 
         for i, v in enumerate(args):
             _, el_type, _ = params.get_element(i)
@@ -710,7 +711,8 @@ class _Connection(object):
                 # returns void, as there's no direct way to determine it.
                 # This won't work if the method is expected to return a
                 # boolean value!!
-                if element != ('ReturnValue', mi.MI_BOOLEAN, True):
+                if (element != ('ReturnValue', mi.MI_BOOLEAN, True)
+                        or keep_bool_ret_vals):
                     l.append(self._wrap_element(*element))
             return tuple(l)
 
