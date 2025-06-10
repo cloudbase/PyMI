@@ -26,7 +26,7 @@ jobs:
         pip install . || exit /b
         python -m unittest discover || exit /b
         python setup.py bdist_wheel || exit /b
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: pymi_wheel_py${{ matrix.python-version }}
         path: 'dist'
