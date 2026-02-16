@@ -35,7 +35,7 @@ class Compiler(_msvccompiler.MSVCCompiler):
 
 
 def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
-    return Compiler(None, dry_run, force)
+    return Compiler(verbose, force)
 
 
 if 'MSC' in sys.version:
